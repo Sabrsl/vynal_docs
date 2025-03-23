@@ -1,0 +1,94 @@
+{
+    "badzagueye@gmail.com": {
+        "license_key": "eyJkYXRhIjogeyJlbWFpbCI6ICJiYWR6YWd1ZXllQGdtYWlsLmNvbSIsICJjcmVhdGVkX2F0IjogMTc0MjcwNjE0OCwgImV4cGlyZXNfYXQiOiAxNzc0MjQyMTQ4LCAibGljZW5zZV90eXBlIjogImVudGVycHJpc2UiLCAiaXNzdWVkX2J5IjogImFkbWluX3Rvb2wifSwgInNpZ25hdHVyZSI6ICJlNWQxMzI4MWFkM2UyYjliOGQ4ODY1MGQ5YjYzNGNkNmIwNjI1MWMyZTg5YWJlMGNhMDhkZTQwZjIzYTdjZDM0In0=",
+        "license_valid": false,
+        "license_verified_at": 1742755356,
+        "theme": "dark",
+        "created_at": 1742713816.0803483,
+        "last_login": "2025-03-23T19:13:52.590877",
+        "password": "1f837a4a4ccf01fbc239fadfb4e0041a0ea5ef6f72f941efd02b2a1a5985b0da",
+        "email": "badzagueye@gmail.com",
+        "sessions": [
+            {
+                "date": "2025-03-23T10:16:26.253272",
+                "duration": 157.17138624191284
+            },
+            {
+                "date": "2025-03-23T10:20:22.102715",
+                "duration": 42.35122013092041
+            },
+            {
+                "date": "2025-03-23T10:23:05.266855",
+                "duration": 36.147979974746704
+            },
+            {
+                "date": "2025-03-23T10:27:58.235591",
+                "duration": 32.47469353675842
+            },
+            {
+                "date": "2025-03-23T10:31:14.375661",
+                "duration": 32.94272518157959
+            },
+            {
+                "date": "2025-03-23T10:35:52.362428",
+                "duration": 138.28824162483215
+            },
+            {
+                "date": "2025-03-23T10:40:22.657014",
+                "duration": 74.07869601249695
+            },
+            {
+                "date": "2025-03-23T10:46:25.038460",
+                "duration": 68.12985634803772
+            },
+            {
+                "date": "2025-03-23T10:51:28.774475",
+                "duration": 62.88013410568237
+            },
+            {
+                "date": "2025-03-23T10:59:10.237531",
+                "duration": 54.39926481246948
+            },
+            {
+                "date": "2025-03-23T11:04:25.119247",
+                "duration": 35.21071100234985
+            },
+            {
+                "date": "2025-03-23T19:06:23.128507",
+                "duration": 120.8117356300354
+            },
+            {
+                "date": "2025-03-23T19:13:35.606988",
+                "duration": 103.83365249633789
+            },
+            {
+                "date": "2025-03-23T19:20:30.876259",
+                "duration": 55.44091582298279
+            },
+            {
+                "date": "2025-03-23T19:27:52.831169",
+                "duration": 59.973652362823486
+            },
+            {
+                "date": "2025-03-23T19:28:43.288864",
+                "duration": 78.85824394226074
+            },
+            {
+                "date": "2025-03-23T19:38:31.126865",
+                "duration": 74.89525842666626
+            },
+            {
+                "date": "2025-03-23T19:38:59.664030",
+                "duration": 71.45032835006714
+            }
+        ],
+        "total_usage_time": 1299.3386960029602
+    },
+    "badzagueye@gamail.com": {
+        "email": "badzagueye@gamail.com",
+        "created_at": 1742712992.144283,
+        "last_login": 1742712993.213366,
+        "password_hash": "4WDJRwLZUciDr9xYgoGUjgkqZdZwnofyNvQj4b0zHwQ=",
+        "salt": "4NDf5O1LWRCMbeXwbFTbqQ=="
+    }
+}

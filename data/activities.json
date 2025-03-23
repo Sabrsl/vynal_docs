@@ -1,5 +1,11 @@
 [
   {
+    "id": "a145a52a-b7de-4dae-98a2-7aa1b9319fa8",
+    "type": "template",
+    "description": "Nouveau modèle: k,mlk",
+    "timestamp": "2025-03-23T08:54:52.184465"
+  },
+  {
     "id": "e97f1c1f-5cae-42f2-a0dd-e9dd40eea22e",
     "type": "system",
     "description": "Application fermée proprement",

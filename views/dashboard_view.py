@@ -39,6 +39,9 @@ class DashboardView:
         self.new_template: Callable[[], None] = lambda: logger.info("Action: Créer un modèle (non implémentée)")
         self.process_document: Callable[[], None] = lambda: logger.info("Action: Nouveau document (non implémentée)")
         
+        # Callback appelé après que la vue est complètement rendue
+        self.post_render_callback = None
+        
         # Charger les icônes
         self.load_icons()
         
@@ -459,7 +462,16 @@ class DashboardView:
         else:
             self.no_activities_label.pack(pady=20)
         
+        # Force l'affichage et la mise à jour complète
+        self.frame.update()
+        
         logger.info("DashboardView mise à jour")
+        
+        # Appeler le callback après que la vue est complètement mise à jour
+        if callable(self.post_render_callback):
+            self.post_render_callback()
+            # Réinitialiser le callback pour éviter les appels multiples
+            self.post_render_callback = None
     
     def show(self) -> None:
         """
@@ -481,3 +493,29 @@ class DashboardView:
         Masque la vue.
         """
         self.frame.pack_forget()
+    
+    def reconnect_buttons(self) -> None:
+        """
+        Réinitialise les commandes des boutons après une reconnexion
+        Cette méthode est appelée par MainView après une reconnexion
+        """
+        try:
+            logger.info("Reconnexion des boutons du tableau de bord")
+            
+            # Réinitialiser les commandes pour les boutons d'action rapide
+            if hasattr(self, 'new_doc_btn'):
+                self.new_doc_btn.configure(command=self._new_document_callback)
+                
+            if hasattr(self, 'process_doc_btn'):
+                self.process_doc_btn.configure(command=self._process_document_callback)
+                
+            if hasattr(self, 'add_client_btn'):
+                self.add_client_btn.configure(command=self._add_client_callback)
+                
+            if hasattr(self, 'new_template_btn'):
+                self.new_template_btn.configure(command=self._new_template_callback)
+                
+            logger.info("Boutons du tableau de bord reconnectés avec succès")
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la reconnexion des boutons: {e}")

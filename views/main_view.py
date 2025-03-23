@@ -13,6 +13,10 @@ import json
 import tkinter as tk
 import hashlib
 from datetime import datetime
+import tkinter.messagebox as messagebox
+from CTkMessagebox import CTkMessagebox
+import traceback
+import time
 
 # Importation des vues
 from views.dashboard_view import DashboardView
@@ -35,20 +39,47 @@ class MainView:
     
     def __init__(self, root, app_model, on_ready=None):
         """
-        Initialise la vue principale
+        Initialiser la vue principale
         
         Args:
-            root: Fenêtre principale CTk
+            root: Fenêtre principale
             app_model: Modèle de l'application
-            on_ready: Callback appelé lorsque l'interface est prête
+            on_ready: Callback à appeler lorsque l'interface est prête
         """
+        # Initialiser les attributs de base
         self.root = root
         self.model = app_model
         self.on_ready = on_ready
         
-        # Initialiser les trackers avant tout
+        # Si c'est une réinitialisation, nettoyer d'abord les widgets existants
+        if hasattr(self, 'main_frame') and self.main_frame:
+            try:
+                self.main_frame.destroy()
+            except Exception:
+                pass  # Ignorer les erreurs de suppression
+        
+        # Nettoyer les autres widgets potentiellement existants
+        for attr_name in ['sidebar', 'content_area', 'main_content']:
+            if hasattr(self, attr_name):
+                try:
+                    widget = getattr(self, attr_name)
+                    if widget:
+                        widget.destroy()
+                except Exception:
+                    pass  # Ignorer les erreurs
+        
+        # Initialiser le gestionnaire d'utilisation
         from utils.usage_tracker import UsageTracker
         self.usage_tracker = UsageTracker()
+        
+        # Vérifier s'il existe une session "rester connecté"
+        remembered_user = self.usage_tracker.check_remembered_session()
+        if remembered_user:
+            logger.info(f"Session 'Rester connecté' trouvée pour {remembered_user.get('email', 'utilisateur inconnu')}")
+            # Connexion automatique si une session valide existe
+            self.auto_login_data = remembered_user
+        else:
+            self.auto_login_data = None
         
         # Configurer la fenêtre principale
         self.root.title(self.model.config.get("app.name", "Vynal Docs Automator"))
@@ -75,18 +106,121 @@ class MainView:
         # Initialiser les dictionnaires de widgets
         self.views = {}
         self.nav_buttons = {}
+        self.sidebar_items = []
+        
+        # Moniteur d'activité
+        self.activity_monitor = {
+            "enabled": False,
+            "timeout": 300,  # 5 minutes par défaut
+            "last_activity": time.time(),
+            "timer_id": None
+        }
         
         # Créer l'interface
         self._create_widgets()
         
         # Initialiser le moniteur d'activité
-        self.activity_monitor = None
         self._setup_activity_monitor()
         
         # Configurer les événements pour détecter l'activité
         self._setup_activity_events()
         
         logger.info("Vue principale initialisée")
+        
+        # Exécuter après l'initialisation
+        if on_ready:
+            on_ready()
+            
+        # Si une session "rester connecté" a été trouvée, afficher directement le tableau de bord
+        if self.auto_login_data:
+            self.root.after(100, lambda: self._perform_auto_login(self.auto_login_data))
+    
+    def _perform_auto_login(self, user_data):
+        """
+        Effectue la connexion automatique avec les données utilisateur
+        
+        Args:
+            user_data: Données de l'utilisateur
+        """
+        try:
+            # Créer un écran de chargement
+            loading_frame = ctk.CTkFrame(self.root)
+            loading_frame.pack(fill=ctk.BOTH, expand=True)
+
+            # Frame centré pour le contenu du spinner
+            spinner_content = ctk.CTkFrame(loading_frame, fg_color="transparent")
+            spinner_content.place(relx=0.5, rely=0.5, anchor=ctk.CENTER)
+
+            # Titre
+            ctk.CTkLabel(
+                spinner_content,
+                text="Connexion automatique",
+                font=ctk.CTkFont(size=20, weight="bold"),
+                text_color=("gray10", "gray90")
+            ).pack(pady=(0, 20))
+
+            # Message de chargement
+            name = user_data.get('name', '')
+            email = user_data.get('email', '')
+            greeting = f"Bienvenue {name}" if name else f"Bienvenue {email}"
+            
+            loading_label = ctk.CTkLabel(
+                spinner_content,
+                text=f"{greeting} ! Veuillez patienter pendant le chargement du tableau de bord...",
+                font=ctk.CTkFont(size=14)
+            )
+            loading_label.pack(pady=(0, 15))
+
+            # Créer un spinner avec CustomTkinter
+            spinner = ctk.CTkProgressBar(spinner_content, width=300)
+            spinner.pack(pady=10)
+            spinner.configure(mode="indeterminate")
+            spinner.start()
+
+            # Force le rafraîchissement pour afficher le spinner
+            self.root.update()
+            
+            def complete_auto_login():
+                try:
+                    # Stocker une référence au loading_frame
+                    global spinner_reference
+                    spinner_reference = loading_frame
+                    
+                    # Mettre à jour l'état d'authentification
+                    self._update_auth_state()
+                    
+                    # Afficher le dashboard
+                    self.show_dashboard()
+                    
+                    # Détruire le spinner après un court délai
+                    self.root.after(800, lambda: self._destroy_spinner_safely(spinner_reference))
+                    
+                except Exception as e:
+                    logger.error(f"Erreur lors de la connexion automatique: {e}", exc_info=True)
+                    # En cas d'erreur, nettoyer et afficher un message
+                    try:
+                        if loading_frame and loading_frame.winfo_exists():
+                            loading_frame.destroy()
+                    except Exception:
+                        pass
+                    
+                    from utils.notification import show_notification
+                    show_notification(
+                        "Erreur de connexion",
+                        "Impossible de restaurer votre session. Veuillez vous reconnecter.",
+                        "error"
+                    )
+                    
+                    # Afficher l'écran de connexion
+                    self.show_login()
+            
+            # Lancer le processus après un court délai
+            self.root.after(1000, complete_auto_login)
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la préparation de la connexion automatique: {e}", exc_info=True)
+            # Afficher l'écran de connexion en cas d'erreur
+            self.show_login()
     
     def _create_widgets(self):
         """
@@ -599,17 +733,24 @@ class MainView:
                 "error"
             )
 
-    def _on_auth_change(self, is_logged_in, user_data):
+    def _on_auth_change(self, is_logged_in=None, user_data=None):
         """
         Callback appelé lorsque l'état d'authentification change
         
         Args:
-            is_logged_in (bool): True si l'utilisateur est connecté, False sinon
-            user_data (dict): Données de l'utilisateur si connecté, None sinon
+            is_logged_in (bool, optional): True si l'utilisateur est connecté, False sinon
+            user_data (dict, optional): Données de l'utilisateur si connecté, None sinon
         """
         try:
+            # Si les paramètres ne sont pas fournis, les récupérer de l'usage tracker
+            if is_logged_in is None:
+                is_logged_in = self.usage_tracker.has_active_user()
+                
+            if user_data is None and is_logged_in:
+                user_data = self.usage_tracker.get_user_data()
+                
             # Mettre à jour l'interface utilisateur
-            self.update_auth_button()
+            self.update_auth_button(is_logged_in)
             
             # Afficher un message approprié
             if is_logged_in:
@@ -629,29 +770,32 @@ class MainView:
         except Exception as e:
             logger.error(f"Erreur lors de la mise à jour de l'état d'authentification: {e}")
             
-    def update_auth_button(self):
-        """Met à jour l'interface utilisateur selon l'état d'authentification"""
+    def update_auth_button(self, is_logged_in=None):
+        """
+        Met à jour l'interface utilisateur selon l'état d'authentification
+        
+        Args:
+            is_logged_in (bool, optional): État de connexion. Si None, il sera déterminé automatiquement.
+        """
         if not hasattr(self, 'usage_tracker'):
             from utils.usage_tracker import UsageTracker
             self.usage_tracker = UsageTracker()
         
-        is_logged_in = self.usage_tracker.is_user_registered()
+        # Si l'état de connexion n'est pas fourni, le déterminer
+        if is_logged_in is None:
+            is_logged_in = self.usage_tracker.has_active_user()
         
         # Mettre à jour le texte et la couleur des boutons selon l'état de connexion
         if is_logged_in:
-            # Utilisateur connecté
-            user_data = self.usage_tracker.get_user_data()
-            display_name = user_data.get('email', 'Utilisateur').split('@')[0]
-            button_text = f"👤 {display_name}"
-            button_color = "#3498db"
-            hover_color = "#2980b9"
+            button_text = "👤 Mon compte"
+            button_color = ("gray75", "gray25")  # Couleur plus subtile
+            hover_color = ("gray85", "gray15")
         else:
-            # Utilisateur non connecté
-            button_text = "👤 Se connecter"
-            button_color = "#2ecc71"
-            hover_color = "#27ae60"
+            button_text = "🔑 Se connecter"
+            button_color = "#4285F4"  # Bleu Google
+            hover_color = "#3367D6"  # Bleu plus foncé au survol
         
-        # Mettre à jour le bouton principal
+        # Appliquer les modifications au bouton si disponible
         if hasattr(self, 'auth_button') and self.auth_button:
             try:
                 self.auth_button.configure(
@@ -697,7 +841,7 @@ class MainView:
                     register_button = ctk.CTkButton(
                         self.sidebar_footer,
                         text="✏️ S'inscrire",
-                        command=lambda: self._show_auth_dialog_tab("register"),
+                        command=self._show_register_view,
                         fg_color="transparent",
                         hover_color=("gray85", "gray25"),
                         anchor="w"
@@ -724,6 +868,239 @@ class MainView:
         # Journaliser le changement d'état
         logger.info(f"État d'authentification mis à jour - Connecté: {is_logged_in}")
 
+    def _handle_logout(self):
+        """
+        Gère l'action de déconnexion de l'utilisateur
+        """
+        try:
+            # Demander confirmation
+            self.show_confirmation(
+                "Déconnexion",
+                "Êtes-vous sûr de vouloir vous déconnecter ?",
+                on_yes=self._confirm_logout
+            )
+        except Exception as e:
+            logger.error(f"Erreur lors de la déconnexion: {e}")
+            self.show_message("Erreur", f"Une erreur est survenue lors de la déconnexion: {e}", "error")
+    
+    def _confirm_logout(self):
+        """Confirme la déconnexion et effectue le processus de logout"""
+        logger.info("Confirmation de déconnexion")
+        try:
+            # Tenter de déconnecter l'utilisateur
+            if self.usage_tracker.logout():
+                logger.info("Déconnexion réussie")
+                # Notifier le changement d'état d'authentification
+                self._on_auth_change(False)
+                
+                # Nettoyer l'interface actuelle
+                try:
+                    # S'assurer que les vues actuelles sont masquées
+                    if hasattr(self, 'views'):
+                        for view_id, view in self.views.items():
+                            if hasattr(view, 'pack_forget'):
+                                view.pack_forget()
+                                
+                    # Masquer tous les widgets de l'interface principale
+                    if hasattr(self, 'main_frame'):
+                        for widget in self.main_frame.winfo_children():
+                            widget.pack_forget()
+                            
+                    # Réafficher les widgets de base
+                    if hasattr(self, 'main_frame') and not self.main_frame.winfo_ismapped():
+                        self.main_frame.pack(fill=ctk.BOTH, expand=True)
+                        
+                    # Forcer la mise à jour de l'interface
+                    self.root.update_idletasks()
+                except Exception as e:
+                    logger.error(f"Erreur lors du nettoyage de l'interface: {e}")
+                
+                # Afficher la vue de connexion standard
+                self.show_login()
+                
+            else:
+                logger.warning("Échec de la déconnexion")
+                messagebox.showwarning("Erreur", "Impossible de se déconnecter.")
+        except Exception as e:
+            logger.error(f"Erreur lors de la déconnexion: {e}")
+            messagebox.showerror("Erreur", f"Une erreur est survenue: {e}")
+    
+    def _show_register_view(self):
+        """Affiche la vue d'inscription"""
+        # Importer ici pour éviter les imports circulaires
+        from views.register_view import RegisterView
+        
+        # Créer une fenêtre modale pour l'inscription
+        register_window = ctk.CTkToplevel(self.root)
+        register_window.title("Créer un compte - Vynal Docs Automator")
+        register_window.geometry("500x650")
+        register_window.resizable(False, False)
+        register_window.transient(self.root)
+        register_window.grab_set()
+        
+        # Centrer la fenêtre
+        register_window.update_idletasks()
+        width = register_window.winfo_width()
+        height = register_window.winfo_height()
+        x = (register_window.winfo_screenwidth() // 2) - (width // 2)
+        y = (register_window.winfo_screenheight() // 2) - (height // 2)
+        register_window.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # Créer la vue d'inscription
+        register_view = RegisterView(register_window, self.usage_tracker)
+        register_view.pack(fill="both", expand=True)
+        
+        # Définir le callback de succès
+        register_view.on_success_callback = self._on_registration_success
+        
+    def _on_registration_success(self, user_data):
+        """Callback appelé lors d'une inscription réussie
+        
+        Args:
+            user_data (dict): Les données de l'utilisateur inscrit
+        """
+        try:
+            # Afficher un message de bienvenue
+            email = user_data.get('email', '')
+            name = user_data.get('name', '')
+            greeting = f"Bienvenue {name}" if name else f"Bienvenue {email}"
+            
+            # Mettre à jour le label d'information utilisateur
+            if hasattr(self, 'user_info_label'):
+                self.user_info_label.configure(text=greeting)
+            
+            # Créer un écran de chargement
+            loading_frame = ctk.CTkFrame(self.root)
+            loading_frame.pack(fill=ctk.BOTH, expand=True)
+
+            # Frame centré pour le contenu du spinner
+            spinner_content = ctk.CTkFrame(loading_frame, fg_color="transparent")
+            spinner_content.place(relx=0.5, rely=0.5, anchor=ctk.CENTER)
+
+            # Titre
+            ctk.CTkLabel(
+                spinner_content,
+                text="Chargement du tableau de bord",
+                font=ctk.CTkFont(size=20, weight="bold"),
+                text_color=("gray10", "gray90")
+            ).pack(pady=(0, 20))
+
+            # Message de chargement
+            loading_label = ctk.CTkLabel(
+                spinner_content,
+                text=f"Bienvenue {name if name else email} ! Veuillez patienter pendant le chargement des données...",
+                font=ctk.CTkFont(size=14)
+            )
+            loading_label.pack(pady=(0, 15))
+
+            # Créer un spinner avec CustomTkinter
+            spinner = ctk.CTkProgressBar(spinner_content, width=300)
+            spinner.pack(pady=10)
+            spinner.configure(mode="indeterminate")
+            spinner.start()
+
+            # Force le rafraîchissement pour afficher le spinner
+            self.root.update()
+            
+            # Fonction pour initialiser le tableau de bord
+            def complete_registration():
+                try:
+                    logger.info(f"Redirection vers le tableau de bord après inscription: {email}")
+                    
+                    # Stocker une référence au loading_frame 
+                    # afin de pouvoir le détruire après le chargement du dashboard
+                    global spinner_reference
+                    spinner_reference = loading_frame
+                    
+                    # S'assurer que l'état d'authentification est mis à jour
+                    self._update_auth_state()
+                    
+                    # S'assurer que les vues sont créées
+                    if not hasattr(self, 'views') or not self.views:
+                        self.create_views()
+                    
+                    # S'assurer que les widgets principaux sont correctement affichés
+                    widgets_to_check = {
+                        'main_frame': {'pack_args': {'fill': ctk.BOTH, 'expand': True}},
+                        'sidebar': {'pack_args': {'side': ctk.LEFT, 'fill': ctk.Y, 'padx': 0, 'pady': 0}},
+                        'content_area': {'pack_args': {'side': ctk.RIGHT, 'fill': ctk.BOTH, 'expand': True, 'padx': 0, 'pady': 0}},
+                        'main_content': {'pack_args': {'side': ctk.TOP, 'fill': ctk.BOTH, 'expand': True, 'padx': 20, 'pady': 20}}
+                    }
+                    
+                    # Vérifier et afficher chaque widget
+                    for widget_name, config in widgets_to_check.items():
+                        if hasattr(self, widget_name):
+                            widget = getattr(self, widget_name)
+                            if widget and not widget.winfo_ismapped():
+                                widget.pack(**config['pack_args'])
+                    
+                    # Forcer la mise à jour de l'interface
+                    self.root.update()
+                    
+                    # Créer les vues si elles n'existent pas
+                    if not self.views or "dashboard" not in self.views:
+                        self.create_views()
+                        # Forcer une mise à jour pour s'assurer que les vues sont bien créées
+                        self.root.update()
+                    
+                    # Afficher le dashboard après un court délai
+                    def show_dashboard_after_delay():
+                        try:
+                            # Afficher le dashboard
+                            if "dashboard" in self.views:
+                                self.show_view("dashboard")
+                                logger.info("Dashboard affiché avec succès après inscription")
+                            else:
+                                logger.error("La vue dashboard n'existe pas après sa création")
+                                
+                            # Détruire le spinner après un court délai
+                            self.root.after(500, lambda: self._destroy_spinner_safely(spinner_reference))
+                        except Exception as e:
+                            logger.error(f"Erreur lors de l'affichage différé du dashboard: {e}", exc_info=True)
+                            self._destroy_spinner_safely(spinner_reference)
+                    
+                    # Lancer l'affichage du dashboard après un court délai
+                    self.root.after(200, show_dashboard_after_delay)
+                    
+                except Exception as e:
+                    logger.error(f"Erreur lors de la redirection vers le tableau de bord: {e}", exc_info=True)
+                    # En cas d'erreur, toujours supprimer le spinner
+                    try:
+                        if 'loading_frame' in locals() and loading_frame and loading_frame.winfo_exists():
+                            loading_frame.destroy()
+                    except Exception:
+                        pass
+                    
+                    # Afficher un message dans une notification
+                    from utils.notification import show_notification
+                    show_notification(
+                        "Erreur",
+                        "Une erreur est survenue lors du chargement du tableau de bord. Veuillez redémarrer l'application.",
+                        "error"
+                    )
+            
+            # Lancer le processus après un court délai
+            self.root.after(1000, complete_registration)
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la gestion du succès d'inscription: {e}", exc_info=True)
+            # Afficher un message dans une notification
+            from utils.notification import show_notification
+            show_notification(
+                "Erreur",
+                "Une erreur est survenue lors de la finalisation de l'inscription. Veuillez redémarrer l'application.",
+                "error"
+            )
+    
+    def _destroy_spinner_safely(self, spinner_frame):
+        """Détruit le spinner de façon sécurisée"""
+        try:
+            if spinner_frame and spinner_frame.winfo_exists():
+                spinner_frame.destroy()
+                logger.info("Spinner supprimé après chargement du dashboard")
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression du spinner: {e}")
+
     def _show_auth_dialog_tab(self, tab_name):
         """
         Affiche le dialogue d'authentification avec un onglet spécifique
@@ -731,7 +1108,12 @@ class MainView:
         Args:
             tab_name: Nom de l'onglet à afficher ("login", "register" ou "account")
         """
-        # Utiliser la méthode standard pour afficher la fenêtre d'authentification
+        # Si l'onglet demandé est "register", utiliser la nouvelle méthode d'inscription
+        if tab_name == "register":
+            self._show_register_view()
+            return
+            
+        # Pour les autres onglets, utiliser la méthode standard
         self._show_auth_dialog()
         
         # Puis afficher l'onglet spécifié
@@ -955,17 +1337,24 @@ class MainView:
             bool: True si le mot de passe est correct, False sinon
         """
         try:
-            # Vérifier si la configuration contient un hash de mot de passe
-            password_hash = self.model.config.get("security.password_hash", "")
-            if not password_hash:
-                logger.error("Aucun mot de passe n'est configuré")
+            # Récupérer les données de l'utilisateur
+            user_data = self.usage_tracker.get_user_data()
+            if not user_data:
+                logger.warning("Aucun utilisateur actif")
                 return False
-            
+                
+            # Récupérer le mot de passe haché
+            stored_password = user_data.get('password', '')
+            if not stored_password:
+                logger.warning("Aucun mot de passe stocké")
+                return False
+                
             # Hacher le mot de passe entré
-            input_hash = hashlib.sha256(password.encode()).hexdigest()
+            import hashlib
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
             
-            # Comparer les hash
-            return input_hash == password_hash
+            # Comparer les mots de passe
+            return hashed_password == stored_password
         except Exception as e:
             logger.error(f"Erreur lors de la vérification du mot de passe: {e}")
             return False
@@ -1087,3 +1476,370 @@ class MainView:
                 logger.warning("Modèle de licence non disponible pour la mise à jour des fonctionnalités")
         except Exception as e:
             logger.error(f"Erreur lors de la mise à jour des fonctionnalités disponibles: {e}")
+
+    def show_dashboard(self):
+        """
+        Affiche le tableau de bord principal de l'application.
+        Cette méthode est appelée après une connexion réussie pour réafficher l'interface principale.
+        """
+        try:
+            logger.info("Tentative d'affichage du tableau de bord...")
+            
+            # S'assurer que l'interface principale est bien créée
+            if not hasattr(self, 'main_frame') or not self.main_frame:
+                logger.warning("Main frame manquant, recréation de l'interface...")
+                self._create_widgets()
+            
+            # Utiliser une seule vérification pour tous les widgets principaux
+            widgets_to_check = {
+                'main_frame': {'pack_args': {'fill': ctk.BOTH, 'expand': True}},
+                'sidebar': {'pack_args': {'side': ctk.LEFT, 'fill': ctk.Y, 'padx': 0, 'pady': 0}},
+                'content_area': {'pack_args': {'side': ctk.RIGHT, 'fill': ctk.BOTH, 'expand': True, 'padx': 0, 'pady': 0}},
+                'main_content': {'pack_args': {'side': ctk.TOP, 'fill': ctk.BOTH, 'expand': True, 'padx': 20, 'pady': 20}}
+            }
+            
+            # Vérifier et afficher chaque widget en une seule passe
+            for widget_name, config in widgets_to_check.items():
+                if hasattr(self, widget_name):
+                    widget = getattr(self, widget_name)
+                    if widget and not widget.winfo_ismapped():
+                        widget.pack(**config['pack_args'])
+                else:
+                    logger.warning(f"Widget {widget_name} manquant lors de l'affichage du dashboard")
+            
+            # Forcer la mise à jour de l'interface
+            self.root.update_idletasks()
+            
+            # Vérifier si les vues existent, sinon les créer
+            if not hasattr(self, 'views') or not self.views or len(self.views) == 0:
+                logger.info("Vues manquantes, création des vues...")
+                self.create_views()
+                # Forcer une mise à jour pour s'assurer que les vues sont bien créées
+                self.root.update_idletasks()
+            
+            # Vérifier si la vue dashboard existe, sinon recréer toutes les vues
+            if "dashboard" not in self.views:
+                logger.warning("Vue dashboard manquante, recréation des vues...")
+                self.create_views()
+                # Forcer une mise à jour
+                self.root.update_idletasks()
+                
+                # Vérifier à nouveau si la création a fonctionné
+                if "dashboard" not in self.views:
+                    logger.error("Impossible de créer la vue dashboard, affichage d'un message d'erreur")
+                    self.show_message("Erreur", "Impossible de charger le tableau de bord. Veuillez redémarrer l'application.", "error")
+                    return
+            
+            # S'assurer que la vue dashboard est mise à jour avant d'être affichée
+            if hasattr(self.views["dashboard"], "update_view"):
+                try:
+                    logger.info("Mise à jour de la vue dashboard...")
+                    self.views["dashboard"].update_view()
+                except Exception as e:
+                    logger.error(f"Erreur lors de la mise à jour de la vue dashboard: {e}")
+            
+            # Afficher la vue dashboard
+            logger.info("Affichage de la vue dashboard...")
+            self.show_view("dashboard")
+            
+            logger.info("Tableau de bord affiché avec succès")
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'affichage du tableau de bord: {e}", exc_info=True)
+            # Approche minimaliste en cas d'erreur
+            try:
+                # Recréer uniquement les composants essentiels de l'interface
+                self._create_widgets()
+                self.create_views()
+                self.root.update_idletasks()
+                
+                if "dashboard" in self.views:
+                    self.show_view("dashboard")
+                else:
+                    self.show_message("Erreur", "Une erreur est survenue lors de l'affichage du tableau de bord.", "error")
+            except Exception as e2:
+                logger.critical(f"Erreur critique lors de la recréation de l'interface: {e2}")
+                self.show_message("Erreur", "Une erreur est survenue lors de l'affichage du tableau de bord.", "error")
+
+    def reset(self, keep_attributes=None):
+        """
+        Réinitialise complètement l'instance en conservant certains attributs
+        
+        Args:
+            keep_attributes: Liste des attributs à conserver
+        """
+        if keep_attributes is None:
+            keep_attributes = ['root', 'model', 'on_ready', 'usage_tracker']
+        
+        try:
+            # Sauvegarder les attributs spécifiés
+            saved_attributes = {}
+            for attr in keep_attributes:
+                if hasattr(self, attr):
+                    saved_attributes[attr] = getattr(self, attr)
+            
+            # Arrêter proprement toutes les ressources
+            if hasattr(self, 'activity_monitor') and self.activity_monitor:
+                self.activity_monitor.stop()
+            
+            # Détruire tous les widgets qui pourraient exister
+            for attr_name, attr_value in list(self.__dict__.items()):
+                if isinstance(attr_value, (ctk.CTkBaseClass, tk.BaseWidget)):
+                    try:
+                        attr_value.destroy()
+                    except Exception:
+                        pass
+            
+            # Supprimer tous les attributs
+            for attr in list(self.__dict__.keys()):
+                if attr not in keep_attributes:
+                    delattr(self, attr)
+            
+            # Restaurer les attributs sauvegardés
+            for attr, value in saved_attributes.items():
+                setattr(self, attr, value)
+            
+            logger.info("Instance réinitialisée avec succès")
+            return True
+        except Exception as e:
+            logger.error(f"Erreur lors de la réinitialisation de l'instance: {e}")
+            return False
+
+    def _update_auth_state(self):
+        """Mettre à jour l'état d'authentification et l'interface utilisateur"""
+        try:
+            # Vérifier et récupérer l'état de connexion
+            is_logged_in = self.usage_tracker.has_active_user()
+            logger.info(f"Mise à jour de l'état d'authentification: utilisateur connecté = {is_logged_in}")
+            
+            # Récupérer les informations de l'utilisateur si connecté
+            user_data = self.usage_tracker.get_user_data() if is_logged_in else None
+            
+            # Mettre à jour le bouton d'authentification et les options liées
+            self.update_auth_button(is_logged_in)
+            
+            # Mettre à jour l'étiquette d'information utilisateur si disponible
+            if hasattr(self, 'user_info_label') and self.user_info_label:
+                if is_logged_in and user_data:
+                    # Privilégier le nom, sinon utiliser l'email
+                    user_display = user_data.get('name', user_data.get('email', 'Utilisateur'))
+                    self.user_info_label.configure(text=f"Bienvenue, {user_display}")
+                else:
+                    self.user_info_label.configure(text="Utilisateur non connecté")
+            
+            # Si l'utilisateur est connecté, s'assurer que la vue dashboard existe
+            if is_logged_in:
+                # Vérifier si les vues existent, et les créer si nécessaire
+                if not hasattr(self, 'views') or not self.views:
+                    logger.info("Vues non créées, création des vues...")
+                    self.create_views()
+                
+                # S'assurer que les widgets principaux sont visibles
+                widgets_to_check = {
+                    'main_frame': {'pack_args': {'fill': ctk.BOTH, 'expand': True}},
+                    'sidebar': {'pack_args': {'side': ctk.LEFT, 'fill': ctk.Y, 'padx': 0, 'pady': 0}},
+                    'content_area': {'pack_args': {'side': ctk.RIGHT, 'fill': ctk.BOTH, 'expand': True, 'padx': 0, 'pady': 0}},
+                    'main_content': {'pack_args': {'side': ctk.TOP, 'fill': ctk.BOTH, 'expand': True, 'padx': 20, 'pady': 20}}
+                }
+                
+                # Vérifier et afficher chaque widget
+                for widget_name, config in widgets_to_check.items():
+                    if hasattr(self, widget_name):
+                        widget = getattr(self, widget_name)
+                        if widget and not widget.winfo_ismapped():
+                            widget.pack(**config['pack_args'])
+                            logger.debug(f"Widget {widget_name} affiché")
+                
+                # Forcer une mise à jour de l'interface
+                self.root.update_idletasks()
+            
+            logger.info("État d'authentification mis à jour avec succès")
+            return is_logged_in
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la mise à jour de l'état d'authentification: {e}", exc_info=True)
+            return False
+
+    def show_login(self):
+        """Affiche le dialogue de connexion"""
+        try:
+            # Nettoyer l'interface principale
+            try:
+                if hasattr(self, 'main_frame'):
+                    # Masquer temporairement le contenu existant
+                    for widget in self.main_frame.winfo_children():
+                        widget.pack_forget()
+            except Exception as e:
+                logger.error(f"Erreur lors du nettoyage de l'interface principale: {e}")
+                
+            # Créer le formulaire de connexion
+            login_frame = ctk.CTkFrame(self.main_frame)
+            login_frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=20)
+            
+            # En-tête avec le logo et le titre
+            header_frame = ctk.CTkFrame(login_frame, fg_color="transparent")
+            header_frame.pack(fill="x", padx=10, pady=(20, 30))
+            
+            # Titre de l'application
+            app_title = ctk.CTkLabel(
+                header_frame,
+                text=self.model.config.get("app.name", "Vynal Docs Automator"),
+                font=ctk.CTkFont(size=24, weight="bold")
+            )
+            app_title.pack(pady=(0, 10))
+            
+            # Formulaire
+            form_frame = ctk.CTkFrame(login_frame, fg_color="transparent")
+            form_frame.pack(pady=20)
+            
+            # Label d'instructions
+            instructions = ctk.CTkLabel(
+                form_frame,
+                text="Veuillez vous connecter pour accéder à votre compte",
+                font=ctk.CTkFont(size=14)
+            )
+            instructions.pack(pady=(0, 20))
+            
+            # Champ email
+            email_label = ctk.CTkLabel(form_frame, text="Email", anchor="w")
+            email_label.pack(fill="x", padx=10, pady=(0, 5))
+            
+            email_var = ctk.StringVar(value=self.usage_tracker.get_last_email() or "")
+            email_entry = ctk.CTkEntry(
+                form_frame, 
+                width=300,
+                placeholder_text="Votre adresse email",
+                textvariable=email_var
+            )
+            email_entry.pack(pady=(0, 15))
+            
+            # Champ mot de passe
+            password_label = ctk.CTkLabel(form_frame, text="Mot de passe", anchor="w")
+            password_label.pack(fill="x", padx=10, pady=(0, 5))
+            
+            password_var = ctk.StringVar()
+            password_entry = ctk.CTkEntry(
+                form_frame, 
+                width=300,
+                placeholder_text="Votre mot de passe",
+                show="•",
+                textvariable=password_var
+            )
+            password_entry.pack(pady=(0, 15))
+            
+            # Option "Rester connecté"
+            remember_var = ctk.BooleanVar(value=False)
+            remember_checkbox = ctk.CTkCheckBox(
+                form_frame,
+                text="Rester connecté",
+                variable=remember_var
+            )
+            remember_checkbox.pack(anchor="w", pady=(0, 15))
+            
+            # Message d'erreur
+            error_var = ctk.StringVar()
+            error_label = ctk.CTkLabel(
+                form_frame,
+                textvariable=error_var,
+                text_color="red"
+            )
+            error_label.pack(pady=(0, 15))
+            
+            # Fonction de connexion
+            def handle_login():
+                try:
+                    email = email_var.get().strip()
+                    password = password_var.get()
+                    remember = remember_var.get()
+                    
+                    # Valider les entrées
+                    if not email:
+                        error_var.set("Veuillez entrer votre adresse email")
+                        return
+                        
+                    if not password:
+                        error_var.set("Veuillez entrer votre mot de passe")
+                        return
+                    
+                    # Vérifier les informations de connexion
+                    success = self.usage_tracker.login(email, password, remember)
+                    
+                    if success:
+                        # Connecté avec succès
+                        error_var.set("")
+                        login_frame.destroy()  # Supprimer le formulaire
+                        
+                        # Mise à jour de l'état d'authentification
+                        user_data = self.usage_tracker.get_user_data()
+                        self._on_auth_change(True, user_data)
+                        
+                        # Afficher le tableau de bord
+                        self.show_dashboard()
+                    else:
+                        # Échec de connexion
+                        error_var.set("Email ou mot de passe incorrect")
+                except Exception as e:
+                    logger.error(f"Erreur lors de la connexion: {e}")
+                    error_var.set(f"Une erreur est survenue: {str(e)}")
+            
+            # Bouton de connexion
+            login_button = ctk.CTkButton(
+                form_frame,
+                text="Se connecter",
+                width=300,
+                command=handle_login
+            )
+            login_button.pack(pady=(0, 20))
+            
+            # Lien pour s'inscrire
+            register_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
+            register_frame.pack(pady=(0, 10))
+            
+            register_label = ctk.CTkLabel(
+                register_frame,
+                text="Vous n'avez pas de compte ? ",
+                font=ctk.CTkFont(size=12)
+            )
+            register_label.pack(side="left")
+            
+            register_link = ctk.CTkButton(
+                register_frame,
+                text="Créer un compte",
+                command=self._show_register_view,
+                fg_color="transparent",
+                hover_color=("gray90", "gray20"),
+                text_color=["#1f538d", "#3a7ebf"],
+                font=ctk.CTkFont(size=12)
+            )
+            register_link.pack(side="left")
+            
+            # Pied de page
+            footer = ctk.CTkLabel(
+                login_frame,
+                text=f"© {datetime.now().year} Vynal Docs Automator",
+                font=ctk.CTkFont(size=10)
+            )
+            footer.pack(side="bottom", pady=10)
+            
+            # S'assurer que le cadre principal est visible
+            if not self.main_frame.winfo_ismapped():
+                self.main_frame.pack(fill=ctk.BOTH, expand=True)
+                
+            # Forcer une mise à jour de l'interface
+            self.root.update_idletasks()
+            
+            # Focus sur le premier champ vide
+            if not email_var.get():
+                email_entry.focus_set()
+            else:
+                password_entry.focus_set()
+                
+            logger.info("Dialogue de connexion affiché")
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'affichage du dialogue de connexion: {e}")
+            self.show_message(
+                "Erreur",
+                f"Une erreur s'est produite lors de l'affichage du dialogue de connexion: {str(e)}",
+                "error"
+            )

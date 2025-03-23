@@ -384,6 +384,9 @@ def main():
                 except Exception as e:
                     logger.error(f"Erreur lors de l'envoi du signal 'ready': {e}")
         
+        # Vérifier si un utilisateur est connecté
+        is_user_logged_in = usage_tracker.has_active_user()
+        
         # Si --skip-auth est passé, on considère que l'authentification a déjà été faite
         if args.skip_auth:
             logger.info("Authentification ignorée (déjà faite)")
@@ -442,8 +445,64 @@ def main():
             # Utiliser un délai de 3 secondes pour s'assurer que le splash screen est terminé
             logger.info("Attente d'un délai avant d'afficher la boîte de dialogue de connexion...")
             root.after(3000, show_login_after_delay)
+        elif not is_user_logged_in:
+            # Utilisateur non connecté, afficher la page de connexion même sans protection par mot de passe
+            logger.info("Aucun utilisateur connecté, affichage de la page de connexion")
+            
+            # Cacher la fenêtre principale
+            root.withdraw()
+            
+            def on_user_login_success():
+                """Callback appelé après une connexion utilisateur réussie"""
+                try:
+                    logger.info("Connexion utilisateur réussie, création de l'interface principale...")
+                    
+                    # Créer la vue principale et le contrôleur après la connexion
+                    nonlocal main_view, controller
+                    main_view = MainView(root, app_model, on_ready=on_main_view_ready)
+                    controller = AppController(app_model, main_view)
+                    
+                    # Démarrer les tâches en arrière-plan
+                    start_background_tasks()
+                    
+                    # Afficher la fenêtre principale
+                    root.deiconify()
+                    logger.info("Interface principale affichée après connexion utilisateur")
+                except Exception as e:
+                    logger.error(f"Erreur lors de l'initialisation après connexion utilisateur: {e}")
+                    messagebox.showerror("Erreur", 
+                                        f"Une erreur est survenue lors de l'initialisation: {e}")
+                    root.destroy()
+            
+            # Variables pour on_user_login_success
+            main_view = None
+            controller = None
+            
+            # Créer la vue de connexion pour l'utilisateur
+            from views.main_view import MainView
+            temp_main_view = MainView(root, app_model)
+            
+            # Configurer le callback de connexion réussie
+            temp_main_view._on_auth_change = on_user_login_success
+            
+            # Afficher la page de connexion
+            def show_user_login():
+                try:
+                    temp_main_view.show_login()
+                    logger.info("Page de connexion utilisateur affichée")
+                except Exception as e:
+                    logger.error(f"Erreur lors de l'affichage de la page de connexion: {e}")
+                    # En cas d'erreur, continuer avec l'interface principale
+                    root.deiconify()
+                    nonlocal main_view, controller
+                    main_view = MainView(root, app_model, on_ready=on_main_view_ready)
+                    controller = AppController(app_model, main_view)
+                    root.after(100, start_background_tasks)
+            
+            # Afficher la page de connexion après un court délai
+            root.after(1000, show_user_login)
         else:
-            # Si pas de protection par mot de passe, créer directement la vue et le contrôleur
+            # Utilisateur déjà connecté ou pas de protection, créer directement la vue et le contrôleur
             main_view = MainView(root, app_model, on_ready=on_main_view_ready)
             controller = AppController(app_model, main_view)
             

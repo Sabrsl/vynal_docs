@@ -1,0 +1,538 @@
+ÿþ#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Vue de connexion pour l'application Vynal Docs Automator
+Gère l'interface utilisateur pour la connexion, l'inscription et la récupération de mot de passe
+"""
+
+import os
+import logging
+import customtkinter as ctk
+from typing import Callable, Dict, Any, Optional
+
+from utils.auth_adapter import AuthAdapter
+
+logger = logging.getLogger("VynalDocsAutomator.LoginView")
+
+class LoginView(ctk.CTkFrame):
+    """
+    Vue de connexion, inscription et récupération de mot de passe
+    
+    Cette classe fournit une interface utilisateur complète pour:
+    - Se connecter avec email/mot de passe
+    - S'inscrire en tant que nouvel utilisateur
+    - Réinitialiser un mot de passe oublié
+    """
+    
+    def __init__(self, master, on_auth_success: Callable[[Dict[str, Any]], None] = None):
+        """
+        Initialise la vue de connexion
+        
+        Args:
+            master: Widget parent
+            on_auth_success: Fonction appelée après une authentification réussie
+        """
+        super().__init__(master)
+        self.pack(fill=ctk.BOTH, expand=True, padx=20, pady=20)
+        
+        self.on_auth_success = on_auth_success
+        self.auth_adapter = AuthAdapter()
+        
+        # États de la vue
+        self.current_view = "login"  # login, register, reset_password
+        
+        # UI éléments
+        self.title_label = None
+        self.error_label = None
+        self.success_label = None
+        self.form_frame = None
+        self.fields = {}
+        
+        # Initialisation de l'interface
+        self._create_ui()
+    
+    def _create_ui(self):
+        """Crée l'interface utilisateur principale"""
+        # Conteneur central pour aligner le formulaire
+        center_frame = ctk.CTkFrame(self, fg_color="transparent")
+        center_frame.pack(expand=True, fill=ctk.BOTH)
+        
+        # Frame du formulaire (avec une largeur fixe pour un meilleur alignement)
+        self.form_container = ctk.CTkFrame(center_frame)
+        self.form_container.pack(expand=True, fill=ctk.Y, padx=20, pady=20)
+        
+        # Titre
+        self.title_label = ctk.CTkLabel(
+            self.form_container,
+            text="Connexion",
+            font=ctk.CTkFont(size=24, weight="bold")
+        )
+        self.title_label.pack(pady=(20, 10))
+        
+        # Labels pour les messages d'erreur et de succès
+        self.error_label = ctk.CTkLabel(
+            self.form_container,
+            text="",
+            text_color="red",
+            font=ctk.CTkFont(size=12)
+        )
+        self.error_label.pack(pady=(0, 10))
+        self.error_label.pack_forget()  # Masqué par défaut
+        
+        self.success_label = ctk.CTkLabel(
+            self.form_container,
+            text="",
+            text_color="green",
+            font=ctk.CTkFont(size=12)
+        )
+        self.success_label.pack(pady=(0, 10))
+        self.success_label.pack_forget()  # Masqué par défaut
+        
+        # Frame pour le formulaire actif
+        self.form_frame = ctk.CTkFrame(self.form_container, fg_color="transparent")
+        self.form_frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=10)
+        
+        # Afficher la vue de connexion par défaut
+        self._show_login_view()
+    
+    def _clear_form(self):
+        """Efface le formulaire actuel"""
+        # Effacer tous les widgets du formulaire
+        for widget in self.form_frame.winfo_children():
+            widget.destroy()
+        
+        # Réinitialiser le dictionnaire des champs
+        self.fields = {}
+        
+        # Masquer les messages
+        self.error_label.pack_forget()
+        self.success_label.pack_forget()
+    
+    def _show_error(self, message):
+        """
+        Affiche un message d'erreur
+        
+        Args:
+            message: Message d'erreur à afficher
+        """
+        self.error_label.configure(text=message)
+        self.error_label.pack(pady=(0, 10))
+        self.success_label.pack_forget()
+    
+    def _show_success(self, message):
+        """
+        Affiche un message de succès
+        
+        Args:
+            message: Message de succès à afficher
+        """
+        self.success_label.configure(text=message)
+        self.success_label.pack(pady=(0, 10))
+        self.error_label.pack_forget()
+    
+    def _add_field(self, name, label, placeholder="", show="", default="", **kwargs):
+        """
+        Ajoute un champ au formulaire
+        
+        Args:
+            name: Nom du champ
+            label: Libellé du champ
+            placeholder: Texte d'exemple
+            show: Mode d'affichage ("" pour normal, "*" pour mot de passe)
+            default: Valeur par défaut
+            **kwargs: Arguments supplémentaires pour le widget
+        """
+        # Frame pour le champ
+        field_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        field_frame.pack(fill=ctk.X, pady=5)
+        
+        # Libellé
+        field_label = ctk.CTkLabel(
+            field_frame,
+            text=label,
+            anchor="w",
+            width=120
+        )
+        field_label.pack(side=ctk.TOP, anchor="w", pady=(0, 2))
+        
+        # Champ de saisie
+        field = ctk.CTkEntry(
+            field_frame,
+            placeholder_text=placeholder,
+            show=show,
+            **kwargs
+        )
+        field.pack(fill=ctk.X)
+        
+        # Définir la valeur par défaut
+        if default:
+            field.insert(0, default)
+        
+        # Enregistrer le champ
+        self.fields[name] = field
+        
+        return field
+    
+    def _show_login_view(self):
+        """Affiche la vue de connexion"""
+        self._clear_form()
+        self.current_view = "login"
+        self.title_label.configure(text="Connexion")
+        
+        # Champ email
+        self._add_field(
+            "email",
+            "Email",
+            placeholder="votre@email.com",
+            width=250
+        )
+        
+        # Champ mot de passe
+        self._add_field(
+            "password",
+            "Mot de passe",
+            placeholder="Votre mot de passe",
+            show="*",
+            width=250
+        )
+        
+        # Frame pour les boutons
+        buttons_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        buttons_frame.pack(fill=ctk.X, pady=15)
+        
+        # Bouton de connexion
+        login_button = ctk.CTkButton(
+            buttons_frame,
+            text="Se connecter",
+            command=self._handle_login
+        )
+        login_button.pack(side=ctk.LEFT, padx=(0, 10))
+        
+        # Bouton pour s'inscrire
+        register_button = ctk.CTkButton(
+            buttons_frame,
+            text="S'inscrire",
+            command=self._show_register_view,
+            fg_color="transparent",
+            border_width=1
+        )
+        register_button.pack(side=ctk.LEFT)
+        
+        # Lien pour mot de passe oublié
+        forgot_link = ctk.CTkButton(
+            self.form_frame,
+            text="Mot de passe oublié ?",
+            command=self._show_reset_password_view,
+            fg_color="transparent",
+            text_color=("gray50", "gray70"),
+            hover=False
+        )
+        forgot_link.pack(anchor="w", pady=(5, 0))
+    
+    def _show_register_view(self):
+        """Affiche la vue d'inscription"""
+        self._clear_form()
+        self.current_view = "register"
+        self.title_label.configure(text="Inscription")
+        
+        # Champ nom (optionnel)
+        self._add_field(
+            "name",
+            "Nom (optionnel)",
+            placeholder="Votre nom",
+            width=250
+        )
+        
+        # Champ email
+        self._add_field(
+            "email",
+            "Email",
+            placeholder="votre@email.com",
+            width=250
+        )
+        
+        # Champ mot de passe
+        password_field = self._add_field(
+            "password",
+            "Mot de passe",
+            placeholder="Choisissez un mot de passe",
+            show="*",
+            width=250
+        )
+        
+        # Champ confirmation mot de passe
+        confirm_field = self._add_field(
+            "confirm_password",
+            "Confirmer le mot de passe",
+            placeholder="Confirmez votre mot de passe",
+            show="*",
+            width=250
+        )
+        
+        # Frame pour les boutons
+        buttons_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        buttons_frame.pack(fill=ctk.X, pady=15)
+        
+        # Bouton d'inscription
+        register_button = ctk.CTkButton(
+            buttons_frame,
+            text="S'inscrire",
+            command=self._handle_register
+        )
+        register_button.pack(side=ctk.LEFT, padx=(0, 10))
+        
+        # Bouton pour revenir à la connexion
+        back_button = ctk.CTkButton(
+            buttons_frame,
+            text="Retour à la connexion",
+            command=self._show_login_view,
+            fg_color="transparent",
+            border_width=1
+        )
+        back_button.pack(side=ctk.LEFT)
+    
+    def _show_reset_password_view(self):
+        """Affiche la vue de réinitialisation de mot de passe"""
+        self._clear_form()
+        self.current_view = "reset_password"
+        self.title_label.configure(text="Réinitialiser le mot de passe")
+        
+        # Champ email
+        self._add_field(
+            "email",
+            "Email",
+            placeholder="votre@email.com",
+            width=250
+        )
+        
+        # Champ nouveau mot de passe (visible seulement après vérification de l'email)
+        password_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        password_frame.pack(fill=ctk.X, pady=5)
+        self.password_frame = password_frame
+        self.password_frame.pack_forget()  # Masqué par défaut
+        
+        # Frame pour les boutons
+        buttons_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        buttons_frame.pack(fill=ctk.X, pady=15)
+        
+        # Bouton de vérification d'email
+        self.verify_button = ctk.CTkButton(
+            buttons_frame,
+            text="Vérifier l'email",
+            command=self._verify_email_for_reset
+        )
+        self.verify_button.pack(side=ctk.LEFT, padx=(0, 10))
+        
+        # Bouton pour réinitialiser le mot de passe
+        self.reset_button = ctk.CTkButton(
+            buttons_frame,
+            text="Réinitialiser le mot de passe",
+            command=self._handle_reset_password
+        )
+        # Ce bouton sera affiché après la vérification de l'email
+        
+        # Bouton pour revenir à la connexion
+        back_button = ctk.CTkButton(
+            buttons_frame,
+            text="Retour à la connexion",
+            command=self._show_login_view,
+            fg_color="transparent",
+            border_width=1
+        )
+        back_button.pack(side=ctk.LEFT)
+    
+    def _handle_login(self):
+        """Gère la soumission du formulaire de connexion"""
+        # Récupérer les valeurs
+        email = self.fields["email"].get().strip()
+        password = self.fields["password"].get()
+        
+        # Validation basique
+        if not email:
+            self._show_error("Veuillez saisir votre email")
+            return
+        
+        if not password:
+            self._show_error("Veuillez saisir votre mot de passe")
+            return
+        
+        try:
+            # Tenter l'authentification
+            user_info = self.auth_adapter.authenticate(email, password)
+            
+            # Authentification réussie
+            self._show_success("Connexion réussie !")
+            
+            # Callback de succès
+            if self.on_auth_success:
+                self.on_auth_success(user_info)
+        
+        except ValueError as e:
+            # Erreur d'authentification
+            self._show_error(str(e))
+    
+    def _handle_register(self):
+        """Gère la soumission du formulaire d'inscription"""
+        # Récupérer les valeurs
+        name = self.fields["name"].get().strip()
+        email = self.fields["email"].get().strip()
+        password = self.fields["password"].get()
+        confirm_password = self.fields["confirm_password"].get()
+        
+        # Validation basique
+        if not email:
+            self._show_error("Veuillez saisir votre email")
+            return
+        
+        if not password:
+            self._show_error("Veuillez saisir un mot de passe")
+            return
+        
+        if password != confirm_password:
+            self._show_error("Les mots de passe ne correspondent pas")
+            return
+        
+        if len(password) < 6:
+            self._show_error("Le mot de passe doit contenir au moins 6 caractères")
+            return
+            
+        try:
+            # Tenter l'inscription
+            user_info = self.auth_adapter.register(email, password, name)
+            
+            # Inscription réussie
+            self._show_success("Inscription réussie ! Vous êtes maintenant connecté.")
+            
+            # Callback de succès
+            if self.on_auth_success:
+                self.on_auth_success(user_info)
+        
+        except ValueError as e:
+            # Erreur d'inscription
+            self._show_error(str(e))
+    
+    def _verify_email_for_reset(self):
+        """Vérifie l'email pour la réinitialisation du mot de passe"""
+        # Récupérer l'email
+        email = self.fields["email"].get().strip()
+        
+        # Validation basique
+        if not email:
+            self._show_error("Veuillez saisir votre email")
+            return
+        
+        try:
+            # Vérifier si l'utilisateur existe
+            if self.auth_adapter.check_password_reset(email):
+                # Utilisateur trouvé, afficher les champs de mot de passe
+                self._show_success("Email vérifié. Vous pouvez maintenant réinitialiser votre mot de passe.")
+                
+                # Masquer le bouton de vérification
+                self.verify_button.pack_forget()
+                
+                # Afficher les champs de mot de passe
+                self._add_password_reset_fields(email)
+            else:
+                self._show_error("Aucun compte trouvé avec cet email")
+        
+        except Exception as e:
+            self._show_error(f"Erreur lors de la vérification de l'email: {str(e)}")
+    
+    def _add_password_reset_fields(self, email):
+        """
+        Ajoute les champs pour la réinitialisation du mot de passe
+        
+        Args:
+            email: Email de l'utilisateur
+        """
+        # Stocker l'email
+        self.reset_email = email
+        
+        # Champ nouveau mot de passe
+        self._add_field(
+            "new_password",
+            "Nouveau mot de passe",
+            placeholder="Nouveau mot de passe",
+            show="*",
+            width=250
+        )
+        
+        # Champ confirmation du nouveau mot de passe
+        self._add_field(
+            "confirm_new_password",
+            "Confirmer le mot de passe",
+            placeholder="Confirmez le nouveau mot de passe",
+            show="*",
+            width=250
+        )
+        
+        # Afficher le bouton de réinitialisation
+        self.reset_button.pack(side=ctk.LEFT, padx=(0, 10))
+    
+    def _handle_reset_password(self):
+        """Gère la soumission du formulaire de réinitialisation de mot de passe"""
+        # Vérifier que l'email a été vérifié
+        if not hasattr(self, "reset_email"):
+            self._show_error("Veuillez d'abord vérifier votre email")
+            return
+        
+        # Récupérer les valeurs
+        new_password = self.fields["new_password"].get()
+        confirm_new_password = self.fields["confirm_new_password"].get()
+        
+        # Validation basique
+        if not new_password:
+            self._show_error("Veuillez saisir un nouveau mot de passe")
+            return
+        
+        if new_password != confirm_new_password:
+            self._show_error("Les mots de passe ne correspondent pas")
+            return
+        
+        if len(new_password) < 6:
+            self._show_error("Le mot de passe doit contenir au moins 6 caractères")
+            return
+        
+        try:
+            # Tenter la réinitialisation
+            success = self.auth_adapter.reset_password(self.reset_email, new_password)
+            
+            if success:
+                # Réinitialisation réussie
+                self._show_success("Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.")
+                
+                # Revenir à la vue de connexion après un court délai
+                self.after(2000, self._show_login_view)
+            else:
+                self._show_error("Erreur lors de la réinitialisation du mot de passe")
+        
+        except ValueError as e:
+            # Erreur de réinitialisation
+            self._show_error(str(e))
+
+
+# Exemple d'utilisation directe
+if __name__ == "__main__":
+    # Configuration du logging
+    logging.basicConfig(level=logging.INFO)
+    
+    # Créer l'application
+    root = ctk.CTk()
+    root.title("Vynal Docs Automator - Connexion")
+    root.geometry("600x500")
+    
+    # Configuration du style
+    ctk.set_appearance_mode("dark")
+    ctk.set_default_color_theme("blue")
+    
+    # Callback de test pour l'authentification réussie
+    def on_auth_success(user_info):
+        print(f"Authentification réussie pour: {user_info.get('email')}")
+        root.after(2000, root.destroy)  # Fermer l'application après 2 secondes
+    
+    # Initialiser la vue de connexion
+    login_view = LoginView(root, on_auth_success=on_auth_success)
+    
+    # Lancer l'application
+    root.mainloop()

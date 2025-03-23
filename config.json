@@ -13,7 +13,7 @@
         "cp1252"
     ],
     "app": {
-        "name": "Document Generator",
+        "name": "Vynal Docs Automator",
         "version": "1.0.0",
         "theme": "dark",
         "language": "fr",
@@ -21,5 +21,30 @@
         "company_logo": "",
         "auto_save": true,
         "save_interval": 5
+    },
+    "security": {
+        "hash_algorithm": "sha256",
+        "hash_iterations": 100000,
+        "min_password_length": 6,
+        "session_expiry_hours": 24,
+        "encryption_enabled": true,
+        "store_credentials_locally": true
+    },
+    "authentication": {
+        "enabled": true,
+        "require_login": false,
+        "offline_mode": true,
+        "allow_registration": true,
+        "verify_email": false,
+        "use_license_key": true,
+        "login_attempts_max": 5,
+        "lockout_duration_minutes": 15
+    },
+    "license": {
+        "check_online": false,
+        "validation_url": "https://licenses.vynal.com/verify",
+        "check_interval_days": 7,
+        "enforce_trial_period": false,
+        "trial_period_days": 30
     }
 } 

@@ -48,26 +48,6 @@ class AuthView:
         self.password_valid = False
         self.confirm_password_valid = False
         
-        # Fenêtre principale
-        self.window = ctk.CTkToplevel(parent)
-        self.window.title("Compte utilisateur")
-        self.window.geometry("500x600")
-        self.window.resizable(False, False)
-        
-        # Intercepter l'événement de fermeture pour cacher la fenêtre au lieu de la détruire
-        self.window.protocol("WM_DELETE_WINDOW", self.hide)
-        
-        # Accessibilité
-        self.window.bind("<Key>", self._handle_keyboard_nav)
-        
-        # Centrer la fenêtre
-        self.window.update_idletasks()
-        width = self.window.winfo_width()
-        height = self.window.winfo_height()
-        x = (self.window.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.window.winfo_screenheight() // 2) - (height // 2)
-        self.window.geometry(f"{width}x{height}+{x}+{y}")
-        
         # Variables
         self.current_tab = ctk.StringVar(value="login")
         self.email_var = ctk.StringVar()
@@ -75,46 +55,109 @@ class AuthView:
         self.confirm_password_var = ctk.StringVar()
         self.register_name_var = ctk.StringVar()
         
+        # Stockage des références aux widgets
+        self.main_frame = None
+        self.window = None
+        self.login_frame = None
+        self.register_frame = None
+        self.account_frame = None
+        self.login_tab = None
+        self.register_tab = None
+        self.account_tab = None
+        
         # Tracer les changements des variables
         self.email_var.trace_add("write", self._validate_email)
         self.password_var.trace_add("write", self._validate_password)
         self.confirm_password_var.trace_add("write", self._validate_confirm_password)
         
-        # Création de l'interface
-        self._create_widgets()
+        # Référence aux onglets
+        self.tabs = None
         
-        # Charger les données utilisateur si connecté
-        self._load_user_data()
-        
-        # Mettre à jour l'interface selon l'état de connexion
-        self._update_auth_state()
-        
-        # Cacher la fenêtre par défaut
-        self.hide()
+        # Ne pas créer les widgets immédiatement, attendre l'appel à show()
     
     def _create_widgets(self):
         """Crée les widgets de l'interface"""
-        # Frame principal avec padding
-        self.main_frame = ctk.CTkFrame(self.window)
-        self.main_frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=20)
-        
-        # En-tête avec logo/icône
-        self._create_header()
-        
-        # Onglets
-        self._create_tabs()
-        
-        # Contenu des onglets
-        self.content_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        self.content_frame.pack(fill=ctk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Créer les différentes vues
-        self._create_login_view()
-        self._create_register_view()
-        self._create_account_view()
-        
-        # Afficher la vue par défaut
-        self._show_tab("login")
+        try:
+            # Frame principal avec padding
+            self.main_frame = ctk.CTkFrame(self.window)
+            self.main_frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=20)
+            
+            # En-tête avec logo/icône
+            self._create_header()
+            
+            # Onglets de navigation
+            self._create_tabs()
+            
+            # Frame de contenu
+            self.content_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+            self.content_frame.pack(fill=ctk.BOTH, expand=True, padx=10, pady=10)
+            
+            # Créer les différentes vues
+            self._create_login_view()
+            self._create_register_view()
+            self._create_account_view()
+            
+            # Mettre à jour l'affichage selon l'onglet courant
+            tab_name = self.current_tab.get()
+            self._update_tab_content()
+            
+            logger.info("Widgets de l'interface d'authentification créés")
+        except Exception as e:
+            logger.error(f"Erreur lors de la création des widgets de l'interface: {e}")
+            # Tenter une approche plus simple en cas d'échec
+            try:
+                # Frame principal
+                self.main_frame = ctk.CTkFrame(self.window)
+                self.main_frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=20)
+                
+                # Titre simple
+                ctk.CTkLabel(
+                    self.main_frame,
+                    text="Connexion à l'application",
+                    font=ctk.CTkFont(size=16, weight="bold")
+                ).pack(pady=10)
+                
+                # Créer juste la vue de connexion
+                self.login_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+                self.login_frame.pack(fill=ctk.BOTH, expand=True, padx=10, pady=10)
+                
+                # Champs de connexion
+                ctk.CTkLabel(self.login_frame, text="Email:").pack(anchor="w", pady=(10, 0))
+                self.email_var = ctk.StringVar()
+                ctk.CTkEntry(
+                    self.login_frame,
+                    textvariable=self.email_var,
+                    width=250
+                ).pack(pady=(0, 10))
+                
+                ctk.CTkLabel(self.login_frame, text="Mot de passe:").pack(anchor="w", pady=(10, 0))
+                self.password_var = ctk.StringVar()
+                ctk.CTkEntry(
+                    self.login_frame,
+                    textvariable=self.password_var,
+                    show="•",
+                    width=250
+                ).pack(pady=(0, 10))
+                
+                # Bouton de connexion
+                ctk.CTkButton(
+                    self.login_frame,
+                    text="Se connecter",
+                    command=self._handle_login,
+                    width=250
+                ).pack(pady=20)
+                
+                # Message d'erreur
+                self.login_status_label = ctk.CTkLabel(
+                    self.login_frame,
+                    text="",
+                    text_color="red"
+                )
+                self.login_status_label.pack(pady=5)
+                
+                logger.info("Interface d'authentification simplifiée créée")
+            except Exception as e2:
+                logger.critical(f"Échec critique lors de la création d'une interface de secours: {e2}")
     
     def _create_header(self):
         """Crée l'en-tête avec logo"""
@@ -138,50 +181,128 @@ class AuthView:
         title_label.pack()
     
     def _create_tabs(self):
-        """Crée la barre d'onglets"""
-        # Frame pour les onglets
-        self.tabs_frame = ctk.CTkFrame(self.main_frame)
-        self.tabs_frame.pack(fill=ctk.X, padx=5, pady=(0, 10))
-        
-        # Configuration de la grille
-        self.tabs_frame.grid_columnconfigure((0, 1, 2), weight=1)
-        self.tabs_frame.grid_rowconfigure(0, weight=1)
-        
-        # Onglet Connexion
-        self.login_tab = ctk.CTkButton(
-            self.tabs_frame,
-            text="Connexion",
-            fg_color=("gray85", "gray25"),
-            text_color=("gray10", "gray90"),
-            corner_radius=0,
-            height=40,
-            command=lambda: self._show_tab("login")
-        )
-        self.login_tab.grid(row=0, column=0, sticky="ew")
-        
-        # Onglet Inscription
-        self.register_tab = ctk.CTkButton(
-            self.tabs_frame,
-            text="Inscription",
-            fg_color="transparent",
-            text_color=("gray10", "gray90"),
-            corner_radius=0,
-            height=40,
-            command=lambda: self._show_tab("register")
-        )
-        self.register_tab.grid(row=0, column=1, sticky="ew")
-        
-        # Onglet Compte
-        self.account_tab = ctk.CTkButton(
-            self.tabs_frame,
-            text="Mon compte",
-            fg_color="transparent",
-            text_color=("gray10", "gray90"),
-            corner_radius=0,
-            height=40,
-            command=lambda: self._show_tab("account")
-        )
-        self.account_tab.grid(row=0, column=2, sticky="ew")
+        """Crée les onglets de navigation"""
+        try:
+            # Créer le frame des onglets
+            self.tabs = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+            self.tabs.pack(fill=ctk.X, padx=10, pady=(10, 0))
+            
+            # Styles des onglets
+            tab_height = 30
+            tab_width = 120
+            tab_corner_radius = 8
+            
+            # Créer les onglets
+            # Onglet Connexion
+            self.login_tab = ctk.CTkButton(
+                self.tabs,
+                text="Connexion",
+                height=tab_height,
+                width=tab_width,
+                corner_radius=tab_corner_radius,
+                fg_color="transparent",
+                text_color=("gray10", "gray90"),
+                hover_color=("gray85", "gray25"),
+                command=lambda: self._show_tab("login")
+            )
+            self.login_tab.pack(side=ctk.LEFT, padx=5, pady=0)
+            
+            # Onglet Inscription
+            self.register_tab = ctk.CTkButton(
+                self.tabs,
+                text="Inscription",
+                height=tab_height,
+                width=tab_width,
+                corner_radius=tab_corner_radius,
+                fg_color="transparent",
+                text_color=("gray10", "gray90"),
+                hover_color=("gray85", "gray25"),
+                command=lambda: self._show_tab("register")
+            )
+            self.register_tab.pack(side=ctk.LEFT, padx=5, pady=0)
+            
+            # Onglet Compte (visible uniquement si connecté)
+            self.account_tab = ctk.CTkButton(
+                self.tabs,
+                text="Compte",
+                height=tab_height,
+                width=tab_width,
+                corner_radius=tab_corner_radius,
+                fg_color="transparent",
+                text_color=("gray10", "gray90"),
+                hover_color=("gray85", "gray25"),
+                command=lambda: self._show_tab("account")
+            )
+            self.account_tab.pack(side=ctk.LEFT, padx=5, pady=0)
+            
+            # Séparateur horizontal sous les onglets
+            ctk.CTkFrame(self.main_frame, height=1, fg_color="gray").pack(fill=ctk.X, padx=10, pady=(0, 0))
+            
+            # Mettre en évidence l'onglet actuel
+            tab_name = self.current_tab.get()
+            if tab_name == "login":
+                self.login_tab.configure(fg_color=("gray85", "gray25"))
+            elif tab_name == "register":
+                self.register_tab.configure(fg_color=("gray85", "gray25"))
+            elif tab_name == "account":
+                self.account_tab.configure(fg_color=("gray85", "gray25"))
+                
+            logger.debug("Onglets créés avec succès")
+        except Exception as e:
+            logger.error(f"Erreur lors de la création des onglets: {e}")
+            # Créer une version simplifiée des onglets avec une gestion d'erreur plus robuste
+            try:
+                # Si le frame des onglets existe déjà, le nettoyer
+                if hasattr(self, 'tabs') and self.tabs:
+                    for widget in self.tabs.winfo_children():
+                        widget.destroy()
+                else:
+                    # Sinon créer un nouveau frame
+                    self.tabs = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+                    self.tabs.pack(fill=ctk.X, padx=10, pady=(10, 0))
+                
+                # Créer les onglets basiques
+                tabs_info = [
+                    {"name": "login", "text": "Connexion"},
+                    {"name": "register", "text": "Inscription"},
+                    {"name": "account", "text": "Compte"}
+                ]
+                
+                # Créer chaque onglet individuellement
+                for tab in tabs_info:
+                    btn = ctk.CTkButton(
+                        self.tabs,
+                        text=tab["text"],
+                        height=30,
+                        width=120,
+                        corner_radius=8,
+                        fg_color="transparent",
+                        text_color=("gray10", "gray90"),
+                        hover_color=("gray85", "gray25"),
+                        command=lambda t=tab["name"]: self._show_tab(t)
+                    )
+                    btn.pack(side=ctk.LEFT, padx=5, pady=0)
+                    
+                    # Garder une référence aux onglets
+                    setattr(self, f"{tab['name']}_tab", btn)
+                
+                # Séparateur
+                ctk.CTkFrame(self.main_frame, height=1, fg_color="gray").pack(fill=ctk.X, padx=10, pady=(0, 0))
+                
+                logger.debug("Version simplifiée des onglets créée après erreur")
+            except Exception as e2:
+                logger.error(f"Échec critique lors de la création des onglets alternatifs: {e2}")
+                # Dernière tentative ultra simplifiée
+                self.tabs = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+                self.tabs.pack(fill=ctk.X, padx=10, pady=(10, 0))
+                
+                # Juste un titre pour indiquer l'onglet actuel
+                tab_name = self.current_tab.get().capitalize()
+                ctk.CTkLabel(
+                    self.tabs,
+                    text=f"Vue: {tab_name}",
+                    font=ctk.CTkFont(size=14, weight="bold")
+                ).pack(pady=5)
     
     def _create_login_view(self):
         """Crée la vue de connexion"""
@@ -1170,46 +1291,105 @@ class AuthView:
 
     def _show_tab(self, tab_name):
         """
-        Affiche l'onglet spécifié et masque les autres
+        Affiche l'onglet spécifié
         
         Args:
-            tab_name (str): Nom de l'onglet à afficher ('login', 'register', 'account')
+            tab_name: Nom de l'onglet à afficher ("login", "register", "account")
         """
-        logger.info(f"Affichage de l'onglet {tab_name}")
-        
-        # Masquer tous les frames
-        if hasattr(self, 'login_frame'):
-            self.login_frame.pack_forget()
-        if hasattr(self, 'register_frame'):
-            self.register_frame.pack_forget()
-        if hasattr(self, 'account_frame'):
-            self.account_frame.pack_forget()
-        
-        # Réinitialiser les styles des onglets
-        self.login_tab.configure(fg_color="transparent")
-        self.register_tab.configure(fg_color="transparent")
-        self.account_tab.configure(fg_color="transparent")
-        
-        # Afficher le frame correspondant et mettre en évidence l'onglet
-        if tab_name == "login":
-            if hasattr(self, 'login_frame'):
-                self.login_frame.pack(fill=ctk.BOTH, expand=True)
-            self.login_tab.configure(fg_color=("gray85", "gray25"))
-            self.current_tab.set("login")
-        elif tab_name == "register":
-            if hasattr(self, 'register_frame'):
-                self.register_frame.pack(fill=ctk.BOTH, expand=True)
-            self.register_tab.configure(fg_color=("gray85", "gray25"))
-            self.current_tab.set("register")
-        elif tab_name == "account":
-            if hasattr(self, 'account_frame'):
-                self.account_frame.pack(fill=ctk.BOTH, expand=True)
-            self.account_tab.configure(fg_color=("gray85", "gray25"))
-            self.current_tab.set("account")
-        
-        # Mettre à jour l'interface selon l'état de connexion
-        self._update_auth_state()
-        
+        try:
+            # Vérifier que les onglets existent
+            if not hasattr(self, 'tabs') or not self.tabs:
+                logger.warning("Les onglets n'existent pas, recréation nécessaire")
+                # Si les onglets n'existent pas, tenter de les recréer
+                if hasattr(self, 'main_frame') and self.main_frame:
+                    self._create_tabs()
+                else:
+                    # Si le frame principal n'existe pas, recréer tous les widgets
+                    self._create_widgets()
+            
+            # Vérifier que l'onglet demandé existe
+            valid_tabs = ["login", "register", "account"]
+            if tab_name not in valid_tabs:
+                logger.warning(f"Onglet demandé '{tab_name}' invalide, utilisation de 'login' par défaut")
+                tab_name = "login"
+            
+            # Mettre à jour la variable de l'onglet courant
+            if hasattr(self, 'current_tab'):
+                self.current_tab.set(tab_name)
+                
+                # Afficher le contenu approprié
+                self._update_tab_content()
+                
+                logger.info(f"Onglet {tab_name} affiché")
+            else:
+                logger.error("Variable current_tab non disponible")
+                # Tenter de la recréer
+                self.current_tab = ctk.StringVar(value=tab_name)
+                self._update_tab_content()
+        except Exception as e:
+            logger.error(f"Erreur lors de l'affichage de l'onglet {tab_name}: {e}")
+            # En cas d'erreur grave, tenter de recréer complètement l'interface
+            try:
+                self._create_widgets()
+                # Mettre à jour la variable et afficher l'onglet
+                self.current_tab.set(tab_name)
+                self._update_tab_content()
+                logger.info(f"Interface recréée et onglet {tab_name} affiché après erreur")
+            except Exception as e2:
+                logger.error(f"Échec critique lors de la recréation de l'interface: {e2}")
+    
+    def _update_tab_content(self):
+        """Met à jour le contenu affiché selon l'onglet sélectionné"""
+        try:
+            tab_name = self.current_tab.get()
+            
+            # Masquer tous les contenus d'onglets
+            for content in ["login_frame", "register_frame", "account_frame"]:
+                if hasattr(self, content) and getattr(self, content):
+                    getattr(self, content).pack_forget()
+            
+            # Afficher le contenu approprié
+            if tab_name == "login" and hasattr(self, 'login_frame'):
+                self.login_frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=20)
+            elif tab_name == "register" and hasattr(self, 'register_frame'):
+                self.register_frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=20)
+            elif tab_name == "account" and hasattr(self, 'account_frame'):
+                self.account_frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=20)
+            
+            # Mettre à jour les styles des onglets
+            if hasattr(self, 'tabs') and self.tabs:
+                for tab in self.tabs.winfo_children():
+                    tab_id = tab.cget("text").lower()
+                    if tab_id == tab_name:
+                        tab.configure(fg_color=("gray85", "gray25"))
+                    else:
+                        tab.configure(fg_color="transparent")
+                        
+            logger.debug(f"Contenu de l'onglet {tab_name} affiché")
+        except Exception as e:
+            logger.error(f"Erreur lors de la mise à jour du contenu de l'onglet: {e}")
+            # En cas d'erreur, on peut essayer une approche plus directe
+            try:
+                if tab_name == "login" and hasattr(self, 'login_frame'):
+                    for content in ["register_frame", "account_frame"]:
+                        if hasattr(self, content) and getattr(self, content):
+                            getattr(self, content).pack_forget()
+                    self.login_frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=20)
+                elif tab_name == "register" and hasattr(self, 'register_frame'):
+                    for content in ["login_frame", "account_frame"]:
+                        if hasattr(self, content) and getattr(self, content):
+                            getattr(self, content).pack_forget()
+                    self.register_frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=20)
+                elif tab_name == "account" and hasattr(self, 'account_frame'):
+                    for content in ["login_frame", "register_frame"]:
+                        if hasattr(self, content) and getattr(self, content):
+                            getattr(self, content).pack_forget()
+                    self.account_frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=20)
+                    
+                logger.debug(f"Contenu de l'onglet {tab_name} affiché via méthode alternative")
+            except Exception as e2:
+                logger.error(f"Échec critique lors de l'affichage alternatif de l'onglet: {e2}")
+    
     def _load_user_data(self):
         """
         Charge les données de l'utilisateur actuellement connecté
@@ -1407,6 +1587,7 @@ class AuthView:
             # Récupérer les valeurs des champs
             email = self.email_var.get()
             password = self.password_var.get()
+            remember_me = self.remember_var.get() if hasattr(self, 'remember_var') else False
             
             # Vérifier que les champs sont remplis
             if not email or not password:
@@ -1443,10 +1624,14 @@ class AuthView:
             user_data = self.usage_tracker.authenticate_user(email, hashed_password)
             
             if user_data:
-                logger.info(f"Utilisateur connecté: {email}")
+                logger.info(f"Utilisateur connecté: {email} (Rester connecté: {remember_me})")
                 
                 # Mettre à jour l'utilisateur courant
                 self.current_user = user_data
+                
+                # Enregistrer la préférence "Rester connecté"
+                self.usage_tracker.set_remember_me(email, remember_me)
+                logger.info(f"Préférence 'Rester connecté' définie à {remember_me} pour {email}")
                 
                 # Réinitialiser les tentatives de connexion
                 if email in self.login_attempts:
@@ -1455,16 +1640,30 @@ class AuthView:
                 # Mettre à jour l'interface
                 self._update_auth_state()
                 
+                # Masquer la fenêtre d'authentification
+                self.hide()
+                
                 # Appeler le callback d'authentification si défini
                 if hasattr(self, 'auth_callback') and self.auth_callback:
                     self.auth_callback(True, user_data)
                 
-                # Afficher l'onglet compte
-                self._show_tab("account")
+                # Restaurer complètement l'interface principale
+                if hasattr(self.parent, 'main_frame') and self.parent.main_frame:
+                    # S'assurer que tous les widgets sont visibles et correctement positionnés
+                    try:
+                        if not self.parent.main_frame.winfo_ismapped():
+                            self.parent.main_frame.pack(fill="both", expand=True)
+                            logger.info("Interface principale restaurée après connexion")
+                    except Exception as e:
+                        logger.error(f"Erreur lors de la restauration de l'interface principale: {e}")
                 
-                # Masquer le message d'erreur
-                if hasattr(self, 'login_status_label'):
-                    self.login_status_label.configure(text="")
+                # S'assurer que le tableau de bord est affiché
+                if hasattr(self.parent, 'show_dashboard'):
+                    try:
+                        self.parent.show_dashboard()
+                        logger.info("Tableau de bord affiché après connexion")
+                    except Exception as e:
+                        logger.error(f"Erreur lors de l'affichage du tableau de bord: {e}")
                 
                 # Charger les paramètres utilisateur
                 self._load_user_data()
@@ -1601,19 +1800,86 @@ class AuthView:
             # Mettre à jour l'interface
             self._update_auth_state()
             
-            # Appeler le callback d'authentification si défini
-            if hasattr(self, 'auth_callback') and self.auth_callback:
-                self.auth_callback(True, user_data)
-            
-            # Afficher l'onglet compte
-            self._show_tab("account")
-            
-            # Afficher un message de succès
+            # Afficher un message de succès temporaire
             if hasattr(self, 'register_status_label'):
                 self.register_status_label.configure(
-                    text="Inscription réussie !",
+                    text="Inscription réussie ! Redirection vers le tableau de bord...",
                     text_color="green"
                 )
+            
+            # Créer un spinner de chargement pendant la redirection
+            loading_frame = None
+            try:
+                loading_frame = ctk.CTkFrame(self.window)
+                loading_frame.place(relx=0.5, rely=0.5, anchor=ctk.CENTER)
+                
+                # Titre du chargement
+                ctk.CTkLabel(
+                    loading_frame,
+                    text="Préparation du tableau de bord",
+                    font=ctk.CTkFont(size=16, weight="bold")
+                ).pack(pady=(10, 5))
+                
+                # Message
+                ctk.CTkLabel(
+                    loading_frame,
+                    text="Veuillez patienter pendant l'initialisation de votre tableau de bord..."
+                ).pack(pady=5)
+                
+                # Spinner
+                spinner = ctk.CTkProgressBar(loading_frame, width=200)
+                spinner.pack(pady=10)
+                spinner.configure(mode="indeterminate")
+                spinner.start()
+                
+                # Forcer la mise à jour de l'interface
+                self.window.update()
+            except Exception as e:
+                logger.error(f"Erreur lors de la création du spinner: {e}")
+            
+            # Appeler le callback d'authentification si défini après un court délai
+            def complete_registration():
+                try:
+                    # Appeler le callback d'authentification si défini
+                    if hasattr(self, 'auth_callback') and self.auth_callback:
+                        self.auth_callback(True, user_data)
+                    
+                    # Fermer la fenêtre d'authentification
+                    self.hide()
+                    
+                    # Afficher un message de succès et rediriger vers le tableau de bord
+                    if hasattr(self.parent, 'show_dashboard') and callable(self.parent.show_dashboard):
+                        # Rediriger vers le tableau de bord
+                        self.parent.show_dashboard()
+                        logger.info("Utilisateur redirigé vers le tableau de bord après inscription")
+                    else:
+                        logger.warning("Impossible de rediriger vers le tableau de bord: méthode non trouvée")
+                        # Tentative alternative pour afficher le tableau de bord
+                        try:
+                            if hasattr(self.parent, 'show_view') and callable(self.parent.show_view):
+                                self.parent.show_view("dashboard")
+                                logger.info("Redirection alternative vers le tableau de bord")
+                            elif hasattr(self.parent, 'winfo_toplevel') and hasattr(self.parent.winfo_toplevel(), 'show_view'):
+                                # Si nous sommes dans une fenêtre modale, essayer avec la fenêtre principale
+                                self.parent.winfo_toplevel().show_view("dashboard")
+                                logger.info("Redirection via la fenêtre principale vers le tableau de bord")
+                        except Exception as e:
+                            logger.error(f"Erreur lors de la redirection vers le tableau de bord: {e}")
+                    
+                    # Afficher un message de bienvenue
+                    if hasattr(self.parent, 'show_message'):
+                        self.parent.show_message(
+                            "Inscription réussie",
+                            f"Bienvenue {name if name else email} ! Votre compte a été créé avec succès.",
+                            "success"
+                        )
+                except Exception as e:
+                    logger.error(f"Erreur lors de la finalisation de l'inscription: {e}")
+                    if loading_frame and loading_frame.winfo_exists():
+                        loading_frame.destroy()
+            
+            # Déclencher la redirection après un court délai pour permettre l'affichage du spinner
+            self.window.after(500, complete_registration)
             
             return True
         except Exception as e:
@@ -1725,491 +1991,110 @@ class AuthView:
             logger.error(f"Erreur lors de la validation de la confirmation du mot de passe: {e}")
 
     def hide(self):
-        """Masque la fenêtre d'authentification sans la détruire"""
+        """Masque la fenêtre d'authentification"""
         try:
+            # Si nous utilisons une fenêtre Toplevel, la masquer
             if hasattr(self, 'window') and self.window.winfo_exists():
                 self.window.withdraw()
                 logger.info("Fenêtre d'authentification masquée")
+            # Si nous utilisons le parent directement, masquer les widgets
+            elif hasattr(self, 'main_frame'):
+                self.main_frame.pack_forget()
+                logger.info("Widgets d'authentification masqués")
         except Exception as e:
-            logger.error(f"Erreur lors du masquage de la fenêtre d'authentification: {e}")
+            logger.error(f"Erreur lors du masquage de l'interface d'authentification: {e}")
             
     def show(self):
         """Affiche la fenêtre d'authentification"""
         try:
-            # Créer une nouvelle fenêtre si elle n'existe pas ou a été détruite
-            if not hasattr(self, 'window') or not self.window.winfo_exists():
-                self.window = ctk.CTkToplevel(self.parent)
-                self.window.title("Compte utilisateur")
-                self.window.geometry("500x600")
-                self.window.resizable(False, False)
+            # Détruire toute fenêtre TopLevel existante pour éviter les doublons
+            if hasattr(self, 'window') and self.window.winfo_exists():
+                try:
+                    self.window.destroy()
+                except Exception as e:
+                    logger.debug(f"Erreur lors de la destruction de la fenêtre existante: {e}")
+            
+            # Créer une interface directement dans le parent
+            if not hasattr(self, 'main_frame') or not self.main_frame:
+                # Créer les widgets directement dans le parent
                 self._create_widgets()
-                
+                logger.info("Widgets d'authentification créés directement dans le parent")
+            
             # Mettre à jour l'interface selon l'état de connexion
             self._update_auth_state()
             
-            # Afficher la fenêtre
-            self.window.deiconify()
-            self.window.lift()
-            self.window.focus_force()
+            # S'assurer que le contenu est visible
+            if hasattr(self, 'main_frame'):
+                self.main_frame.pack(fill="both", expand=True, padx=20, pady=20)
             
-            # Centrer la fenêtre
-            self.window.update_idletasks()
-            width = self.window.winfo_width()
-            height = self.window.winfo_height()
-            x = (self.window.winfo_screenwidth() // 2) - (width // 2)
-            y = (self.window.winfo_screenheight() // 2) - (height // 2)
-            self.window.geometry(f"{width}x{height}+{x}+{y}")
+            # Forcer la mise à jour pour éviter les problèmes d'affichage
+            self.parent.update_idletasks()
             
-            # Intercepter l'événement de fermeture
-            self.window.protocol("WM_DELETE_WINDOW", self.hide)
+            logger.info("Interface d'authentification affichée directement dans le parent")
             
-            logger.info("Fenêtre d'authentification affichée")
         except Exception as e:
-            logger.error(f"Erreur lors de l'affichage de la fenêtre d'authentification: {e}")
-            
+            logger.error(f"Erreur lors de l'affichage de l'interface d'authentification: {e}")
+            # Créer une interface de secours en cas d'erreur
+            try:
+                # Nettoyer l'interface existante
+                for widget in self.parent.winfo_children():
+                    widget.destroy()
+                
+                # Créer une interface minimaliste
+                frame = ctk.CTkFrame(self.parent)
+                frame.pack(fill="both", expand=True, padx=20, pady=20)
+                
+                label = ctk.CTkLabel(
+                    frame,
+                    text="Interface d'authentification",
+                    font=ctk.CTkFont(size=16, weight="bold")
+                )
+                label.pack(pady=20)
+                
+                # Champs d'authentification simples
+                email_label = ctk.CTkLabel(frame, text="Email:")
+                email_label.pack(anchor="w", pady=(10, 0))
+                
+                self.email_var = ctk.StringVar()
+                email_entry = ctk.CTkEntry(frame, width=300, textvariable=self.email_var)
+                email_entry.pack(pady=(0, 10))
+                
+                password_label = ctk.CTkLabel(frame, text="Mot de passe:")
+                password_label.pack(anchor="w", pady=(10, 0))
+                
+                self.password_var = ctk.StringVar()
+                password_entry = ctk.CTkEntry(frame, show="•", width=300, textvariable=self.password_var)
+                password_entry.pack(pady=(0, 20))
+                
+                login_button = ctk.CTkButton(
+                    frame,
+                    text="Se connecter",
+                    width=200,
+                    command=self._handle_login
+                )
+                login_button.pack(pady=10)
+                
+                logger.info("Interface d'authentification simplifiée créée après erreur")
+            except Exception as e2:
+                logger.critical(f"Échec critique lors de la création d'une interface de secours: {e2}")
+                # Afficher un simple message d'erreur
+                try:
+                    label = ctk.CTkLabel(
+                        self.parent,
+                        text="Erreur lors de l'affichage de l'interface d'authentification.\nVeuillez redémarrer l'application.",
+                        font=ctk.CTkFont(size=14),
+                        text_color="red"
+                    )
+                    label.pack(expand=True, pady=50)
+                except:
+                    pass
+
     def set_auth_callback(self, callback):
         """
-        Définit un callback à appeler lors de l'authentification
+        Définit le callback à appeler lorsque l'état d'authentification change
         
         Args:
-            callback: Fonction à appeler avec les paramètres (is_logged_in, user_data)
+            callback: Fonction à appeler avec (is_authenticated, user_data)
         """
         self.auth_callback = callback
         logger.info("Callback d'authentification défini")
-
-    def _show_account_tab(self, tab_name):
-        """
-        Affiche l'onglet spécifié dans la vue compte et masque les autres
-        
-        Args:
-            tab_name (str): Nom de l'onglet à afficher ('profile', 'security', 'preferences')
-        """
-        try:
-            logger.info(f"Affichage de l'onglet de compte {tab_name}")
-            
-            # Masquer tous les frames
-            if hasattr(self, 'profile_frame'):
-                self.profile_frame.pack_forget()
-            if hasattr(self, 'security_frame'):
-                self.security_frame.pack_forget()
-            if hasattr(self, 'preferences_frame'):
-                self.preferences_frame.pack_forget()
-            
-            # Réinitialiser les styles des onglets
-            self.profile_tab_btn.configure(fg_color="transparent")
-            self.security_tab_btn.configure(fg_color="transparent")
-            self.preferences_tab_btn.configure(fg_color="transparent")
-            
-            # Afficher le frame correspondant et mettre en évidence l'onglet
-            if tab_name == "profile":
-                if hasattr(self, 'profile_frame'):
-                    self.profile_frame.pack(fill=ctk.BOTH, expand=True)
-                self.profile_tab_btn.configure(fg_color=("gray85", "gray25"))
-            elif tab_name == "security":
-                if hasattr(self, 'security_frame'):
-                    self.security_frame.pack(fill=ctk.BOTH, expand=True)
-                self.security_tab_btn.configure(fg_color=("gray85", "gray25"))
-            elif tab_name == "preferences":
-                if hasattr(self, 'preferences_frame'):
-                    self.preferences_frame.pack(fill=ctk.BOTH, expand=True)
-                self.preferences_tab_btn.configure(fg_color=("gray85", "gray25"))
-            
-            # Mettre à jour la variable d'onglet actif
-            self.account_tabs_var.set(tab_name)
-        except Exception as e:
-            logger.error(f"Erreur lors de l'affichage de l'onglet de compte {tab_name}: {e}")
-    
-    def _change_theme(self):
-        """Change le thème de l'application"""
-        try:
-            theme = self.theme_var.get()
-            ctk.set_appearance_mode(theme)
-            
-            # Sauvegarder la préférence si un utilisateur est connecté
-            if self.current_user:
-                user_data = self.current_user.copy()
-                if "settings" not in user_data:
-                    user_data["settings"] = {}
-                user_data["settings"]["theme"] = theme
-                self._save_user_settings(user_data)
-                
-            # Afficher un message de confirmation
-            if hasattr(self, 'preferences_status_label'):
-                self.preferences_status_label.configure(
-                    text="Thème mis à jour",
-                    text_color="green"
-                )
-                # Effacer le message après 3 secondes
-                self.window.after(3000, lambda: self.preferences_status_label.configure(text=""))
-        except Exception as e:
-            logger.error(f"Erreur lors du changement de thème: {e}")
-            if hasattr(self, 'preferences_status_label'):
-                self.preferences_status_label.configure(
-                    text=f"Erreur: {str(e)}",
-                    text_color="red"
-                )
-
-    def _save_preferences(self):
-        """Sauvegarde les préférences de l'utilisateur"""
-        try:
-            if not self.current_user:
-                logger.warning("Tentative de sauvegarde des préférences sans utilisateur connecté")
-                return
-                
-            # Récupérer les valeurs
-            email_notif = self.email_notif_var.get()
-            update_notif = self.update_notif_var.get()
-            
-            # Mettre à jour les données utilisateur
-            user_data = self.current_user.copy()
-            if "settings" not in user_data:
-                user_data["settings"] = {}
-            
-            user_data["settings"]["email_notifications"] = email_notif
-            user_data["settings"]["update_notifications"] = update_notif
-            
-            # Sauvegarder les modifications
-            if self._save_user_settings(user_data):
-                # Mettre à jour l'utilisateur courant
-                self.current_user = user_data
-                
-                # Afficher un message de succès
-                logger.info("Préférences mises à jour avec succès")
-                
-                # Afficher un message dans l'interface
-                if hasattr(self, 'preferences_status_label'):
-                    self.preferences_status_label.configure(
-                        text="Préférences enregistrées",
-                        text_color="green"
-                    )
-                    # Effacer le message après 3 secondes
-                    self.window.after(3000, lambda: self.preferences_status_label.configure(text=""))
-            else:
-                # Afficher un message d'erreur
-                logger.error("Erreur lors de la mise à jour des préférences")
-                
-                # Afficher un message dans l'interface
-                if hasattr(self, 'preferences_status_label'):
-                    self.preferences_status_label.configure(
-                        text="Erreur lors de l'enregistrement",
-                        text_color="red"
-                    )
-        except Exception as e:
-            logger.error(f"Erreur lors de la sauvegarde des préférences: {e}")
-            
-            # Afficher un message dans l'interface
-            if hasattr(self, 'preferences_status_label'):
-                self.preferences_status_label.configure(
-                    text=f"Erreur: {str(e)}",
-                    text_color="red"
-                )
-    
-    def _change_password(self):
-        """Change le mot de passe de l'utilisateur"""
-        try:
-            if not self.current_user:
-                logger.warning("Tentative de changement de mot de passe sans utilisateur connecté")
-                return
-                
-            # Récupérer les valeurs
-            current_password = self.current_password_var.get()
-            new_password = self.new_password_var.get()
-            confirm_password = self.confirm_new_password_var.get()
-            
-            # Vérifier que les champs sont remplis
-            if not current_password or not new_password or not confirm_password:
-                logger.warning("Champs de changement de mot de passe incomplets")
-                if hasattr(self, 'password_status_label'):
-                    self.password_status_label.configure(
-                        text="Veuillez remplir tous les champs",
-                        text_color="red"
-                    )
-                return
-            
-            # Vérifier que les nouveaux mots de passe correspondent
-            if new_password != confirm_password:
-                logger.warning("Les nouveaux mots de passe ne correspondent pas")
-                if hasattr(self, 'password_status_label'):
-                    self.password_status_label.configure(
-                        text="Les nouveaux mots de passe ne correspondent pas",
-                        text_color="red"
-                    )
-                return
-            
-            # Vérifier la complexité du nouveau mot de passe
-            if len(new_password) < self.PASSWORD_MIN_LENGTH:
-                logger.warning("Nouveau mot de passe trop court")
-                if hasattr(self, 'password_status_label'):
-                    self.password_status_label.configure(
-                        text=f"Le mot de passe doit contenir au moins {self.PASSWORD_MIN_LENGTH} caractères",
-                        text_color="red"
-                    )
-                return
-            
-            # Vérifier que le mot de passe actuel est correct
-            email = self.current_user.get("email", "")
-            hashed_current = hashlib.sha256(current_password.encode()).hexdigest()
-            
-            # Vérifier les identifiants
-            if self.usage_tracker.verify_password(email, hashed_current):
-                # Mettre à jour le mot de passe
-                hashed_new = hashlib.sha256(new_password.encode()).hexdigest()
-                
-                # Mettre à jour les données utilisateur
-                user_data = self.current_user.copy()
-                user_data["password"] = hashed_new
-                
-                # Sauvegarder les modifications
-                if self._save_user_settings(user_data):
-                    # Mettre à jour l'utilisateur courant
-                    self.current_user = user_data
-                    
-                    # Vider les champs
-                    self.current_password_var.set("")
-                    self.new_password_var.set("")
-                    self.confirm_new_password_var.set("")
-                    
-                    # Afficher un message de succès
-                    logger.info("Mot de passe mis à jour avec succès")
-                    
-                    # Afficher un message dans l'interface
-                    if hasattr(self, 'password_status_label'):
-                        self.password_status_label.configure(
-                            text="Mot de passe mis à jour avec succès",
-                            text_color="green"
-                        )
-                        # Effacer le message après 3 secondes
-                        self.window.after(3000, lambda: self.password_status_label.configure(text=""))
-                else:
-                    # Afficher un message d'erreur
-                    logger.error("Erreur lors de la mise à jour du mot de passe")
-                    
-                    # Afficher un message dans l'interface
-                    if hasattr(self, 'password_status_label'):
-                        self.password_status_label.configure(
-                            text="Erreur lors de la mise à jour du mot de passe",
-                            text_color="red"
-                        )
-            else:
-                logger.warning("Mot de passe actuel incorrect")
-                
-                # Afficher un message d'erreur
-                if hasattr(self, 'password_status_label'):
-                    self.password_status_label.configure(
-                        text="Mot de passe actuel incorrect",
-                        text_color="red"
-                    )
-        except Exception as e:
-            logger.error(f"Erreur lors du changement de mot de passe: {e}")
-            
-            # Afficher un message dans l'interface
-            if hasattr(self, 'password_status_label'):
-                self.password_status_label.configure(
-                    text=f"Erreur: {str(e)}",
-                    text_color="red"
-                )
-    
-    def _show_terms(self):
-        """Affiche les conditions d'utilisation dans une nouvelle fenêtre"""
-        try:
-            # Créer une nouvelle fenêtre
-            terms_window = ctk.CTkToplevel(self.window)
-            terms_window.title("Conditions d'utilisation")
-            terms_window.geometry("600x400")
-            terms_window.resizable(True, True)
-            
-            # Centrer la fenêtre
-            terms_window.update_idletasks()
-            width = terms_window.winfo_width()
-            height = terms_window.winfo_height()
-            x = (terms_window.winfo_screenwidth() // 2) - (width // 2)
-            y = (terms_window.winfo_screenheight() // 2) - (height // 2)
-            terms_window.geometry(f"{width}x{height}+{x}+{y}")
-            
-            # Titre
-            ctk.CTkLabel(
-                terms_window,
-                text="Conditions d'utilisation",
-                font=ctk.CTkFont(size=20, weight="bold")
-            ).pack(pady=(20, 10))
-            
-            # Frame avec scrollbar pour le texte
-            frame = ctk.CTkFrame(terms_window)
-            frame.pack(fill=ctk.BOTH, expand=True, padx=20, pady=10)
-            
-            # Ajouter une scrollbar
-            scrollbar = ctk.CTkScrollbar(frame)
-            scrollbar.pack(side=ctk.RIGHT, fill=ctk.Y)
-            
-            # Zone de texte
-            terms_text = ctk.CTkTextbox(
-                frame,
-                height=300,
-                width=550,
-                yscrollcommand=scrollbar.set,
-                wrap="word"
-            )
-            terms_text.pack(side=ctk.LEFT, fill=ctk.BOTH, expand=True)
-            scrollbar.configure(command=terms_text.yview)
-            
-            # Contenu des conditions d'utilisation
-            terms_content = """
-            CONDITIONS D'UTILISATION
-            
-            1. ACCEPTATION DES CONDITIONS
-            
-            En utilisant cette application, vous acceptez d'être lié par les présentes conditions d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser l'application.
-            
-            2. DESCRIPTION DU SERVICE
-            
-            L'application Vynal Docs Automator est un outil permettant d'automatiser la gestion de documents. Elle est fournie "telle quelle", sans garantie d'aucune sorte.
-            
-            3. CONFIDENTIALITÉ
-            
-            Nous respectons votre vie privée. Veuillez consulter notre politique de confidentialité pour comprendre comment nous collectons, utilisons et protégeons vos données personnelles.
-            
-            4. COMPTES UTILISATEURS
-            
-            Lorsque vous créez un compte, vous devez fournir des informations exactes et complètes. Vous êtes responsable du maintien de la confidentialité de votre mot de passe et de toutes les activités qui se produisent sous votre compte.
-            
-            5. PROPRIÉTÉ INTELLECTUELLE
-            
-            Tous les droits de propriété intellectuelle liés à l'application et à son contenu restent la propriété exclusive de leurs propriétaires respectifs.
-            
-            6. LIMITATION DE RESPONSABILITÉ
-            
-            En aucun cas, nous ne serons tenus responsables des dommages directs, indirects, accessoires, spéciaux ou consécutifs résultant de l'utilisation ou de l'impossibilité d'utiliser notre application.
-            
-            7. MODIFICATIONS DES CONDITIONS
-            
-            Nous nous réservons le droit de modifier ces conditions d'utilisation à tout moment. Les modifications prendront effet dès leur publication dans l'application.
-            
-            8. RÉSILIATION
-            
-            Nous nous réservons le droit de résilier ou de suspendre votre accès à notre application, sans préavis, pour quelque raison que ce soit, y compris, sans limitation, si vous violez ces conditions d'utilisation.
-            
-            9. LOI APPLICABLE
-            
-            Ces conditions d'utilisation sont régies par les lois en vigueur dans votre pays de résidence.
-            
-            10. CONTACT
-            
-            Pour toute question concernant ces conditions d'utilisation, veuillez nous contacter à l'adresse support@vynaldocs.com.
-            
-            Dernière mise à jour : 15 mars 2025
-            """
-            
-            terms_text.insert("1.0", terms_content)
-            terms_text.configure(state="disabled")
-            
-            # Bouton pour fermer la fenêtre
-            close_button = ctk.CTkButton(
-                terms_window,
-                text="Fermer",
-                command=terms_window.destroy,
-                height=40,
-                corner_radius=8,
-                fg_color=("#3498db", "#2980b9"),
-                hover_color=("#2980b9", "#1f618d")
-            )
-            close_button.pack(pady=(0, 20))
-            
-        except Exception as e:
-            logger.error(f"Erreur lors de l'affichage des conditions d'utilisation: {e}")
-    
-    def _handle_google_auth(self):
-        """Gère l'authentification avec Google"""
-        try:
-            # Simulation d'une connexion Google
-            # Dans une implémentation réelle, il faudrait intégrer l'API Google OAuth
-            logger.info("Tentative d'authentification avec Google")
-            
-            # Afficher un message temporaire
-            if hasattr(self, 'register_status_label'):
-                self.register_status_label.configure(
-                    text="Connexion avec Google en cours...",
-                    text_color="blue"
-                )
-            else:
-                # Créer un label temporaire s'il n'existe pas
-                self.register_status_label = ctk.CTkLabel(
-                    self.register_frame.winfo_children()[1],  # Le form_frame
-                    text="Connexion avec Google en cours...",
-                    text_color="blue",
-                    anchor="center",
-                    font=ctk.CTkFont(size=12)
-                )
-                self.register_status_label.pack(fill=ctk.X, padx=5, pady=(0, 10))
-                
-            # Simuler un délai de connexion (2 secondes)
-            self.window.after(2000, self._complete_google_auth)
-        except Exception as e:
-            logger.error(f"Erreur lors de l'authentification avec Google: {e}")
-            
-            # Afficher un message d'erreur
-            if hasattr(self, 'register_status_label'):
-                self.register_status_label.configure(
-                    text=f"Erreur: {str(e)}",
-                    text_color="red"
-                )
-    
-    def _complete_google_auth(self):
-        """Complète le processus d'authentification Google (simulé)"""
-        try:
-            # Simuler une authentification réussie
-            # Générer un email fictif basé sur un timestamp pour éviter les collisions
-            import time
-            timestamp = int(time.time())
-            fake_email = f"user{timestamp}@gmail.com"
-            
-            # Créer un utilisateur fictif
-            user_data = {
-                "email": fake_email,
-                "name": "Utilisateur Google",
-                "created_at": datetime.now().isoformat(),
-                "last_login": datetime.now().isoformat(),
-                "auth_provider": "google",
-                "settings": {}
-            }
-            
-            # Sauvegarder l'utilisateur
-            success = self._save_user_settings(user_data)
-            
-            if success:
-                logger.info(f"Utilisateur Google créé/connecté: {fake_email}")
-                
-                # Mettre à jour l'utilisateur courant
-                self.current_user = user_data
-                self.usage_tracker.set_current_user(user_data)
-                
-                # Mettre à jour l'interface
-                self._update_auth_state()
-                
-                # Appeler le callback d'authentification si défini
-                if hasattr(self, 'auth_callback') and self.auth_callback:
-                    self.auth_callback(True, user_data)
-                
-                # Afficher l'onglet compte
-                self._show_tab("account")
-                
-                # Masquer le message
-                if hasattr(self, 'register_status_label'):
-                    self.register_status_label.configure(text="")
-            else:
-                logger.error(f"Erreur lors de la création de l'utilisateur Google: {fake_email}")
-                
-                # Afficher un message d'erreur
-                if hasattr(self, 'register_status_label'):
-                    self.register_status_label.configure(
-                        text="Erreur lors de la connexion avec Google",
-                        text_color="red"
-                    )
-        except Exception as e:
-            logger.error(f"Erreur lors de la complétion de l'authentification Google: {e}")
-            
-            # Afficher un message d'erreur
-            if hasattr(self, 'register_status_label'):
-                self.register_status_label.configure(
-                    text=f"Erreur: {str(e)}",
-                    text_color="red"
-                )
