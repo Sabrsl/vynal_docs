@@ -1,3 +1,48 @@
-logs/
-data/backup/
+# Fichiers de configuration sensibles
+credentials.json
+*.pem
+*.key
+*.crt
+*.p12
+
+# Fichiers de cache et temporaires
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Fichiers de logs
+*.log
+logs/
+log/
+
+# Fichiers de données utilisateur
+data/
+*.json
+!package.json
+
+# Fichiers d'environnement
+.env
+.env.local
+.env.*.local
+
+# Fichiers système
+.DS_Store
+Thumbs.db
