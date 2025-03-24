@@ -1,3 +1,0 @@
-ERREUR DE GÉNÉRATION DE DOCUMENT
-Date: 2025-03-15 00:57:53
-Erreur: 'DocumentGenerator' object has no attribute 'logger'

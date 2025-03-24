@@ -192,15 +192,6 @@ class DashboardView:
         self.action_buttons_frame = ctk.CTkFrame(self.actions_frame, fg_color="transparent")
         self.action_buttons_frame.pack(fill=ctk.X, padx=10, pady=5)
         
-        # Créer le bouton "Nouveau document"
-        self.new_doc_btn = ctk.CTkButton(
-            self.action_buttons_frame,
-            text="Nouveau document",
-            width=150,
-            command=self._new_document_callback
-        )
-        self.new_doc_btn.pack(side=ctk.LEFT, padx=5, pady=5)
-        
         # Créer le bouton "Traiter un document"
         self.process_doc_btn = ctk.CTkButton(
             self.action_buttons_frame,
@@ -503,9 +494,6 @@ class DashboardView:
             logger.info("Reconnexion des boutons du tableau de bord")
             
             # Réinitialiser les commandes pour les boutons d'action rapide
-            if hasattr(self, 'new_doc_btn'):
-                self.new_doc_btn.configure(command=self._new_document_callback)
-                
             if hasattr(self, 'process_doc_btn'):
                 self.process_doc_btn.configure(command=self._process_document_callback)
                 

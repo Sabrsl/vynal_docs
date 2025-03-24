@@ -25,11 +25,21 @@ from views.document_view import DocumentView
 from views.template_view import TemplateView
 from views.settings_view import SettingsView
 from views.chat_ai_view import ChatAIView
+from views.account_view import AccountView
 
 # Importer le moniteur d'activité
 from utils.activity_monitor import ActivityMonitor
 
 logger = logging.getLogger("VynalDocsAutomator.MainView")
+
+# Variable globale pour stocker l'instance active de MainView
+# Cette variable sera utilisée pour faciliter l'accès depuis d'autres composants
+_main_view_instance = None
+
+def get_main_view_instance():
+    """Retourne l'instance active de MainView"""
+    global _main_view_instance
+    return _main_view_instance
 
 class MainView:
     """
@@ -46,6 +56,10 @@ class MainView:
             app_model: Modèle de l'application
             on_ready: Callback à appeler lorsque l'interface est prête
         """
+        # Enregistrer cette instance comme l'instance active
+        global _main_view_instance
+        _main_view_instance = self
+        
         # Initialiser les attributs de base
         self.root = root
         self.model = app_model
@@ -455,7 +469,8 @@ class MainView:
                 "templates": TemplateView,
                 "documents": DocumentView,
                 "analysis": ChatAIView,
-                "settings": SettingsView
+                "settings": SettingsView,
+                "account": AccountView
             }
             
             # Importer document_creator_view si nécessaire
@@ -509,7 +524,8 @@ class MainView:
                     "templates": TemplateView,
                     "documents": DocumentView,
                     "analysis": ChatAIView,
-                    "settings": SettingsView
+                    "settings": SettingsView,
+                    "account": AccountView
                 }
                 # Ajouter DocumentCreatorView si elle n'est pas déjà là
                 if "document_creator" not in view_classes and view_id == "document_creator":
@@ -537,7 +553,8 @@ class MainView:
             "documents": "Documents",
             "analysis": "Chat IA",
             "settings": "Paramètres",
-            "document_creator": "Création de document"
+            "document_creator": "Création de document",
+            "account": "Mon compte"
         }
         
         self.page_title.configure(text=titles.get(view_id, view_id.capitalize()))
@@ -1843,3 +1860,77 @@ class MainView:
                 f"Une erreur s'est produite lors de l'affichage du dialogue de connexion: {str(e)}",
                 "error"
             )
+
+    def show_account(self):
+        """Affiche la vue du compte utilisateur"""
+        try:
+            logging.info("Affichage de la vue du compte utilisateur")
+            
+            # Essayer d'abord de trouver le bouton d'authentification dans le dashboard
+            auth_button = None
+            if hasattr(self, "dashboard") and self.dashboard:
+                auth_button = self.dashboard.get_auth_button()
+            
+            if auth_button:
+                # Utiliser la méthode du bouton d'authentification pour afficher le compte
+                auth_button._show_user_account()
+            else:
+                # Si le bouton n'est pas disponible, créer directement une fenêtre modale pour la vue de compte
+                logging.info("Bouton d'authentification non trouvé, création directe d'une fenêtre de compte")
+                
+                # Vérifier si l'utilisateur est authentifié
+                usage_tracker = self.app_controller.app_model.usage_tracker
+                if not usage_tracker:
+                    logging.error("Tracker d'utilisation non disponible")
+                    return
+                    
+                user_data = usage_tracker.get_user_data()
+                if not user_data or not user_data.get("email"):
+                    logging.warning("Tentative d'afficher le compte sans utilisateur authentifié")
+                    self.show_auth_dialog()
+                    return
+                    
+                # Créer une fenêtre modale pour la vue de compte
+                account_window = tk.Toplevel(self.root)
+                account_window.title("Mon compte")
+                account_window.geometry("800x600")
+                
+                # Centrer la fenêtre
+                account_window.update_idletasks()
+                width = account_window.winfo_width()
+                height = account_window.winfo_height()
+                x = (account_window.winfo_screenwidth() // 2) - (width // 2)
+                y = (account_window.winfo_screenheight() // 2) - (height // 2)
+                account_window.geometry(f'{width}x{height}+{x}+{y}')
+                
+                # Configuration de la fenêtre
+                account_window.transient(self.root)
+                account_window.grab_set()
+                account_window.focus_set()
+                
+                # Callback pour revenir à la vue précédente
+                def on_back():
+                    account_window.destroy()
+                    
+                # Callback pour se déconnecter
+                def on_logout():
+                    self.app_controller.app_model.usage_tracker.logout()
+                    account_window.destroy()
+                    self.update_auth_state()
+                    self.show_auth_dialog()
+                    
+                # Créer la vue du compte
+                account_view = AccountView(
+                    account_window, 
+                    self.app_controller.app_model,
+                    user_data,
+                    on_back=on_back,
+                    on_logout=on_logout
+                )
+                
+                # Afficher la vue
+                account_view.show()
+                
+        except Exception as e:
+            logging.error(f"Erreur lors de l'affichage de la vue compte: {e}")
+            logging.error(traceback.format_exc())

@@ -714,427 +714,10 @@ class AuthView:
         login_link.pack(side=ctk.LEFT)
     
     def _create_account_view(self):
-        """Crée la vue de compte utilisateur"""
-        self.account_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
-        
-        # Titre et bienvenue
-        welcome_frame = ctk.CTkFrame(self.account_frame, fg_color="transparent")
-        welcome_frame.pack(fill=ctk.X, pady=(0, 20))
-        
-        # Avatar utilisateur
-        self.avatar_label = ctk.CTkLabel(
-            welcome_frame,
-            text="👤",
-            font=ctk.CTkFont(size=48)
-        )
-        self.avatar_label.pack(pady=(0, 10))
-        
-        # Nom de l'utilisateur
-        self.user_name_label = ctk.CTkLabel(
-            welcome_frame,
-            text="",
-            font=ctk.CTkFont(size=20, weight="bold")
-        )
-        self.user_name_label.pack(pady=(0, 5))
-        
-        # Email de l'utilisateur
-        self.user_email_label = ctk.CTkLabel(
-            welcome_frame,
-            text="",
-            font=ctk.CTkFont(size=14)
-        )
-        self.user_email_label.pack()
-        
-        # Statut du compte
-        self.account_status_frame = ctk.CTkFrame(welcome_frame, fg_color="transparent")
-        self.account_status_frame.pack(pady=10)
-        
-        self.account_status_label = ctk.CTkLabel(
-            self.account_status_frame,
-            text="",
-            font=ctk.CTkFont(size=12)
-        )
-        self.account_status_label.pack(side=ctk.LEFT, padx=(0, 5))
-        
-        self.account_status_badge = ctk.CTkLabel(
-            self.account_status_frame,
-            text="",
-            width=80,
-            height=22,
-            corner_radius=11,
-            font=ctk.CTkFont(size=11)
-        )
-        self.account_status_badge.pack(side=ctk.LEFT)
-        
-        # Séparateur
-        ctk.CTkFrame(self.account_frame, height=1, fg_color="gray70").pack(fill=ctk.X, padx=20, pady=10)
-        
-        # Contenu principal en onglets
-        self.account_tabs_var = ctk.StringVar(value="profile")
-        
-        # Frame des onglets du compte
-        tabs_frame = ctk.CTkFrame(self.account_frame, fg_color="transparent")
-        tabs_frame.pack(fill=ctk.X, pady=10)
-        
-        # Style des onglets
-        tab_style = {
-            "corner_radius": 6,
-            "fg_color": "transparent",
-            "hover_color": ("gray90", "gray30"),
-            "height": 35
-        }
-        
-        # Onglets
-        self.profile_tab_btn = ctk.CTkButton(
-            tabs_frame,
-            text="Mon profil",
-            command=lambda: self._show_account_tab("profile"),
-            **tab_style
-        )
-        self.profile_tab_btn.pack(side=ctk.LEFT, padx=5, expand=True, fill=ctk.X)
-        
-        self.security_tab_btn = ctk.CTkButton(
-            tabs_frame,
-            text="Sécurité",
-            command=lambda: self._show_account_tab("security"),
-            **tab_style
-        )
-        self.security_tab_btn.pack(side=ctk.LEFT, padx=5, expand=True, fill=ctk.X)
-        
-        self.preferences_tab_btn = ctk.CTkButton(
-            tabs_frame,
-            text="Préférences",
-            command=lambda: self._show_account_tab("preferences"),
-            **tab_style
-        )
-        self.preferences_tab_btn.pack(side=ctk.LEFT, padx=5, expand=True, fill=ctk.X)
-        
-        # Contenu des onglets
-        self.account_content_frame = ctk.CTkFrame(self.account_frame, fg_color="transparent")
-        self.account_content_frame.pack(fill=ctk.BOTH, expand=True, pady=10)
-        
-        # Créer les contenus des différents onglets
-        self._create_profile_tab()
-        self._create_security_tab()
-        self._create_preferences_tab()
-        
-        # Bouton de déconnexion
-        self.logout_button = ctk.CTkButton(
-            self.account_frame,
-            text="Se déconnecter",
-            command=self._handle_logout,
-            height=40,
-            corner_radius=8,
-            fg_color="#e74c3c",
-            hover_color="#c0392b"
-        )
-        self.logout_button.pack(fill=ctk.X, padx=20, pady=20)
-    
-    def _create_profile_tab(self):
-        """Crée l'onglet de profil utilisateur"""
-        self.profile_frame = ctk.CTkFrame(self.account_content_frame, fg_color="transparent")
-        
-        # Informations utilisateur
-        info_frame = ctk.CTkFrame(self.profile_frame, fg_color="transparent")
-        info_frame.pack(fill=ctk.X, pady=10)
-        
-        # Champ nom
-        name_frame = ctk.CTkFrame(info_frame, fg_color="transparent")
-        name_frame.pack(fill=ctk.X, pady=5)
-        
-        ctk.CTkLabel(
-            name_frame,
-            text="Nom complet",
-            anchor="w"
-        ).pack(fill=ctk.X, padx=5, pady=(0, 5))
-        
-        self.profile_name_var = ctk.StringVar()
-        self.profile_name = ctk.CTkEntry(
-            name_frame,
-            textvariable=self.profile_name_var,
-            placeholder_text="Votre nom complet",
-            height=40,
-            border_width=1
-        )
-        self.profile_name.pack(fill=ctk.X)
-        
-        # Champ email (non éditable)
-        email_frame = ctk.CTkFrame(info_frame, fg_color="transparent")
-        email_frame.pack(fill=ctk.X, pady=5)
-        
-        ctk.CTkLabel(
-            email_frame,
-            text="Adresse email",
-            anchor="w"
-        ).pack(fill=ctk.X, padx=5, pady=(0, 5))
-        
-        self.profile_email_var = ctk.StringVar()
-        self.profile_email = ctk.CTkEntry(
-            email_frame,
-            textvariable=self.profile_email_var,
-            placeholder_text="Votre adresse email",
-            height=40,
-            border_width=1,
-            state="disabled"
-        )
-        self.profile_email.pack(fill=ctk.X)
-        
-        # Date d'inscription
-        created_frame = ctk.CTkFrame(info_frame, fg_color="transparent")
-        created_frame.pack(fill=ctk.X, pady=5)
-        
-        ctk.CTkLabel(
-            created_frame,
-            text="Date d'inscription",
-            anchor="w"
-        ).pack(fill=ctk.X, padx=5, pady=(0, 5))
-        
-        self.profile_created_var = ctk.StringVar()
-        self.profile_created = ctk.CTkEntry(
-            created_frame,
-            textvariable=self.profile_created_var,
-            placeholder_text="Date d'inscription",
-            height=40,
-            border_width=1,
-            state="disabled"
-        )
-        self.profile_created.pack(fill=ctk.X)
-        
-        # Boutons d'action
-        action_frame = ctk.CTkFrame(self.profile_frame, fg_color="transparent")
-        action_frame.pack(fill=ctk.X, pady=10)
-        
-        # Message de statut pour le profil
-        self.profile_status_label = ctk.CTkLabel(
-            action_frame,
-            text="",
-            text_color="red",
-            anchor="center",
-            font=ctk.CTkFont(size=12)
-        )
-        self.profile_status_label.pack(fill=ctk.X, padx=5, pady=(0, 10))
-        
-        # Bouton pour sauvegarder les modifications
-        save_profile_button = ctk.CTkButton(
-            action_frame,
-            text="Enregistrer les modifications",
-            command=self._save_profile,
-            height=40,
-            corner_radius=8,
-            fg_color=("#3498db", "#2980b9"),
-            hover_color=("#2980b9", "#1f618d")
-        )
-        save_profile_button.pack(fill=ctk.X, pady=(0, 10))
-    
-    def _create_security_tab(self):
-        """Crée l'onglet de sécurité"""
-        self.security_frame = ctk.CTkFrame(self.account_content_frame, fg_color="transparent")
-        
-        # Titre de l'onglet
-        ctk.CTkLabel(
-            self.security_frame,
-            text="Paramètres de sécurité",
-            font=ctk.CTkFont(size=18, weight="bold")
-        ).pack(pady=(0, 15))
-        
-        # Section de changement de mot de passe
-        pwd_section = ctk.CTkFrame(self.security_frame, fg_color="transparent")
-        pwd_section.pack(fill=ctk.X, pady=10)
-        
-        ctk.CTkLabel(
-            pwd_section,
-            text="Changer votre mot de passe",
-            font=ctk.CTkFont(size=16, weight="bold"),
-            anchor="w"
-        ).pack(fill=ctk.X, padx=5, pady=(0, 10))
-        
-        # Mot de passe actuel
-        current_frame = ctk.CTkFrame(pwd_section, fg_color="transparent")
-        current_frame.pack(fill=ctk.X, pady=5)
-        
-        ctk.CTkLabel(
-            current_frame,
-            text="Mot de passe actuel",
-            anchor="w"
-        ).pack(fill=ctk.X, padx=5, pady=(0, 5))
-        
-        self.current_password_var = ctk.StringVar()
-        self.current_password = ctk.CTkEntry(
-            current_frame,
-            textvariable=self.current_password_var,
-            placeholder_text="Votre mot de passe actuel",
-            show="•",
-            height=40,
-            border_width=1
-        )
-        self.current_password.pack(fill=ctk.X)
-        
-        # Nouveau mot de passe
-        new_frame = ctk.CTkFrame(pwd_section, fg_color="transparent")
-        new_frame.pack(fill=ctk.X, pady=5)
-        
-        ctk.CTkLabel(
-            new_frame,
-            text="Nouveau mot de passe",
-            anchor="w"
-        ).pack(fill=ctk.X, padx=5, pady=(0, 5))
-        
-        self.new_password_var = ctk.StringVar()
-        self.new_password = ctk.CTkEntry(
-            new_frame,
-            textvariable=self.new_password_var,
-            placeholder_text="Nouveau mot de passe",
-            show="•",
-            height=40,
-            border_width=1
-        )
-        self.new_password.pack(fill=ctk.X)
-        
-        # Confirmation du nouveau mot de passe
-        confirm_frame = ctk.CTkFrame(pwd_section, fg_color="transparent")
-        confirm_frame.pack(fill=ctk.X, pady=5)
-        
-        ctk.CTkLabel(
-            confirm_frame,
-            text="Confirmer le nouveau mot de passe",
-            anchor="w"
-        ).pack(fill=ctk.X, padx=5, pady=(0, 5))
-        
-        self.confirm_new_password_var = ctk.StringVar()
-        self.confirm_new_password = ctk.CTkEntry(
-            confirm_frame,
-            textvariable=self.confirm_new_password_var,
-            placeholder_text="Confirmer le nouveau mot de passe",
-            show="•",
-            height=40,
-            border_width=1
-        )
-        self.confirm_new_password.pack(fill=ctk.X)
-        
-        # Message de statut pour le changement de mot de passe
-        self.password_status_label = ctk.CTkLabel(
-            pwd_section,
-            text="",
-            text_color="red",
-            anchor="center",
-            font=ctk.CTkFont(size=12)
-        )
-        self.password_status_label.pack(fill=ctk.X, padx=5, pady=(5, 10))
-        
-        # Bouton pour changer le mot de passe
-        change_password_button = ctk.CTkButton(
-            pwd_section,
-            text="Changer mon mot de passe",
-            command=self._change_password,
-            height=40,
-            corner_radius=8,
-            fg_color=("#3498db", "#2980b9"),
-            hover_color=("#2980b9", "#1f618d")
-        )
-        change_password_button.pack(fill=ctk.X, pady=(0, 10))
-    
-    def _create_preferences_tab(self):
-        """Crée l'onglet des préférences"""
-        self.preferences_frame = ctk.CTkFrame(self.account_content_frame, fg_color="transparent")
-        
-        # Titre de l'onglet
-        ctk.CTkLabel(
-            self.preferences_frame,
-            text="Préférences",
-            font=ctk.CTkFont(size=18, weight="bold")
-        ).pack(pady=(0, 15))
-        
-        # Section thème
-        theme_section = ctk.CTkFrame(self.preferences_frame, fg_color="transparent")
-        theme_section.pack(fill=ctk.X, pady=10)
-        
-        ctk.CTkLabel(
-            theme_section,
-            text="Thème de l'application",
-            font=ctk.CTkFont(size=16, weight="bold"),
-            anchor="w"
-        ).pack(fill=ctk.X, padx=5, pady=(0, 10))
-        
-        # Options de thème
-        self.theme_var = ctk.StringVar(value="system")
-        
-        theme_options = ctk.CTkFrame(theme_section, fg_color="transparent")
-        theme_options.pack(fill=ctk.X, pady=5)
-        
-        light_radio = ctk.CTkRadioButton(
-            theme_options,
-            text="Clair",
-            variable=self.theme_var,
-            value="light",
-            command=self._change_theme
-        )
-        light_radio.pack(anchor="w", padx=20, pady=5)
-        
-        dark_radio = ctk.CTkRadioButton(
-            theme_options,
-            text="Sombre",
-            variable=self.theme_var,
-            value="dark",
-            command=self._change_theme
-        )
-        dark_radio.pack(anchor="w", padx=20, pady=5)
-        
-        system_radio = ctk.CTkRadioButton(
-            theme_options,
-            text="Système",
-            variable=self.theme_var,
-            value="system",
-            command=self._change_theme
-        )
-        system_radio.pack(anchor="w", padx=20, pady=5)
-        
-        # Section notifications
-        notif_section = ctk.CTkFrame(self.preferences_frame, fg_color="transparent")
-        notif_section.pack(fill=ctk.X, pady=10)
-        
-        ctk.CTkLabel(
-            notif_section,
-            text="Notifications",
-            font=ctk.CTkFont(size=16, weight="bold"),
-            anchor="w"
-        ).pack(fill=ctk.X, padx=5, pady=(0, 10))
-        
-        # Options de notifications
-        self.email_notif_var = ctk.BooleanVar(value=True)
-        email_checkbox = ctk.CTkCheckBox(
-            notif_section,
-            text="Recevoir des notifications par email",
-            variable=self.email_notif_var,
-            command=self._save_preferences,
-            border_width=2,
-            corner_radius=6,
-            hover_color=("#3498db", "#2980b9"),
-            fg_color=("#3498db", "#2980b9")
-        )
-        email_checkbox.pack(anchor="w", padx=20, pady=5)
-        
-        self.update_notif_var = ctk.BooleanVar(value=True)
-        update_checkbox = ctk.CTkCheckBox(
-            notif_section,
-            text="M'informer des mises à jour",
-            variable=self.update_notif_var,
-            command=self._save_preferences,
-            border_width=2,
-            corner_radius=6,
-            hover_color=("#3498db", "#2980b9"),
-            fg_color=("#3498db", "#2980b9")
-        )
-        update_checkbox.pack(anchor="w", padx=20, pady=5)
-        
-        # Message de statut pour les préférences
-        self.preferences_status_label = ctk.CTkLabel(
-            self.preferences_frame,
-            text="",
-            text_color="green",
-            anchor="center",
-            font=ctk.CTkFont(size=12)
-        )
-        self.preferences_status_label.pack(fill=ctk.X, padx=5, pady=(10, 0))
+        """Crée la vue du compte utilisateur"""
+        # Ne rien faire - la vue account est maintenant gérée ailleurs
+        logger.info("Vue du compte utilisateur désactivée dans AuthView")
+        pass
     
     def _handle_keyboard_nav(self, event):
         """
@@ -1291,52 +874,69 @@ class AuthView:
 
     def _show_tab(self, tab_name):
         """
-        Affiche l'onglet spécifié
+        Affiche un onglet spécifique
         
         Args:
-            tab_name: Nom de l'onglet à afficher ("login", "register", "account")
+            tab_name: Nom de l'onglet à afficher (login, register, account)
         """
         try:
-            # Vérifier que les onglets existent
-            if not hasattr(self, 'tabs') or not self.tabs:
-                logger.warning("Les onglets n'existent pas, recréation nécessaire")
-                # Si les onglets n'existent pas, tenter de les recréer
-                if hasattr(self, 'main_frame') and self.main_frame:
-                    self._create_tabs()
-                else:
-                    # Si le frame principal n'existe pas, recréer tous les widgets
-                    self._create_widgets()
+            logger.info(f"Demande d'affichage de l'onglet: {tab_name}")
             
-            # Vérifier que l'onglet demandé existe
-            valid_tabs = ["login", "register", "account"]
-            if tab_name not in valid_tabs:
-                logger.warning(f"Onglet demandé '{tab_name}' invalide, utilisation de 'login' par défaut")
-                tab_name = "login"
+            # Si l'onglet est "account", utiliser la vue AccountView directement
+            if tab_name == "account":
+                logger.info("Redirection vers la vue AccountView")
+                self.hide()  # Masquer cette vue
+                
+                # Rediriger vers la vue account via MainView si possible
+                try:
+                    from views.main_view import get_main_view_instance
+                    main_view = get_main_view_instance()
+                    if main_view and hasattr(main_view, 'show_account'):
+                        main_view.show_account()
+                        return
+                except Exception as e:
+                    logger.error(f"Erreur lors de la redirection vers AccountView: {e}")
+                
+                # Sinon essayer d'utiliser le bouton d'authentification du dashboard
+                try:
+                    # Rechercher le bouton d'authentification dans la hiérarchie des widgets
+                    root = self.window.winfo_toplevel()
+                    for widget in root.winfo_children():
+                        if hasattr(widget, "_show_user_account"):
+                            widget._show_user_account()
+                            return
+                except Exception as e:
+                    logger.error(f"Erreur lors de la recherche du bouton d'authentification: {e}")
+                
+                # Si ça échoue, afficher un message
+                self.hide()
+                self.window.after(100, lambda: CTkMessagebox(
+                    title="Accès au compte",
+                    message="Utilisez le bouton 'Mon compte' du tableau de bord pour accéder à votre compte.",
+                    icon="info"
+                ))
+                return
             
-            # Mettre à jour la variable de l'onglet courant
-            if hasattr(self, 'current_tab'):
-                self.current_tab.set(tab_name)
-                
-                # Afficher le contenu approprié
-                self._update_tab_content()
-                
-                logger.info(f"Onglet {tab_name} affiché")
-            else:
-                logger.error("Variable current_tab non disponible")
-                # Tenter de la recréer
-                self.current_tab = ctk.StringVar(value=tab_name)
-                self._update_tab_content()
+            # Pour les autres onglets, continuer normalement
+            # Mettre à jour la variable d'onglet actuel
+            self.current_tab.set(tab_name)
+            
+            # Mettre en évidence l'onglet actuel
+            if hasattr(self, 'login_tab'):
+                self.login_tab.configure(fg_color="transparent" if tab_name != "login" else ("gray85", "gray25"))
+            if hasattr(self, 'register_tab'):
+                self.register_tab.configure(fg_color="transparent" if tab_name != "register" else ("gray85", "gray25"))
+            if hasattr(self, 'account_tab'):
+                self.account_tab.configure(fg_color="transparent" if tab_name != "account" else ("gray85", "gray25"))
+            
+            # Mettre à jour l'affichage en fonction de l'onglet sélectionné
+            self._update_tab_content()
+            
+            logger.debug(f"Onglet {tab_name} affiché avec succès")
         except Exception as e:
             logger.error(f"Erreur lors de l'affichage de l'onglet {tab_name}: {e}")
-            # En cas d'erreur grave, tenter de recréer complètement l'interface
-            try:
-                self._create_widgets()
-                # Mettre à jour la variable et afficher l'onglet
-                self.current_tab.set(tab_name)
-                self._update_tab_content()
-                logger.info(f"Interface recréée et onglet {tab_name} affiché après erreur")
-            except Exception as e2:
-                logger.error(f"Échec critique lors de la recréation de l'interface: {e2}")
+            # Tenter une approche alternative en cas d'erreur
+            self._show_tab_alternative(tab_name)
     
     def _update_tab_content(self):
         """Met à jour le contenu affiché selon l'onglet sélectionné"""
@@ -1455,7 +1055,8 @@ class AuthView:
             # Mettre à jour la visibilité des onglets
             if is_logged_in:
                 # Afficher l'onglet Compte et masquer l'onglet Inscription
-                self.account_tab.grid()
+                if hasattr(self, 'account_tab') and self.account_tab:
+                    self.account_tab.grid()
                 
                 # Si on est sur l'onglet login ou register, basculer vers account
                 current_tab = self.current_tab.get()
@@ -1470,12 +1071,17 @@ class AuthView:
             
             # Mettre à jour les boutons de connexion/déconnexion
             if hasattr(self, 'login_button') and hasattr(self, 'logout_button'):
-                if is_logged_in:
-                    self.login_button.pack_forget()
-                    self.logout_button.pack(fill=ctk.X, pady=(10, 0))
-                else:
-                    self.logout_button.pack_forget()
-                    self.login_button.pack(fill=ctk.X, pady=(10, 0))
+                if self.login_button and self.logout_button:
+                    if is_logged_in:
+                        if self.login_button and self.login_button.winfo_exists():
+                            self.login_button.pack_forget()
+                        if self.logout_button and self.logout_button.winfo_exists():
+                            self.logout_button.pack(fill=ctk.X, pady=(10, 0))
+                    else:
+                        if self.logout_button and self.logout_button.winfo_exists():
+                            self.logout_button.pack_forget()
+                        if self.login_button and self.login_button.winfo_exists():
+                            self.login_button.pack(fill=ctk.X, pady=(10, 0))
         except Exception as e:
             logger.error(f"Erreur lors de la mise à jour de l'état d'authentification: {e}")
             
@@ -2098,3 +1704,242 @@ class AuthView:
         """
         self.auth_callback = callback
         logger.info("Callback d'authentification défini")
+
+    def _show_tab_alternative(self, tab_name):
+        """
+        Méthode alternative pour afficher un onglet lorsque l'approche principale échoue
+        
+        Args:
+            tab_name: Nom de l'onglet à afficher (login, register, account)
+        """
+        try:
+            # Mettre à jour la variable d'onglet actuel
+            self.current_tab.set(tab_name)
+            
+            # Si les frames d'onglets n'existent pas, essayer de les créer
+            try:
+                if tab_name == "login" and (not hasattr(self, 'login_frame') or not self.login_frame):
+                    self._create_login_tab()
+                elif tab_name == "register" and (not hasattr(self, 'register_frame') or not self.register_frame):
+                    self._create_register_tab()
+                elif tab_name == "account" and (not hasattr(self, 'account_frame') or not self.account_frame):
+                    self._create_account_tab()
+            except Exception as e:
+                logger.error(f"Erreur lors de la création de l'onglet {tab_name}: {e}")
+                # Continuer malgré l'erreur
+            
+            # Vérifier si les frames d'onglets existent maintenant
+            tab_frames = {
+                "login": getattr(self, 'login_frame', None),
+                "register": getattr(self, 'register_frame', None),
+                "account": getattr(self, 'account_frame', None)
+            }
+            
+            # Vider le content_frame si disponible
+            if hasattr(self, 'content_frame') and self.content_frame:
+                for widget in self.content_frame.winfo_children():
+                    try:
+                        widget.pack_forget()
+                    except Exception:
+                        pass
+            else:
+                # Si content_frame n'existe pas, recréer l'UI
+                self._create_widgets()
+                logger.info("Interface recréée car content_frame n'existe pas")
+                # Réessayer après la recréation
+                self._show_tab(tab_name)
+                return
+            
+            # Si l'onglet demandé existe maintenant, l'afficher
+            if tab_frames[tab_name]:
+                try:
+                    self.content_frame.update_idletasks()  # Force une mise à jour des widgets
+                    tab_frames[tab_name].pack(fill=ctk.BOTH, expand=True, pady=(15, 0))
+                    logger.info(f"Onglet {tab_name} affiché (méthode alternative)")
+                except Exception as e:
+                    logger.error(f"Erreur lors de l'affichage de l'onglet {tab_name}: {e}")
+                    # Continuer malgré l'erreur
+            
+            # Dans tous les cas, afficher un message simple si nécessaire
+            if not (tab_frames[tab_name] and tab_frames[tab_name].winfo_ismapped()):
+                try:
+                    # Créer un frame d'erreur simple
+                    error_frame = ctk.CTkFrame(self.content_frame)
+                    error_frame.pack(fill=ctk.BOTH, expand=True, pady=(15, 0))
+                    
+                    ctk.CTkLabel(
+                        error_frame,
+                        text=f"Bienvenue sur Vynal Docs Automator",
+                        font=ctk.CTkFont(size=18, weight="bold")
+                    ).pack(pady=(20, 10))
+                    
+                    if tab_name == "account":
+                        message = "Gestion de votre compte utilisateur"
+                    elif tab_name == "register":
+                        message = "Créez un compte pour commencer"
+                    else:
+                        message = "Connectez-vous pour continuer"
+                        
+                    ctk.CTkLabel(
+                        error_frame,
+                        text=message
+                    ).pack(pady=10)
+                    
+                    logger.info(f"Vue simplifiée affichée pour {tab_name}")
+                except Exception as e:
+                    logger.error(f"Erreur lors de l'affichage du message alternatif: {e}")
+        except Exception as e:
+            logger.error(f"Erreur lors de l'affichage alternatif de l'onglet {tab_name}: {e}")
+            # En dernier recours, essayer de recréer complètement l'interface
+            if hasattr(self, '_create_widgets'):
+                try:
+                    self._create_widgets()
+                    logger.info("Interface recréée après erreur d'affichage d'onglet")
+                except Exception as e2:
+                    logger.error(f"Échec critique lors de la recréation de l'interface: {e2}")
+
+    def _create_account_tab(self):
+        """Crée le contenu de l'onglet compte"""
+        try:
+            if not hasattr(self, 'content_frame') or not self.content_frame:
+                logger.error("content_frame n'existe pas, impossible de créer l'onglet compte")
+                return
+
+            # Créer le frame pour l'onglet compte s'il n'existe pas
+            if not hasattr(self, 'account_frame') or not self.account_frame:
+                self.account_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+            
+            # Options de style
+            title_font = ctk.CTkFont(size=18, weight="bold")
+            section_font = ctk.CTkFont(size=14, weight="bold")
+            
+            # Titre
+            title_frame = ctk.CTkFrame(self.account_frame, fg_color="transparent")
+            title_frame.pack(fill=ctk.X, pady=(0, 15))
+            
+            ctk.CTkLabel(
+                title_frame, 
+                text="Mon Compte", 
+                font=title_font
+            ).pack(anchor=ctk.W)
+            
+            # Informations utilisateur
+            if hasattr(self, 'current_user') and self.current_user:
+                # Frame d'informations
+                info_frame = ctk.CTkFrame(self.account_frame)
+                info_frame.pack(fill=ctk.X, pady=10)
+                
+                # Email et nom
+                user_details = ctk.CTkFrame(info_frame, fg_color="transparent")
+                user_details.pack(fill=ctk.X, padx=15, pady=15)
+                
+                ctk.CTkLabel(
+                    user_details,
+                    text="Informations personnelles",
+                    font=section_font
+                ).pack(anchor=ctk.W, pady=(0, 10))
+                
+                # Email
+                email_frame = ctk.CTkFrame(user_details, fg_color="transparent")
+                email_frame.pack(fill=ctk.X, pady=5)
+                
+                ctk.CTkLabel(
+                    email_frame,
+                    text="Email:",
+                    width=100,
+                    anchor="w"
+                ).pack(side=ctk.LEFT)
+                
+                ctk.CTkLabel(
+                    email_frame,
+                    text=self.current_user.get('email', 'Non défini'),
+                    anchor="w"
+                ).pack(side=ctk.LEFT, fill=ctk.X, expand=True)
+                
+                # Nom (si disponible)
+                if 'name' in self.current_user:
+                    name_frame = ctk.CTkFrame(user_details, fg_color="transparent")
+                    name_frame.pack(fill=ctk.X, pady=5)
+                    
+                    ctk.CTkLabel(
+                        name_frame,
+                        text="Nom:",
+                        width=100,
+                        anchor="w"
+                    ).pack(side=ctk.LEFT)
+                    
+                    ctk.CTkLabel(
+                        name_frame,
+                        text=self.current_user.get('name', 'Non défini'),
+                        anchor="w"
+                    ).pack(side=ctk.LEFT, fill=ctk.X, expand=True)
+                
+                # Licence (si disponible)
+                if 'license_valid' in self.current_user:
+                    is_valid = self.current_user.get('license_valid', False)
+                    
+                    license_frame = ctk.CTkFrame(self.account_frame)
+                    license_frame.pack(fill=ctk.X, pady=10)
+                    
+                    license_title = ctk.CTkFrame(license_frame, fg_color="transparent")
+                    license_title.pack(fill=ctk.X, padx=15, pady=(15, 10))
+                    
+                    ctk.CTkLabel(
+                        license_title,
+                        text="Licence",
+                        font=section_font
+                    ).pack(anchor=ctk.W)
+                    
+                    status_frame = ctk.CTkFrame(license_frame, fg_color="transparent")
+                    status_frame.pack(fill=ctk.X, padx=15, pady=5)
+                    
+                    status_text = "Active" if is_valid else "Inactive"
+                    status_color = "#4CAF50" if is_valid else "#F44336"
+                    
+                    ctk.CTkLabel(
+                        status_frame,
+                        text="Statut:",
+                        width=100,
+                        anchor="w"
+                    ).pack(side=ctk.LEFT)
+                    
+                    ctk.CTkLabel(
+                        status_frame,
+                        text=status_text,
+                        text_color=status_color,
+                        anchor="w"
+                    ).pack(side=ctk.LEFT, fill=ctk.X, expand=True)
+            else:
+                # Message si aucun utilisateur n'est connecté
+                ctk.CTkLabel(
+                    self.account_frame,
+                    text="Aucun utilisateur connecté",
+                    font=section_font
+                ).pack(pady=20)
+            
+            # Boutons d'action
+            buttons_frame = ctk.CTkFrame(self.account_frame, fg_color="transparent")
+            buttons_frame.pack(fill=ctk.X, pady=(20, 10))
+            
+            # Bouton de déconnexion
+            logout_button = ctk.CTkButton(
+                buttons_frame,
+                text="Déconnexion",
+                command=self._handle_logout,
+                fg_color="#E74C3C",
+                hover_color="#C0392B"
+            )
+            logout_button.pack(pady=5)
+            
+            # Bouton pour fermer la fenêtre
+            close_button = ctk.CTkButton(
+                buttons_frame,
+                text="Fermer",
+                command=self.hide
+            )
+            close_button.pack(pady=5)
+            
+            logger.info("Onglet compte créé avec succès")
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la création de l'onglet compte: {e}")

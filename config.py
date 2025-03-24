@@ -76,6 +76,9 @@ APP_VERSION = "1.0.0"
 # Nom de l'entreprise
 COMPANY_NAME = "Vynal Agency LTD"
 
+# Intervalle de vérification des mises à jour de configuration (en secondes)
+CONFIG_CHECK_INTERVAL = 60
+
 # Configuration par défaut
 DEFAULT_CONFIG = {
     "app": {

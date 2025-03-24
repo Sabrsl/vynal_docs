@@ -12,6 +12,7 @@ import hashlib
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 import time
+from utils.security import SecureFileManager
 
 # Configuration du logger
 logger = logging.getLogger("VynalDocsAutomator.UsageTracker")
@@ -23,6 +24,9 @@ class UsageTracker:
         """Initialise le gestionnaire de suivi"""
         self.data_dir = os.path.join("data")
         os.makedirs(self.data_dir, exist_ok=True)
+        
+        # Initialiser le gestionnaire de fichiers sécurisés
+        self.secure_files = SecureFileManager(self.data_dir)
         
         self.usage_file = os.path.join(self.data_dir, "usage_count.json")
         self.usage_count = self._load_usage_count()
@@ -45,25 +49,15 @@ class UsageTracker:
         
         # Charger l'utilisateur actif au démarrage
         self._load_current_user()
+        
+        # Sécuriser tous les fichiers existants
+        self.secure_files.secure_all_files()
     
     def _load_usage_count(self) -> int:
         """Charge le compteur d'utilisation"""
         try:
-            if os.path.exists(self.usage_file):
-                with open(self.usage_file, 'r', encoding='utf-8') as f:
-                    content = f.read().strip()
-                    if not content:  # Si le fichier est vide
-                        return 0
-                    data = json.loads(content)
-                    if isinstance(data, dict):
-                        return data.get("count", 0)
-                    return 0
-            return 0
-        except json.JSONDecodeError as e:
-            logger.error(f"Erreur de format JSON dans le compteur: {e}")
-            # Réinitialiser le fichier avec un format valide
-            self._save_usage_count()
-            return 0
+            data = self.secure_files.read_secure_file("usage_count.json")
+            return data.get("count", 0)
         except Exception as e:
             logger.error(f"Erreur lors du chargement du compteur: {e}")
             return 0
@@ -71,8 +65,7 @@ class UsageTracker:
     def _save_usage_count(self):
         """Sauvegarde le compteur d'utilisation"""
         try:
-            with open(self.usage_file, 'w', encoding='utf-8') as f:
-                json.dump({"count": self.usage_count}, f, indent=4)
+            self.secure_files.write_secure_file("usage_count.json", {"count": self.usage_count})
         except Exception as e:
             logger.error(f"Erreur lors de la sauvegarde du compteur: {e}")
     
@@ -196,61 +189,15 @@ class UsageTracker:
         """
         try:
             # Vérifier s'il y a un utilisateur actif
-            current_user_file = os.path.join(self.data_dir, "current_user.json")
-            if os.path.exists(current_user_file):
-                try:
-                    with open(current_user_file, 'r', encoding='utf-8', errors='ignore') as f:
-                        content = f.read().strip()
-                        if not content:
-                            # Fichier vide, créer un fichier valide
-                            with open(current_user_file, 'w', encoding='utf-8') as fw:
-                                json.dump({"email": "", "last_login": ""}, fw)
-                            return {}
-                        
-                        try:
-                            current_user = json.loads(content)
-                            if current_user.get("email"):
-                                # Récupérer les données complètes de cet utilisateur
-                                users_file = os.path.join(self.data_dir, "users.json")
-                                if os.path.exists(users_file):
-                                    try:
-                                        with open(users_file, 'r', encoding='utf-8', errors='ignore') as f2:
-                                            users = json.load(f2)
-                                            if current_user.get("email") in users:
-                                                user_data = users[current_user.get("email")]
-                                                # Ajouter l'email dans les données utilisateur
-                                                user_data["email"] = current_user.get("email")
-                                                return user_data
-                                    except Exception as e:
-                                        logger.error(f"Erreur lors de la lecture des utilisateurs: {e}")
-                        except json.JSONDecodeError as e:
-                            logger.error(f"Format JSON invalide dans current_user.json: {e}")
-                            # Réinitialiser le fichier avec un JSON valide
-                            with open(current_user_file, 'w', encoding='utf-8') as fw:
-                                json.dump({"email": "", "last_login": ""}, fw)
-                except Exception as e:
-                    logger.error(f"Erreur lors de la lecture de l'utilisateur actif: {e}")
+            current_user = self.secure_files.read_secure_file("current_user.json")
+            if current_user and current_user.get("email"):
+                # Récupérer les données complètes de cet utilisateur
+                users = self.secure_files.read_secure_file("users.json")
+                if users and current_user.get("email") in users:
+                    user_data = users[current_user.get("email")]
+                    user_data["email"] = current_user.get("email")
+                    return user_data
             
-            # Si aucun utilisateur actif, prendre le premier utilisateur disponible
-            users_file = os.path.join(self.data_dir, "users.json")
-            if os.path.exists(users_file):
-                try:
-                    with open(users_file, 'r', encoding='utf-8', errors='ignore') as f:
-                        users = json.load(f)
-                        if users:
-                            first_email = next(iter(users))
-                            user_data = users[first_email]
-                            # Ajouter l'email dans les données utilisateur
-                            user_data["email"] = first_email
-                            
-                            # Enregistrer cet utilisateur comme utilisateur actif
-                            self.set_current_user(user_data)
-                            
-                            return user_data
-                except Exception as e:
-                    logger.error(f"Erreur lors de la lecture des utilisateurs: {e}")
-            
-            # Aucun utilisateur trouvé
             return {}
         except Exception as e:
             logger.error(f"Erreur lors de la récupération des données utilisateur: {e}")
@@ -262,44 +209,22 @@ class UsageTracker:
         
         Args:
             user_data: Données de l'utilisateur
-        
+            
         Returns:
-            bool: True si l'opération a réussi, False sinon
+            bool: True si l'opération a réussi
         """
         try:
-            current_user_file = os.path.join(self.data_dir, "current_user.json")
+            if not user_data.get("email"):
+                logger.error("Email manquant dans les données utilisateur")
+                return False
             
-            # Créer un dictionnaire avec juste les informations nécessaires
+            # Sauvegarder l'utilisateur actif
             current_user = {
-                "email": user_data.get("email"),
+                "email": user_data["email"],
                 "last_login": datetime.now().isoformat()
             }
             
-            # Écrire dans un fichier temporaire d'abord
-            temp_file = f"{current_user_file}.tmp"
-            try:
-                with open(temp_file, 'w', encoding='utf-8') as f:
-                    json.dump(current_user, f, indent=4)
-                
-                # Remplacer le fichier original par le temporaire
-                if os.path.exists(current_user_file):
-                    os.replace(temp_file, current_user_file)
-                else:
-                    os.rename(temp_file, current_user_file)
-                
-                logger.info(f"Utilisateur actif défini: {user_data.get('email')}")
-                return True
-            except Exception as e:
-                logger.error(f"Erreur lors de l'écriture du fichier utilisateur: {e}")
-                # Essayer avec une méthode alternative en cas d'échec
-                try:
-                    with open(current_user_file, 'w', encoding='utf-8') as f:
-                        json.dump(current_user, f, indent=4)
-                    logger.info(f"Utilisateur actif défini (méthode alternative): {user_data.get('email')}")
-                    return True
-                except Exception as e2:
-                    logger.error(f"Échec de la méthode alternative: {e2}")
-                    return False
+            return self.secure_files.write_secure_file("current_user.json", current_user)
         except Exception as e:
             logger.error(f"Erreur lors de la définition de l'utilisateur actif: {e}")
             return False
@@ -328,7 +253,7 @@ class UsageTracker:
         
         Args:
             email: Email de l'utilisateur
-            password: Mot de passe hashé de l'utilisateur
+            password: Mot de passe de l'utilisateur
             
         Returns:
             Dict: Données de l'utilisateur si l'authentification réussit, sinon un dictionnaire vide
@@ -357,94 +282,49 @@ class UsageTracker:
             user_data = users[email]
             stored_password = user_data.get("password", "")
             
-            # Hasher le mot de passe fourni si ce n'est pas déjà un hash
-            if len(password) != 64:  # SHA-256 produit 64 caractères hexadécimaux
-                hashed_password = hashlib.sha256(password.encode()).hexdigest()
-            else:
-                hashed_password = password
-                
-            if stored_password != hashed_password:
+            # Convertir le mot de passe stocké en bytes
+            stored_password_bytes = stored_password.encode()
+            
+            # Vérifier le mot de passe avec bcrypt
+            from utils.security import verify_password
+            if not verify_password(password, stored_password_bytes):
                 logger.warning(f"Mot de passe incorrect pour {email}")
                 return {}
                 
             # Authentification réussie
             logger.info(f"Authentification réussie pour {email}")
-            
-            # Ajouter l'email aux données utilisateur
-            user_data["email"] = email
-            
-            # Mettre à jour la dernière connexion
-            user_data["last_login"] = datetime.now().isoformat()
-            users[email]["last_login"] = user_data["last_login"]
-            
-            # Sauvegarder la mise à jour
-            with open(users_file, 'w', encoding='utf-8') as f:
-                json.dump(users, f, indent=4)
-            
-            # Enregistrer l'utilisateur comme utilisateur actif
-            self.set_current_user(user_data)
-            
             return user_data
+                
         except Exception as e:
             logger.error(f"Erreur lors de l'authentification: {e}")
             return {}
 
     def save_user_data(self, user_data: Dict[str, Any]) -> bool:
         """
-        Enregistre les données de l'utilisateur actuellement connecté
-        Cette fonction est un alias de set_current_user pour assurer la compatibilité
+        Enregistre les données de l'utilisateur
         
         Args:
             user_data: Données de l'utilisateur à enregistrer
             
         Returns:
-            bool: True si l'opération a réussi, False sinon
+            bool: True si l'opération a réussi
         """
         try:
-            # S'assurer que les données contiennent un email
-            if 'email' not in user_data or not user_data['email']:
-                logger.error("Tentative de sauvegarde de données utilisateur sans email")
+            if not user_data.get("email"):
+                logger.error("Email manquant dans les données utilisateur")
                 return False
-                
-            # Garantir que toutes les données importantes sont enregistrées
-            # en les ajoutant explicitement aux données du set_current_user
-            email = user_data['email']
             
-            # Créer la structure de données à sauvegarder
-            users_file = os.path.join(self.data_dir, "users.json")
-            if os.path.exists(users_file):
-                try:
-                    with open(users_file, 'r', encoding='utf-8', errors='ignore') as f:
-                        users = json.load(f)
-                        
-                        # Si l'utilisateur existe, mettre à jour ses données
-                        if email in users:
-                            for key, value in user_data.items():
-                                if key != 'email':  # Ne pas enregistrer l'email dans les données
-                                    users[email][key] = value
-                        else:
-                            # Créer un nouvel utilisateur
-                            users[email] = {k: v for k, v in user_data.items() if k != 'email'}
-                        
-                        # Sauvegarder les modifications
-                        with open(users_file, 'w', encoding='utf-8') as fw:
-                            json.dump(users, fw, indent=4)
-                except Exception as e:
-                    logger.error(f"Erreur lors de la mise à jour des données utilisateur: {e}")
-                    return False
-            else:
-                # Créer un nouveau fichier utilisateurs
-                try:
-                    with open(users_file, 'w', encoding='utf-8') as f:
-                        users = {email: {k: v for k, v in user_data.items() if k != 'email'}}
-                        json.dump(users, f, indent=4)
-                except Exception as e:
-                    logger.error(f"Erreur lors de la création du fichier utilisateurs: {e}")
-                    return False
+            email = user_data["email"]
+            users = self.secure_files.read_secure_file("users.json") or {}
             
-            # Utiliser set_current_user pour définir l'utilisateur courant
-            return self.set_current_user(user_data)
-                
+            # Mettre à jour les données utilisateur
+            users[email] = {k: v for k, v in user_data.items() if k != "email"}
+            
+            # Sauvegarder les modifications
+            if self.secure_files.write_secure_file("users.json", users):
+                logger.info(f"Données utilisateur sauvegardées pour {email}")
+                return True
+            return False
         except Exception as e:
             logger.error(f"Erreur lors de la sauvegarde des données utilisateur: {e}")
             return False
@@ -562,12 +442,21 @@ class UsageTracker:
                 logger.warning(f"L'utilisateur {email} existe déjà")
                 return False
                 
-            # Hasher le mot de passe
-            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+            # Valider le mot de passe
+            from utils.security import validate_password
+            is_valid, message = validate_password(password)
+            if not is_valid:
+                logger.error(f"Mot de passe invalide: {message}")
+                return False
+                
+            # Hacher le mot de passe avec bcrypt
+            from utils.security import hash_password
+            hashed_password, salt = hash_password(password)
             
             # Préparer les données utilisateur
             full_user_data = {
-                "password": hashed_password,
+                "password": hashed_password.decode(),  # Convertir bytes en str pour JSON
+                "salt": salt.decode(),  # Convertir bytes en str pour JSON
                 "created_at": datetime.now().isoformat(),
                 "last_login": datetime.now().isoformat()
             }
@@ -593,11 +482,15 @@ class UsageTracker:
             users[email] = full_user_data
             
             # Sauvegarder les modifications
-            with open(users_file, 'w', encoding='utf-8') as f:
-                json.dump(users, f, indent=4)
+            try:
+                with open(users_file, 'w', encoding='utf-8') as f:
+                    json.dump(users, f, indent=4, ensure_ascii=False)
+                logger.info(f"Utilisateur {email} enregistré avec succès")
+                return True
+            except Exception as e:
+                logger.error(f"Erreur lors de la sauvegarde de l'utilisateur: {e}")
+                return False
                 
-            logger.info(f"Utilisateur {email} enregistré avec succès")
-            return True
         except Exception as e:
             logger.error(f"Erreur lors de l'enregistrement de l'utilisateur: {e}")
             return False
@@ -1046,4 +939,64 @@ class UsageTracker:
             return ""
         except Exception as e:
             logger.error(f"Erreur lors de la récupération du dernier email: {e}")
-            return "" 
+            return ""
+
+    def set_active_user(self, email: str, user_data: Dict[str, Any]) -> bool:
+        """
+        Définit l'utilisateur actif et ses données
+        
+        Args:
+            email: Email de l'utilisateur
+            user_data: Données de l'utilisateur
+            
+        Returns:
+            bool: True si l'opération a réussi, False sinon
+        """
+        try:
+            if not email:
+                logger.error("Email manquant pour définir l'utilisateur actif")
+                return False
+            
+            # Mettre à jour les données utilisateur
+            users_file = os.path.join(self.data_dir, "users.json")
+            if os.path.exists(users_file):
+                with open(users_file, 'r', encoding='utf-8') as f:
+                    users = json.load(f)
+                    
+                # Mettre à jour ou créer l'utilisateur
+                if email not in users:
+                    users[email] = {}
+                
+                # Mettre à jour les données
+                for key, value in user_data.items():
+                    if key != 'email':  # Ne pas stocker l'email dans les données
+                        users[email][key] = value
+                
+                # Sauvegarder les modifications
+                with open(users_file, 'w', encoding='utf-8') as f:
+                    json.dump(users, f, indent=4)
+            else:
+                # Créer le fichier s'il n'existe pas
+                users = {email: {k: v for k, v in user_data.items() if k != 'email'}}
+                with open(users_file, 'w', encoding='utf-8') as f:
+                    json.dump(users, f, indent=4)
+            
+            # Définir l'utilisateur comme actif
+            self.current_user = email
+            self.session_start_time = time.time()
+            
+            # Sauvegarder dans current_user.json
+            current_user_file = os.path.join(self.data_dir, "current_user.json")
+            current_user_data = {
+                "email": email,
+                "last_login": datetime.now().isoformat()
+            }
+            with open(current_user_file, 'w', encoding='utf-8') as f:
+                json.dump(current_user_data, f, indent=4)
+            
+            logger.info(f"Utilisateur actif défini: {email}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la définition de l'utilisateur actif: {e}")
+            return False 

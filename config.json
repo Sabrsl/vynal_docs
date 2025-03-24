@@ -23,12 +23,18 @@
         "save_interval": 5
     },
     "security": {
-        "hash_algorithm": "sha256",
-        "hash_iterations": 100000,
-        "min_password_length": 6,
+        "hash_algorithm": "bcrypt",
+        "hash_iterations": 12,
+        "min_password_length": 8,
+        "password_requires_mixed_case": true,
+        "password_requires_digit": true,
+        "password_requires_special": true,
+        "special_chars": "!@#$%^&*(),.?\":{}|<>",
         "session_expiry_hours": 24,
         "encryption_enabled": true,
-        "store_credentials_locally": true
+        "store_credentials_locally": true,
+        "csrf_protection": true,
+        "csrf_token_expiry_hours": 1
     },
     "authentication": {
         "enabled": true,

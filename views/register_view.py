@@ -8,11 +8,11 @@ Vue d'inscription simplifiée pour l'application Vynal Docs Automator
 import os
 import json
 import logging
-import hashlib
 import customtkinter as ctk
 import re
 from typing import Callable, Dict, Any, Optional
 from utils.usage_tracker import UsageTracker
+from utils.security import hash_password, validate_password, CSRFProtection
 from datetime import datetime
 import tkinter as tk
 import time
@@ -39,6 +39,10 @@ class RegisterView(ctk.CTkFrame):
         self.parent = parent
         self.usage_tracker = usage_tracker or UsageTracker()
         self.on_success_callback = on_success
+        
+        # Protection CSRF
+        self.csrf = CSRFProtection()
+        self.csrf_token = self.csrf.generate_token("register_form")
         
         # Variables de saisie
         self.name_var = ctk.StringVar()
@@ -266,14 +270,12 @@ class RegisterView(ctk.CTkFrame):
                 self.password_status.configure(text="")
                 return
             
-            # Vérifier la longueur du mot de passe
-            is_valid = len(password) >= self.PASSWORD_MIN_LENGTH
+            # Valider le mot de passe avec les nouvelles règles
+            is_valid, message = validate_password(password)
             self.password_valid = is_valid
             
             # Mettre à jour le message d'erreur
-            self.password_status.configure(
-                text="" if is_valid else f"Le mot de passe doit contenir au moins {self.PASSWORD_MIN_LENGTH} caractères"
-            )
+            self.password_status.configure(text="" if is_valid else message)
             
             # Valider également la confirmation
             self._validate_confirm_password()
@@ -308,7 +310,7 @@ class RegisterView(ctk.CTkFrame):
         try:
             # Récupérer les valeurs des champs
             name = self.name_var.get().strip()
-            email = self.email_var.get().strip()
+            email = self.email_var.get().strip().lower()  # Normalisation de l'email
             password = self.password_var.get()
             confirm_password = self.confirm_password_var.get()
             
@@ -316,6 +318,24 @@ class RegisterView(ctk.CTkFrame):
             if not all([name, email, password, confirm_password]):
                 self.status_label.configure(text="Tous les champs sont obligatoires", text_color="red")
                 return
+            
+            # Vérifier que l'email n'est pas déjà utilisé
+            existing_users = {}
+            users_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'users.json')
+            os.makedirs(os.path.dirname(users_file), exist_ok=True)
+            
+            if os.path.exists(users_file):
+                try:
+                    with open(users_file, 'r', encoding='utf-8') as f:
+                        existing_users = json.load(f)
+                        # Vérifier avec les emails normalisés
+                        if email in {k.lower() for k in existing_users.keys()}:
+                            self.status_label.configure(text="Cette adresse email est déjà utilisée", text_color="red")
+                            return
+                except Exception as e:
+                    logger.error(f"Erreur lors de la lecture du fichier utilisateurs: {e}")
+                    self.status_label.configure(text="Erreur lors de l'inscription, veuillez réessayer", text_color="red")
+                    return
             
             # Vérifier que les mots de passe correspondent
             if password != confirm_password:
@@ -327,40 +347,21 @@ class RegisterView(ctk.CTkFrame):
                 self.status_label.configure(text="Adresse email invalide", text_color="red")
                 return
             
-            # Valider le mot de passe
-            if not self.password_valid:
-                self.status_label.configure(
-                    text=f"Le mot de passe doit contenir au moins {self.PASSWORD_MIN_LENGTH} caractères",
-                    text_color="red"
-                )
+            # Valider le mot de passe avec les nouvelles règles
+            is_valid, message = validate_password(password)
+            if not is_valid:
+                self.status_label.configure(text=message, text_color="red")
                 return
             
-            # Vérifier que l'email n'est pas déjà utilisé
-            existing_users = {}
-            users_file = os.path.join('data', 'users.json')
-            os.makedirs(os.path.dirname(users_file), exist_ok=True)
-            
-            if os.path.exists(users_file):
-                try:
-                    with open(users_file, 'r', encoding='utf-8') as f:
-                        existing_users = json.load(f)
-                except Exception as e:
-                    logger.error(f"Erreur lors de la lecture du fichier utilisateurs: {e}")
-                    self.status_label.configure(text="Erreur lors de l'inscription, veuillez réessayer", text_color="red")
-                    return
-            
-            if email in existing_users:
-                self.status_label.configure(text="Cette adresse email est déjà utilisée", text_color="red")
-                return
-            
-            # Hacher le mot de passe
-            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+            # Hacher le mot de passe avec bcrypt
+            hashed_password, salt = hash_password(password)
             
             # Créer l'utilisateur
             user_data = {
                 'name': name,
                 'email': email,
-                'password': hashed_password,
+                'password': hashed_password.decode(),  # Convertir bytes en str pour JSON
+                'salt': salt.decode(),  # Convertir bytes en str pour JSON
                 'created_at': time.time(),
                 'last_login': datetime.now().isoformat(),
                 'theme': 'dark',
@@ -372,7 +373,7 @@ class RegisterView(ctk.CTkFrame):
                 'marketing_accepted': self.marketing_var.get()
             }
             
-            # Sauvegarder l'utilisateur sans l'email comme clé pour éviter les problèmes d'encodage
+            # Sauvegarder l'utilisateur
             try:
                 # Faire une sauvegarde du fichier existant si nécessaire
                 if os.path.exists(users_file):
@@ -399,80 +400,22 @@ class RegisterView(ctk.CTkFrame):
                     return
                 
                 # Mettre à jour l'état d'authentification
-                self.usage_tracker.set_active_user(email, user_data)
-                self.usage_tracker.save_session()
-                
-                # Configuration temporaire pour le message de succès
-                self.status_label.configure(
-                    text="Inscription réussie ! Redirection...",
-                    text_color="green"
-                )
-                
-                # Créer un écran de chargement avec un spinner
-                try:
-                    loading_frame = ctk.CTkFrame(self)
-                    loading_frame.pack(fill=ctk.BOTH, expand=True)
+                if self.usage_tracker.register_user(email, password, user_data):
+                    # Définir l'utilisateur comme actif
+                    self.usage_tracker.set_active_user(email, user_data)
                     
-                    spinner_content = ctk.CTkFrame(loading_frame, fg_color="transparent")
-                    spinner_content.place(relx=0.5, rely=0.5, anchor=ctk.CENTER)
+                    # Sauvegarder les données utilisateur
+                    user_data["email"] = email
+                    self.usage_tracker.save_user_data(user_data)
                     
-                    ctk.CTkLabel(
-                        spinner_content,
-                        text="Préparation du tableau de bord",
-                        font=ctk.CTkFont(size=16, weight="bold")
-                    ).pack(pady=(0, 20))
+                    logger.info(f"Utilisateur {email} enregistré avec succès")
+                    self.status_label.configure(text="Inscription réussie !", text_color="green")
                     
-                    progress_bar = ctk.CTkProgressBar(spinner_content, width=300)
-                    progress_bar.pack(pady=10)
-                    progress_bar.configure(mode="indeterminate")
-                    progress_bar.start()
-                    
-                    # Forcer la mise à jour pour afficher le spinner
-                    self.master.update()
-                    
-                    # Fonction pour finaliser l'inscription
-                    def on_complete():
-                        try:
-                            # Sauvegarder le callback et les données pour l'utiliser après fermeture de la fenêtre
-                            callback = self.on_success_callback
-                            data = user_data
-                            
-                            logger.info(f"Finalisation de l'inscription pour: {email}")
-                            
-                            # Fermer la fenêtre d'inscription
-                            if self.master and self.master.winfo_exists():
-                                window_reference = self.master
-                                
-                                # Utiliser after_idle pour assurer que le callback est appelé après la destruction
-                                window_reference.after_idle(lambda: self._invoke_callback(callback, data))
-                                
-                                # Détruire la fenêtre
-                                window_reference.destroy()
-                            else:
-                                logger.warning("La fenêtre d'inscription n'existe plus")
-                                # Appeler le callback directement si la fenêtre n'existe plus
-                                if callback:
-                                    callback(data)
-                        except Exception as e:
-                            logger.error(f"Erreur lors de la finalisation de l'inscription: {e}", exc_info=True)
-                            # Essayer de fermer la fenêtre même en cas d'erreur
-                            try:
-                                if self.master and self.master.winfo_exists():
-                                    self.master.destroy()
-                            except Exception:
-                                pass
-                    
-                    # Appeler on_complete après un court délai pour permettre au spinner d'être visible
-                    self.master.after(500, on_complete)
-                    
-                except Exception as e:
-                    logger.error(f"Erreur lors de la création du spinner: {e}", exc_info=True)
-                    # Appeler directement le callback en cas d'erreur
-                    if self.on_success_callback:
-                        self.on_success_callback(user_data)
-                    # Fermer la fenêtre même en cas d'erreur
-                    if self.master and self.master.winfo_exists():
-                        self.master.destroy()
+                    # Rediriger vers la vue principale après un court délai
+                    self.after(1500, self._handle_success)
+                else:
+                    logger.error(f"Erreur lors de l'inscription de l'utilisateur {email}")
+                    self.status_label.configure(text="Erreur lors de l'inscription, veuillez réessayer", text_color="red")
                 
             except Exception as e:
                 logger.error(f"Erreur lors de l'inscription: {e}", exc_info=True)
@@ -482,16 +425,15 @@ class RegisterView(ctk.CTkFrame):
             logger.error(f"Erreur inattendue lors de l'inscription: {e}", exc_info=True)
             self.status_label.configure(text="Une erreur inattendue est survenue", text_color="red")
     
-    def _invoke_callback(self, callback, data):
-        """Appelle le callback avec les données utilisateur de manière sécurisée"""
+    def _handle_success(self):
+        """Gère la redirection après une inscription réussie"""
         try:
-            if callback:
-                logger.info("Exécution du callback de succès d'inscription")
-                callback(data)
-            else:
-                logger.warning("Aucun callback de succès fourni pour l'inscription")
+            # Appeler le callback de succès
+            if self.on_success_callback:
+                self.on_success_callback(self.usage_tracker.get_active_user())
+            logger.info("Redirection vers la vue principale après inscription réussie")
         except Exception as e:
-            logger.error(f"Erreur lors de l'exécution du callback d'inscription: {e}", exc_info=True)
+            logger.error(f"Erreur lors de la redirection après inscription réussie: {e}")
     
     def _handle_back(self):
         """Ferme la vue d'inscription et ouvre la vue de connexion"""

@@ -1,0 +1,45 @@
+{
+  "update": {
+    "latest_version": "1.0.0",
+    "download_url": "https://example.com/update/patch-1.0.0.zip",
+    "checksum": "",
+    "changelog": "Version initiale"
+  },
+  "licences": {
+    "admin@example.com": {
+      "status": "active",
+      "expires": "2026-03-24"
+    }
+  },
+  "global_message": {
+    "title": "Bienvenue",
+    "body": "Bienvenue dans Vynal Docs Automator !",
+    "type": "info",
+    "visible": false
+  },
+  "features": {
+    "docsGPT_enabled": true,
+    "analyse_automatique": true,
+    "mode_test": false
+  },
+  "settings": {
+    "licence_check_grace_days": 7,
+    "max_offline_days": 14,
+    "auto_update": true
+  },
+  "support": {
+    "email": "support@example.com",
+    "url": "https://example.com/support"
+  },
+  "changelog_full": [
+    {
+      "version": "1.0.0",
+      "date": "2025-03-24",
+      "notes": "Version initiale"
+    }
+  ],
+  "security": {
+    "signature_required": false,
+    "public_key": ""
+  }
+}

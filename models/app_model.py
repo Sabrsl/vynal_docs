@@ -17,6 +17,7 @@ from utils.cache_manager import CacheManager
 import time
 import threading
 import glob
+from utils.free_version_manager import FreeVersionManager
 
 logger = logging.getLogger("VynalDocsAutomator.AppModel")
 
@@ -52,6 +53,9 @@ class AppModel:
         # Modèle de licences
         self._license_model = None
         self.current_user = None
+        
+        # Gestionnaire de la version gratuite
+        self.free_version_manager = FreeVersionManager()
         
         # Initialisation des dossiers de modèles
         self.template_folders = {
@@ -154,10 +158,46 @@ class AppModel:
             # Charger les données secondaires en arrière-plan
             threading.Thread(target=self._load_secondary_data, daemon=True).start()
             
+            # Initialiser le modèle de licences
+            self._initialize_license_model()
+            
+            # Mettre à jour les compteurs de la version gratuite
+            self._update_free_version_counters()
+            
             logger.info("Données essentielles chargées")
         except Exception as e:
             logger.error(f"Erreur lors du chargement des données: {e}")
             logger.info("Utilisation de données par défaut")
+    
+    def _update_free_version_counters(self) -> None:
+        """
+        Met à jour les compteurs de la version gratuite avec les données réelles
+        """
+        if not hasattr(self, 'free_version_manager') or not self.free_version_manager:
+            logger.warning("Gestionnaire de version gratuite non disponible")
+            return
+            
+        try:
+            # Réinitialiser les compteurs
+            self.free_version_manager.reset_counters()
+            
+            # Mettre à jour avec les valeurs réelles
+            doc_count = len(self.documents)
+            user_count = len(self.clients)
+            template_count = len(self.templates)
+            
+            # Définir les compteurs directement (sans les contraintes de limites)
+            self.free_version_manager.counters["documents"] = doc_count
+            self.free_version_manager.counters["users"] = user_count
+            self.free_version_manager.counters["templates"] = template_count
+            
+            # Persister les valeurs
+            self.free_version_manager._persist_counters()
+            
+            logger.info(f"Compteurs de version gratuite mis à jour: "
+                       f"documents={doc_count}, clients={user_count}, modèles={template_count}")
+        except Exception as e:
+            logger.error(f"Erreur lors de la mise à jour des compteurs de version gratuite: {e}")
     
     def _load_secondary_data(self) -> None:
         """
@@ -415,53 +455,70 @@ class AppModel:
         Ajoute un nouveau client
         
         Args:
-            client_data: Dictionnaire avec les données du client
-        
+            client_data: Données du client
+            
         Returns:
-            str: ID du client ajouté ou None en cas d'erreur
+            ID du client créé ou None si erreur
         """
-        # Vérification des champs obligatoires
-        if 'name' not in client_data or not client_data['name'].strip():
-            logger.warning("Tentative d'ajout d'un client sans nom")
+        # Vérifier la limite de clients pour la version gratuite
+        if not self.check_license():
+            can_add, message = self.free_version_manager.check_can_add_user()
+            if not can_add:
+                logger.warning(f"Limite de clients atteinte : {message}")
+                return None
+                
+        try:
+            # Vérification des champs obligatoires
+            if 'name' not in client_data or not client_data['name'].strip():
+                logger.warning("Tentative d'ajout d'un client sans nom")
+                return None
+            
+            if 'email' not in client_data or not client_data['email'].strip():
+                logger.warning("Tentative d'ajout d'un client sans email")
+                return None
+            
+            # Vérifier si le client existe déjà (par email)
+            existing = next((c for c in self.clients if c.get('email') == client_data.get('email')), None)
+            
+            if existing:
+                logger.warning(f"Client avec email {client_data.get('email')} existe déjà")
+                return None
+            
+            # Générer un ID unique
+            client_id = str(uuid.uuid4())
+            
+            # Nettoyer et valider les données
+            clean_data = {
+                'id': client_id,
+                'name': client_data.get('name', '').strip(),
+                'company': client_data.get('company', '').strip(),
+                'email': client_data.get('email', '').strip(),
+                'phone': client_data.get('phone', '').strip(),
+                'address': client_data.get('address', '').strip(),
+                'created_at': datetime.now().isoformat(),
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            # Ajouter à la liste
+            self.clients.append(clean_data)
+            
+            # Sauvegarder
+            self.save_clients()
+            
+            # Ajouter l'activité
+            self.add_activity('client', f"Nouveau client ajouté: {clean_data.get('name')}")
+            
+            logger.info(f"Client ajouté: {clean_data.get('name')} (ID: {client_id})")
+            
+            # Si réussi et pas de licence, incrémenter le compteur
+            if not self.check_license():
+                self.free_version_manager.increment_counter("users")
+                
+            return client_id
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'ajout du client: {e}")
             return None
-        
-        if 'email' not in client_data or not client_data['email'].strip():
-            logger.warning("Tentative d'ajout d'un client sans email")
-            return None
-        
-        # Vérifier si le client existe déjà (par email)
-        existing = next((c for c in self.clients if c.get('email') == client_data.get('email')), None)
-        
-        if existing:
-            logger.warning(f"Client avec email {client_data.get('email')} existe déjà")
-            return None
-        
-        # Générer un ID unique
-        client_id = str(uuid.uuid4())
-        
-        # Nettoyer et valider les données
-        clean_data = {
-            'id': client_id,
-            'name': client_data.get('name', '').strip(),
-            'company': client_data.get('company', '').strip(),
-            'email': client_data.get('email', '').strip(),
-            'phone': client_data.get('phone', '').strip(),
-            'address': client_data.get('address', '').strip(),
-            'created_at': datetime.now().isoformat(),
-            'updated_at': datetime.now().isoformat()
-        }
-        
-        # Ajouter à la liste
-        self.clients.append(clean_data)
-        
-        # Sauvegarder
-        self.save_clients()
-        
-        # Ajouter l'activité
-        self.add_activity('client', f"Nouveau client ajouté: {clean_data.get('name')}")
-        
-        logger.info(f"Client ajouté: {clean_data.get('name')} (ID: {client_id})")
-        return client_id
     
     def update_client(self, client_id: str, client_data: Dict[str, Any]) -> bool:
         """
@@ -529,40 +586,50 @@ class AppModel:
         
         Args:
             client_id: ID du client à supprimer
-        
-        Returns:
-            bool: True si la suppression a réussi, False sinon
-        """
-        # Trouver le client
-        client = next((c for c in self.clients if c.get('id') == client_id), None)
-        
-        if client is None:
-            logger.warning(f"Client avec ID {client_id} non trouvé")
-            return False
-        
-        # Vérifier si des documents sont liés à ce client
-        linked_docs = [d for d in self.documents if d.get('client_id') == client_id]
-        if linked_docs:
-            logger.warning(f"Client avec ID {client_id} a {len(linked_docs)} documents liés")
-            # Mettre à jour les documents pour enlever la référence au client
-            for doc in linked_docs:
-                doc['client_id'] = None
-                doc['updated_at'] = datetime.now().isoformat()
             
-            # Sauvegarder les documents mis à jour
-            self.save_documents()
-        
-        # Supprimer le client
-        self.clients = [c for c in self.clients if c.get('id') != client_id]
-        
-        # Sauvegarder
-        self.save_clients()
-        
-        # Ajouter l'activité
-        self.add_activity('client', f"Client supprimé: {client.get('name')}")
-        
-        logger.info(f"Client supprimé: {client.get('name')} (ID: {client_id})")
-        return True
+        Returns:
+            True si supprimé avec succès, False sinon
+        """
+        try:
+            # Trouver le client
+            client = next((c for c in self.clients if c.get('id') == client_id), None)
+            
+            if client is None:
+                logger.warning(f"Client avec ID {client_id} non trouvé")
+                return False
+            
+            # Vérifier si des documents sont liés à ce client
+            linked_docs = [d for d in self.documents if d.get('client_id') == client_id]
+            if linked_docs:
+                logger.warning(f"Client avec ID {client_id} a {len(linked_docs)} documents liés")
+                # Mettre à jour les documents pour enlever la référence au client
+                for doc in linked_docs:
+                    doc['client_id'] = None
+                    doc['updated_at'] = datetime.now().isoformat()
+                
+                # Sauvegarder les documents mis à jour
+                self.save_documents()
+            
+            # Supprimer le client
+            self.clients = [c for c in self.clients if c.get('id') != client_id]
+            
+            # Sauvegarder
+            self.save_clients()
+            
+            # Ajouter l'activité
+            self.add_activity('client', f"Client supprimé: {client.get('name')}")
+            
+            logger.info(f"Client supprimé: {client.get('name')} (ID: {client_id})")
+            
+            # Si réussi et pas de licence, décrémenter le compteur
+            if not self.check_license():
+                self.free_version_manager.decrement_counter("users")
+                
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression du client: {e}")
+            return False
     
     def get_client(self, client_id: str) -> Optional[Dict[str, Any]]:
         """Récupère un client avec mise en cache"""
@@ -827,46 +894,63 @@ class AppModel:
         Returns:
             str: ID du modèle ajouté ou None en cas d'erreur
         """
-        # Vérification des champs obligatoires
-        if 'name' not in template_data or not template_data['name'].strip():
-            logger.warning("Tentative d'ajout d'un modèle sans nom")
+        # Vérifier la limite de modèles pour la version gratuite
+        if not self.check_license():
+            can_add, message = self.free_version_manager.check_can_add_template()
+            if not can_add:
+                logger.warning(f"Limite de modèles atteinte : {message}")
+                return None
+                
+        try:
+            # Vérification des champs obligatoires
+            if 'name' not in template_data or not template_data['name'].strip():
+                logger.warning("Tentative d'ajout d'un modèle sans nom")
+                return None
+            
+            if 'content' not in template_data or not template_data['content'].strip():
+                logger.warning("Tentative d'ajout d'un modèle sans contenu")
+                return None
+            
+            # Générer un ID unique
+            template_id = str(uuid.uuid4())
+            
+            # Nettoyer et valider les données
+            clean_data = {
+                'id': template_id,
+                'name': template_data.get('name', '').strip(),
+                'type': template_data.get('type', '').strip().lower(),
+                'description': template_data.get('description', '').strip(),
+                'content': template_data.get('content', '').strip(),
+                'variables': template_data.get('variables', []),
+                'folder': template_data.get('folder', 'autre'),  # Ajout du champ folder
+                'created_at': datetime.now().isoformat(),
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            # S'assurer que variables est une liste
+            if not isinstance(clean_data['variables'], list):
+                clean_data['variables'] = []
+            
+            # Ajouter à la liste
+            self.templates.append(clean_data)
+            
+            # Sauvegarder
+            self.save_templates()
+            
+            # Ajouter l'activité
+            self.add_activity('template', f"Nouveau modèle créé: {clean_data.get('name')}")
+            
+            logger.info(f"Modèle ajouté: {clean_data.get('name')} (ID: {template_id})")
+            
+            # Si réussi et pas de licence, incrémenter le compteur
+            if not self.check_license():
+                self.free_version_manager.increment_counter("templates")
+                
+            return template_id
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'ajout du modèle: {e}")
             return None
-        
-        if 'content' not in template_data or not template_data['content'].strip():
-            logger.warning("Tentative d'ajout d'un modèle sans contenu")
-            return None
-        
-        # Générer un ID unique
-        template_id = str(uuid.uuid4())
-        
-        # Nettoyer et valider les données
-        clean_data = {
-            'id': template_id,
-            'name': template_data.get('name', '').strip(),
-            'type': template_data.get('type', '').strip().lower(),
-            'description': template_data.get('description', '').strip(),
-            'content': template_data.get('content', '').strip(),
-            'variables': template_data.get('variables', []),
-            'folder': template_data.get('folder', 'autre'),  # Ajout du champ folder
-            'created_at': datetime.now().isoformat(),
-            'updated_at': datetime.now().isoformat()
-        }
-        
-        # S'assurer que variables est une liste
-        if not isinstance(clean_data['variables'], list):
-            clean_data['variables'] = []
-        
-        # Ajouter à la liste
-        self.templates.append(clean_data)
-        
-        # Sauvegarder
-        self.save_templates()
-        
-        # Ajouter l'activité
-        self.add_activity('template', f"Nouveau modèle créé: {clean_data.get('name')}")
-        
-        logger.info(f"Modèle ajouté: {clean_data.get('name')} (ID: {template_id})")
-        return template_id
     
     def update_template(self, template_id: str, template_data: Dict[str, Any]) -> bool:
         """
@@ -940,42 +1024,52 @@ class AppModel:
         
         Args:
             template_id: ID du modèle à supprimer
-        
+            
         Returns:
-            bool: True si la suppression a réussi, False sinon
+            True si supprimé avec succès, False sinon
         """
-        # Trouver le modèle
-        template = next((t for t in self.templates if t.get('id') == template_id), None)
-        
-        if template is None:
-            logger.warning(f"Modèle avec ID {template_id} non trouvé")
+        try:
+            # Trouver le modèle
+            template = next((t for t in self.templates if t.get('id') == template_id), None)
+            
+            if template is None:
+                logger.warning(f"Modèle avec ID {template_id} non trouvé")
+                return False
+            
+            # Vérifier si des documents sont liés à ce modèle
+            linked_docs = [d for d in self.documents if d.get('template_id') == template_id]
+            if linked_docs:
+                logger.warning(f"Modèle avec ID {template_id} a {len(linked_docs)} documents liés")
+                # On pourrait soit refuser la suppression, soit mettre à jour les documents
+                
+                # Mettre à jour les documents pour enlever la référence au modèle
+                for doc in linked_docs:
+                    doc['template_id'] = None
+                    doc['updated_at'] = datetime.now().isoformat()
+                
+                # Sauvegarder les documents mis à jour
+                self.save_documents()
+            
+            # Supprimer le modèle
+            self.templates = [t for t in self.templates if t.get('id') != template_id]
+            
+            # Sauvegarder
+            self.save_templates()
+            
+            # Ajouter l'activité
+            self.add_activity('template', f"Modèle supprimé: {template.get('name')}")
+            
+            logger.info(f"Modèle supprimé: {template.get('name')} (ID: {template_id})")
+            
+            # Si réussi et pas de licence, décrémenter le compteur
+            if not self.check_license():
+                self.free_version_manager.decrement_counter("templates")
+                
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression du modèle: {e}")
             return False
-        
-        # Vérifier si des documents sont liés à ce modèle
-        linked_docs = [d for d in self.documents if d.get('template_id') == template_id]
-        if linked_docs:
-            logger.warning(f"Modèle avec ID {template_id} a {len(linked_docs)} documents liés")
-            # On pourrait soit refuser la suppression, soit mettre à jour les documents
-            
-            # Mettre à jour les documents pour enlever la référence au modèle
-            for doc in linked_docs:
-                doc['template_id'] = None
-                doc['updated_at'] = datetime.now().isoformat()
-            
-            # Sauvegarder les documents mis à jour
-            self.save_documents()
-        
-        # Supprimer le modèle
-        self.templates = [t for t in self.templates if t.get('id') != template_id]
-        
-        # Sauvegarder
-        self.save_templates()
-        
-        # Ajouter l'activité
-        self.add_activity('template', f"Modèle supprimé: {template.get('name')}")
-        
-        logger.info(f"Modèle supprimé: {template.get('name')} (ID: {template_id})")
-        return True
     
     def get_template(self, template_id: str) -> Optional[Dict[str, Any]]:
         """Récupère un template avec mise en cache"""
@@ -1317,8 +1411,15 @@ class AppModel:
             document_data: Données du document
             
         Returns:
-            str: ID du document créé ou None si échec
+            ID du document créé ou None si erreur
         """
+        # Vérifier la limite de documents pour la version gratuite
+        if not self.check_license():
+            can_add, message = self.free_version_manager.check_can_add_document()
+            if not can_add:
+                logger.warning(f"Limite de documents atteinte : {message}")
+                return None
+                
         try:
             logger.info("Début de l'ajout d'un nouveau document")
             logger.info(f"Données reçues: {document_data}")
@@ -1338,13 +1439,18 @@ class AppModel:
             # Sauvegarder immédiatement
             if self.save_documents():
                 logger.info("Document sauvegardé avec succès")
+                
+                # Si réussi et pas de licence, incrémenter le compteur
+                if not self.check_license():
+                    self.free_version_manager.increment_counter("documents")
+                    
                 return document_id
             else:
                 logger.error("Échec de la sauvegarde du document")
                 # Retirer le document de la liste en cas d'échec
                 self.documents.remove(document_data)
                 return None
-                
+            
         except Exception as e:
             logger.error(f"Erreur lors de l'ajout du document: {e}")
             return None
@@ -1412,39 +1518,49 @@ class AppModel:
         
         Args:
             document_id: ID du document à supprimer
-            delete_file: Si True, supprime aussi le fichier associé
-        
+            delete_file: Si True, supprime également le fichier associé
+            
         Returns:
-            bool: True si la suppression a réussi, False sinon
+            True si supprimé avec succès, False sinon
         """
-        # Trouver le document
-        document = next((d for d in self.documents if d.get('id') == document_id), None)
-        
-        if document is None:
-            logger.warning(f"Document avec ID {document_id} non trouvé")
+        try:
+            # Trouver le document
+            document = next((d for d in self.documents if d.get('id') == document_id), None)
+            
+            if document is None:
+                logger.warning(f"Document avec ID {document_id} non trouvé")
+                return False
+            
+            # Supprimer le fichier associé si demandé
+            file_path = document.get('file_path', '')
+            if delete_file and file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    logger.info(f"Fichier supprimé: {file_path}")
+                except Exception as e:
+                    logger.error(f"Erreur lors de la suppression du fichier: {e}")
+                    # On continue quand même avec la suppression du document
+            
+            # Supprimer le document
+            self.documents = [d for d in self.documents if d.get('id') != document_id]
+            
+            # Sauvegarder
+            self.save_documents()
+            
+            # Ajouter l'activité
+            self.add_activity('document', f"Document supprimé: {document.get('title')}")
+            
+            logger.info(f"Document supprimé: {document.get('title')} (ID: {document_id})")
+            
+            # Si réussi et pas de licence, décrémenter le compteur
+            if not self.check_license():
+                self.free_version_manager.decrement_counter("documents")
+                
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression du document: {e}")
             return False
-        
-        # Supprimer le fichier associé si demandé
-        file_path = document.get('file_path', '')
-        if delete_file and file_path and os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-                logger.info(f"Fichier supprimé: {file_path}")
-            except Exception as e:
-                logger.error(f"Erreur lors de la suppression du fichier: {e}")
-                # On continue quand même avec la suppression du document
-        
-        # Supprimer le document
-        self.documents = [d for d in self.documents if d.get('id') != document_id]
-        
-        # Sauvegarder
-        self.save_documents()
-        
-        # Ajouter l'activité
-        self.add_activity('document', f"Document supprimé: {document.get('title')}")
-        
-        logger.info(f"Document supprimé: {document.get('title')} (ID: {document_id})")
-        return True
     
     def get_document(self, document_id: str) -> Optional[Dict[str, Any]]:
         """Récupère un document avec mise en cache optimisée"""

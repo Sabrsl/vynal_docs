@@ -1310,6 +1310,43 @@ def _check_package(package_name: str) -> Dict[str, Any]:
         return {"installed": False, "version": None}
 
 
+def initialize_tesseract():
+    """Initialise Tesseract en l'ajoutant au PATH si nécessaire"""
+    global TESSERACT_AVAILABLE
+    
+    try:
+        # Vérifier d'abord si Tesseract est déjà disponible
+        pytesseract.get_tesseract_version()
+        TESSERACT_AVAILABLE = True
+        return True
+    except:
+        # Essayer d'ajouter Tesseract au PATH
+        tesseract_path = r"C:\Program Files\Tesseract-OCR"
+        if os.path.exists(tesseract_path):
+            # Ajouter au PATH de l'environnement actuel
+            os.environ["PATH"] = tesseract_path + os.pathsep + os.environ["PATH"]
+            
+            # Configurer pytesseract
+            pytesseract.pytesseract.tesseract_cmd = os.path.join(tesseract_path, "tesseract.exe")
+            
+            try:
+                # Vérifier que ça fonctionne
+                pytesseract.get_tesseract_version()
+                TESSERACT_AVAILABLE = True
+                logger.info("Tesseract ajouté au PATH avec succès")
+                return True
+            except:
+                pass
+        
+        TESSERACT_AVAILABLE = False
+        logger.warning("Impossible d'initialiser Tesseract")
+        return False
+
+
+# Initialiser Tesseract au chargement du module
+initialize_tesseract()
+
+
 if __name__ == "__main__":
     # Script de test et d'exemple
     import argparse

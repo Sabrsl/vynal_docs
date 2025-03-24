@@ -1,0 +1,33 @@
+{
+    "update": {
+        "latest_version": "1.0.0",
+        "download_url": "",
+        "checksum": "",
+        "changelog": "Version initiale",
+        "credentials_path": "credentials.json",
+        "folder_id": "1Lmh0m7CvkmiSKyXAKZWw0asSfhLwofF5",
+        "encryption_password": "vynal_docs_secure_key"
+    },
+    "licences": {
+        "test@example.com": {
+            "status": "active",
+            "expires": "2025-03-24"
+        }
+    },
+    "global_message": {
+        "title": "Test",
+        "body": "Ceci est un test de configuration",
+        "type": "info",
+        "visible": true
+    },
+    "features": {
+        "docsGPT_enabled": true,
+        "analyse_automatique": true,
+        "mode_test": true
+    },
+    "settings": {
+        "licence_check_grace_days": 7,
+        "max_offline_days": 14,
+        "auto_update": true
+    }
+} 

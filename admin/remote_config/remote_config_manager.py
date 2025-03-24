@@ -20,8 +20,10 @@ import urllib.request
 from urllib.error import URLError, HTTPError
 from typing import Dict, Any, Optional, List, Tuple, Union, Callable
 import ssl
+import tkinter as tk
 
 from utils.license_utils import verify_license, get_expiration_date_string, get_remaining_days
+from utils.notification import show_notification, notification_manager
 
 logger = logging.getLogger("VynalDocsAutomator.RemoteConfigManager")
 
@@ -71,6 +73,15 @@ class RemoteConfigManager:
         self.last_successful_check = 0
         self.features_enabled_locally = {}
         
+        # Initialiser le système de notifications
+        try:
+            root = tk.Tk()
+            root.withdraw()  # Cacher la fenêtre racine
+            notification_manager.initialize(root)
+            logger.info("Système de notifications initialisé")
+        except Exception as e:
+            logger.error(f"Erreur lors de l'initialisation du système de notifications: {e}")
+        
         # Chargement initial de la configuration
         self._load_local_cache()
         
@@ -100,16 +111,31 @@ class RemoteConfigManager:
             return self.config
         
         except json.JSONDecodeError as e:
-            logger.error(f"Erreur de format JSON dans le fichier de cache local: {e}")
+            error_msg = f"Erreur de format JSON dans le fichier de cache local: {e}"
+            logger.error(error_msg)
+            show_notification(
+                "Erreur de configuration",
+                "Le fichier de configuration est corrompu. Une nouvelle configuration sera créée.",
+                "error"
+            )
             # Faire une sauvegarde du fichier corrompu
             backup_file = f"{self.local_cache_path}.bak.{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
-            shutil.copyfile(self.local_cache_path, backup_file)
-            logger.info(f"Fichier de cache local corrompu sauvegardé sous {backup_file}")
+            try:
+                shutil.copyfile(self.local_cache_path, backup_file)
+                logger.info(f"Fichier de cache local corrompu sauvegardé sous {backup_file}")
+            except Exception as backup_error:
+                logger.error(f"Erreur lors de la sauvegarde du fichier corrompu: {backup_error}")
             self.config = {}
             return self.config
         
         except Exception as e:
-            logger.error(f"Erreur lors du chargement du cache local: {e}")
+            error_msg = f"Erreur lors du chargement du cache local: {e}"
+            logger.error(error_msg)
+            show_notification(
+                "Erreur de configuration",
+                "Impossible de charger la configuration. Une nouvelle configuration sera créée.",
+                "error"
+            )
             self.config = {}
             return self.config
     
@@ -141,45 +167,59 @@ class RemoteConfigManager:
     
     def _fetch_remote_config(self) -> Tuple[bool, Dict[str, Any]]:
         """
-        Récupère la configuration depuis l'URL distante.
+        Récupère la configuration depuis Google Drive.
         
         Returns:
             Tuple[bool, Dict[str, Any]]: (succès, configuration)
         """
         try:
-            # Créer un contexte SSL pour ignorer les erreurs de certificat en développement
-            # En production, ce comportement devrait être modifié
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
+            # Initialiser le gestionnaire de mises à jour
+            from utils.update_downloader import UpdateDownloader
             
-            # Ouvrir l'URL avec un timeout
-            with urllib.request.urlopen(self.config_url, timeout=10, context=ctx) as response:
-                if response.status == 200:
-                    # Lire et décoder le contenu
-                    content = response.read().decode('utf-8')
-                    remote_config = json.loads(content)
-                    
-                    # Mettre à jour le timestamp de la dernière vérification réussie
-                    self.last_successful_check = time.time()
-                    self.offline_mode = False
-                    
-                    return True, remote_config
-                else:
-                    logger.error(f"Erreur lors de la récupération de la configuration distante: {response.status} {response.reason}")
-                    return False, {}
-        
-        except (URLError, HTTPError) as e:
-            logger.error(f"Erreur de connexion lors de la récupération de la configuration distante: {e}")
-            self.offline_mode = True
-            return False, {}
-        
-        except json.JSONDecodeError as e:
-            logger.error(f"Erreur de format JSON dans la configuration distante: {e}")
-            return False, {}
+            # Récupérer les paramètres depuis la configuration locale
+            config = self._load_local_cache()
+            credentials_path = config.get('update', {}).get('credentials_path', 'credentials.json')
+            folder_id = config.get('update', {}).get('folder_id', '')
+            encryption_password = config.get('update', {}).get('encryption_password', '')
+            
+            if not all([credentials_path, folder_id, encryption_password]):
+                logger.warning("Configuration Google Drive incomplète")
+                return False, {}
+            
+            # Initialiser le gestionnaire de mises à jour
+            updater = UpdateDownloader(credentials_path, folder_id, encryption_password)
+            
+            # Récupérer le fichier de configuration
+            config_file = updater.download_config()
+            if not config_file:
+                logger.error("Erreur lors du téléchargement de la configuration")
+                return False, {}
+            
+            # Lire et décoder le contenu
+            try:
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    remote_config = json.load(f)
+                
+                # Nettoyer le fichier temporaire
+                os.unlink(config_file)
+                
+                # Mettre à jour le timestamp de la dernière vérification réussie
+                self.last_successful_check = time.time()
+                self.offline_mode = False
+                
+                return True, remote_config
+                
+            except json.JSONDecodeError as e:
+                logger.error(f"Erreur de format JSON dans la configuration distante: {e}")
+                return False, {}
+            finally:
+                # S'assurer que le fichier temporaire est supprimé
+                if os.path.exists(config_file):
+                    os.unlink(config_file)
         
         except Exception as e:
             logger.error(f"Erreur inattendue lors de la récupération de la configuration distante: {e}")
+            self.offline_mode = True
             return False, {}
     
     def check_for_updates(self, force: bool = False) -> bool:
@@ -248,34 +288,62 @@ class RemoteConfigManager:
     
     def _check_updates(self, old_config: Dict[str, Any]) -> bool:
         """
-        Vérifie si une mise à jour est disponible.
+        Vérifie si des mises à jour sont disponibles en comparant l'ancienne et la nouvelle configuration.
         
         Args:
             old_config (Dict[str, Any]): Ancienne configuration
         
         Returns:
-            bool: True si une mise à jour est disponible, False sinon
+            bool: True si des mises à jour sont disponibles, False sinon
         """
-        # Vérifier si la section update existe dans les deux configurations
-        if 'update' not in self.config or 'update' not in old_config:
-            return 'update' in self.config
-        
-        # Vérifier si la version a changé
-        new_version = self.config['update'].get('latest_version')
-        old_version = old_config['update'].get('latest_version')
-        
-        if new_version != old_version and new_version is not None:
-            # Enregistrer l'information dans le fichier de log
-            try:
-                with open(self.update_log_path, 'a', encoding='utf-8') as f:
-                    log_entry = f"{datetime.datetime.now().isoformat()} - Nouvelle version disponible: {new_version}\n"
-                    f.write(log_entry)
-            except Exception as e:
-                logger.error(f"Erreur lors de l'écriture dans le fichier de log des mises à jour: {e}")
+        try:
+            # Vérifier la version de l'application
+            old_version = old_config.get('app', {}).get('version', '0.0.0')
+            new_version = self.config.get('app', {}).get('version', '0.0.0')
             
-            return True
-        
-        return False
+            if new_version != old_version:
+                logger.info(f"Nouvelle version détectée: {new_version} (ancienne: {old_version})")
+                
+                # Créer un message de notification
+                notification = {
+                    'type': 'update',
+                    'title': 'Nouvelle mise à jour disponible',
+                    'message': f'Une nouvelle version ({new_version}) est disponible. Voulez-vous la télécharger maintenant ?',
+                    'version': new_version,
+                    'changelog': self.config.get('update', {}).get('changelog', ''),
+                    'timestamp': datetime.datetime.now().isoformat()
+                }
+                
+                # Sauvegarder la notification dans la configuration
+                if 'notifications' not in self.config:
+                    self.config['notifications'] = []
+                self.config['notifications'].append(notification)
+                
+                # Afficher la notification
+                show_notification(
+                    notification['title'],
+                    notification['message'],
+                    'info',
+                    10000  # Plus long pour les mises à jour
+                )
+                
+                # Si une fonction de callback est définie pour les mises à jour, l'appeler
+                if self.on_update_available:
+                    self.on_update_available(self.config.get('update', {}))
+                
+                return True
+            
+            return False
+            
+        except Exception as e:
+            error_msg = f"Erreur lors de la vérification des mises à jour: {e}"
+            logger.error(error_msg)
+            show_notification(
+                "Erreur de mise à jour",
+                "Impossible de vérifier les mises à jour. Veuillez réessayer plus tard.",
+                "error"
+            )
+            return False
     
     def _check_global_messages(self, old_config: Dict[str, Any]) -> bool:
         """
@@ -356,52 +424,46 @@ class RemoteConfigManager:
     
     def download_update(self, update_info: Dict[str, Any]) -> Tuple[bool, str]:
         """
-        Télécharge une mise à jour.
+        Télécharge une mise à jour depuis Google Drive.
         
         Args:
-            update_info (Dict[str, Any]): Informations de mise à jour
-        
+            update_info (Dict[str, Any]): Informations sur la mise à jour
+            
         Returns:
-            Tuple[bool, str]: (succès, chemin du fichier téléchargé ou message d'erreur)
+            Tuple[bool, str]: (succès, chemin du fichier ou message d'erreur)
         """
-        if 'download_url' not in update_info:
-            return False, "URL de téléchargement manquante"
-        
-        download_url = update_info['download_url']
-        
         try:
-            # Créer un fichier temporaire pour le téléchargement
-            with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as temp_file:
-                # Créer un contexte SSL pour ignorer les erreurs de certificat en développement
-                ctx = ssl.create_default_context()
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl.CERT_NONE
-                
-                # Télécharger le fichier
-                with urllib.request.urlopen(download_url, context=ctx) as response:
-                    if response.status != 200:
-                        return False, f"Erreur HTTP {response.status} {response.reason}"
-                    
-                    # Lire le contenu et l'écrire dans le fichier temporaire
-                    content = response.read()
-                    temp_file.write(content)
-                    temp_file_path = temp_file.name
+            # Initialiser le gestionnaire de mises à jour
+            from utils.update_downloader import UpdateDownloader
             
-            # Vérifier le checksum si disponible
-            if 'checksum' in update_info:
-                actual_checksum = hashlib.sha256(content).hexdigest()
-                expected_checksum = update_info['checksum']
-                
-                if actual_checksum != expected_checksum:
-                    # Supprimer le fichier téléchargé si le checksum ne correspond pas
-                    os.unlink(temp_file_path)
-                    return False, "Checksum invalide, le fichier peut être corrompu ou altéré"
+            # Récupérer les paramètres depuis la configuration
+            config = self._load_local_cache()
+            credentials_path = config.get('update', {}).get('credentials_path', 'credentials.json')
+            folder_id = config.get('update', {}).get('folder_id', '')
+            encryption_password = config.get('update', {}).get('encryption_password', '')
             
-            # Vérifier la signature si disponible
-            if 'security' in self.config and self.config['security'].get('signature_required', False):
-                if 'signature' in update_info and 'public_key' in self.config['security']:
-                    # Cette vérification serait à implémenter selon les besoins spécifiques
-                    pass
+            if not all([credentials_path, folder_id, encryption_password]):
+                logger.error("Configuration Google Drive incomplète")
+                return False, "Configuration Google Drive incomplète"
+            
+            # Initialiser le gestionnaire de mises à jour
+            updater = UpdateDownloader(credentials_path, folder_id, encryption_password)
+            
+            # Télécharger la mise à jour
+            update_file = updater.download_update(
+                update_info['file_id'],
+                update_info['checksum']
+            )
+            
+            if not update_file:
+                logger.error("Erreur lors du téléchargement de la mise à jour")
+                return False, "Erreur lors du téléchargement"
+            
+            # Vérifier la signature si nécessaire
+            if self.config.get('security', {}).get('signature_required', False):
+                if not updater.verify_signature(update_file, update_info.get('signature', '')):
+                    os.unlink(update_file)
+                    return False, "Signature invalide"
             
             # Enregistrer l'information dans le fichier de log
             try:
@@ -411,15 +473,11 @@ class RemoteConfigManager:
             except Exception as e:
                 logger.error(f"Erreur lors de l'écriture dans le fichier de log des mises à jour: {e}")
             
-            return True, temp_file_path
-        
-        except (URLError, HTTPError) as e:
-            logger.error(f"Erreur de connexion lors du téléchargement de la mise à jour: {e}")
-            return False, f"Erreur de connexion: {str(e)}"
-        
+            return True, update_file
+            
         except Exception as e:
-            logger.error(f"Erreur inattendue lors du téléchargement de la mise à jour: {e}")
-            return False, f"Erreur inattendue: {str(e)}"
+            logger.error(f"Erreur lors du téléchargement de la mise à jour: {e}")
+            return False, str(e)
     
     def apply_update(self, update_file_path: str) -> Tuple[bool, str]:
         """
@@ -506,66 +564,84 @@ class RemoteConfigManager:
         Returns:
             Tuple[bool, str, Dict[str, Any]]: (valide, message, données de licence)
         """
-        # Normaliser l'email
-        email = email.lower().strip()
-        
-        # Vérifier si l'application est en mode hors ligne
-        if self.offline_mode:
-            logger.info(f"Vérification de licence en mode hors ligne pour {email}")
+        try:
+            # Normaliser l'email
+            email = email.lower().strip()
             
-            # Récupérer les paramètres de grâce
-            grace_days = self.config.get('settings', {}).get('licence_check_grace_days', 7)
-            max_offline_days = self.config.get('settings', {}).get('max_offline_days', 14)
+            # Vérifier si l'application est en mode hors ligne
+            if self.offline_mode:
+                logger.info(f"Vérification de licence en mode hors ligne pour {email}")
+                
+                # Récupérer les paramètres de grâce
+                grace_days = self.config.get('settings', {}).get('licence_check_grace_days', 7)
+                max_offline_days = self.config.get('settings', {}).get('max_offline_days', 14)
+                
+                # Calculer le nombre de jours depuis la dernière vérification réussie
+                days_since_check = (time.time() - self.last_successful_check) / 86400
+                
+                # Si la période de grâce est dépassée, vérifier localement
+                if days_since_check > grace_days:
+                    logger.warning(f"Période de grâce dépassée ({days_since_check:.1f} jours), vérification locale uniquement")
+                    if days_since_check > max_offline_days:
+                        error_msg = f"Période maximale hors ligne dépassée ({max_offline_days} jours). Veuillez vous connecter pour vérifier votre licence."
+                        show_notification("Erreur de licence", error_msg, "error")
+                        return False, error_msg, {}
+                
+                # Vérifier avec les informations locales uniquement
+                is_valid, message, license_data = verify_license(email, license_key)
+                if not is_valid:
+                    show_notification("Erreur de licence", message, "error")
+                return is_valid, message, license_data
             
-            # Calculer le nombre de jours depuis la dernière vérification réussie
-            days_since_check = (time.time() - self.last_successful_check) / 86400
+            # Vérifier dans la configuration distante
+            if 'licences' in self.config and email in self.config['licences']:
+                remote_license = self.config['licences'][email]
+                
+                # Vérifier le statut
+                if remote_license.get('status') == 'blocked':
+                    error_msg = "Licence bloquée par l'administrateur."
+                    show_notification("Erreur de licence", error_msg, "error")
+                    logger.warning(f"Licence bloquée pour {email}")
+                    return False, error_msg, remote_license
+                
+                # Vérifier la date d'expiration
+                expires_str = remote_license.get('expires')
+                if expires_str:
+                    try:
+                        expires_date = datetime.datetime.strptime(expires_str, "%Y-%m-%d").date()
+                        today = datetime.datetime.now().date()
+                        
+                        if expires_date < today:
+                            error_msg = f"Licence expirée le {expires_str}."
+                            show_notification("Erreur de licence", error_msg, "error")
+                            logger.warning(f"Licence expirée pour {email} (expirée le {expires_str})")
+                            return False, error_msg, remote_license
+                    except Exception as e:
+                        logger.error(f"Erreur lors de l'analyse de la date d'expiration: {e}")
+                
+                # Vérifier la licence localement également
+                is_valid, message, license_data = verify_license(email, license_key)
+                if is_valid:
+                    # Si la licence est valide localement et distante, retourner les informations distantes
+                    logger.info(f"Licence valide pour {email} (vérification distante et locale)")
+                    return True, "Licence valide", remote_license
+                else:
+                    logger.warning(f"Licence invalide localement pour {email}: {message}")
+                    show_notification("Erreur de licence", message, "error")
+                    return False, message, license_data
             
-            # Si la période de grâce est dépassée, vérifier localement
-            if days_since_check > grace_days:
-                logger.warning(f"Période de grâce dépassée ({days_since_check:.1f} jours), vérification locale uniquement")
-                if days_since_check > max_offline_days:
-                    return False, f"Période maximale hors ligne dépassée ({max_offline_days} jours). Veuillez vous connecter pour vérifier votre licence.", {}
-            
-            # Vérifier avec les informations locales uniquement
+            # Si la licence n'est pas dans la configuration distante, vérifier localement
+            logger.info(f"Licence non trouvée dans la configuration distante pour {email}, vérification locale")
             is_valid, message, license_data = verify_license(email, license_key)
+            if not is_valid:
+                show_notification("Erreur de licence", message, "error")
             return is_valid, message, license_data
-        
-        # Vérifier dans la configuration distante
-        if 'licences' in self.config and email in self.config['licences']:
-            remote_license = self.config['licences'][email]
             
-            # Vérifier le statut
-            if remote_license.get('status') == 'blocked':
-                logger.warning(f"Licence bloquée pour {email}")
-                return False, "Licence bloquée par l'administrateur.", remote_license
-            
-            # Vérifier la date d'expiration
-            expires_str = remote_license.get('expires')
-            if expires_str:
-                try:
-                    expires_date = datetime.datetime.strptime(expires_str, "%Y-%m-%d").date()
-                    today = datetime.datetime.now().date()
-                    
-                    if expires_date < today:
-                        logger.warning(f"Licence expirée pour {email} (expirée le {expires_str})")
-                        return False, f"Licence expirée le {expires_str}.", remote_license
-                except Exception as e:
-                    logger.error(f"Erreur lors de l'analyse de la date d'expiration: {e}")
-            
-            # Vérifier la licence localement également
-            is_valid, message, license_data = verify_license(email, license_key)
-            if is_valid:
-                # Si la licence est valide localement et distante, retourner les informations distantes
-                logger.info(f"Licence valide pour {email} (vérification distante et locale)")
-                return True, "Licence valide", remote_license
-            else:
-                logger.warning(f"Licence invalide localement pour {email}: {message}")
-                return False, message, license_data
-        
-        # Si la licence n'est pas dans la configuration distante, vérifier localement
-        logger.info(f"Licence non trouvée dans la configuration distante pour {email}, vérification locale")
-        is_valid, message, license_data = verify_license(email, license_key)
-        return is_valid, message, license_data
+        except Exception as e:
+            error_msg = f"Erreur lors de la vérification de la licence: {e}"
+            logger.error(error_msg)
+            show_notification("Erreur de licence", "Une erreur est survenue lors de la vérification de la licence.", "error")
+            return False, error_msg, {}
     
     def get_license_details(self, email: str) -> Dict[str, Any]:
         """
@@ -662,4 +738,42 @@ class RemoteConfigManager:
         Returns:
             Dict[str, str]: Informations de support
         """
-        return self.config.get('support', {}) 
+        return self.config.get('support', {})
+    
+    def get_pending_notifications(self) -> List[Dict[str, Any]]:
+        """
+        Récupère les notifications en attente.
+        
+        Returns:
+            List[Dict[str, Any]]: Liste des notifications en attente
+        """
+        try:
+            notifications = self.config.get('notifications', [])
+            # Filtrer les notifications non lues
+            pending = [n for n in notifications if not n.get('read', False)]
+            return pending
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des notifications: {e}")
+            return []
+    
+    def mark_notification_read(self, notification_id: str) -> bool:
+        """
+        Marque une notification comme lue.
+        
+        Args:
+            notification_id (str): ID de la notification
+        
+        Returns:
+            bool: True si la notification a été marquée comme lue, False sinon
+        """
+        try:
+            notifications = self.config.get('notifications', [])
+            for notification in notifications:
+                if notification.get('id') == notification_id:
+                    notification['read'] = True
+                    self._save_local_cache()
+                    return True
+            return False
+        except Exception as e:
+            logger.error(f"Erreur lors du marquage de la notification comme lue: {e}")
+            return False 

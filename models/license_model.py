@@ -708,4 +708,30 @@ class LicenseModel:
         del self.licenses[username]
         
         # Sauvegarder les modifications
-        return self._save_licenses() 
+        return self._save_licenses()
+    
+    def get_license_by_key(self, key: str) -> Optional[Dict[str, Any]]:
+        """
+        Récupère une licence par sa clé
+        
+        Args:
+            key: Clé de licence à rechercher
+            
+        Returns:
+            Dict contenant les informations de licence ou None si non trouvée
+        """
+        try:
+            # Parcourir toutes les licences pour trouver celle avec la clé correspondante
+            for username, license_data in self.licenses.items():
+                if license_data.get("license_key") == key:
+                    # Vérifier si la licence est expirée
+                    if license_data.get("expires_at", 0) < int(time.time()) and license_data.get("status") not in ["expired", "blocked"]:
+                        # Mettre à jour le statut
+                        self.licenses[username]["status"] = "expired"
+                        self._save_licenses()
+                        license_data["status"] = "expired"
+                    return license_data
+            return None
+        except Exception as e:
+            logger.error(f"Erreur lors de la recherche de licence par clé: {e}")
+            return None 

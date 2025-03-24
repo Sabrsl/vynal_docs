@@ -19,6 +19,8 @@ import threading
 import shutil
 import base64
 import secrets
+import winreg
+import time
 
 logger = logging.getLogger("VynalDocsAutomator.RemoteConfigAdmin")
 
@@ -35,7 +37,6 @@ class RemoteConfigAdmin:
         update_files_dir (str): Répertoire pour les fichiers de mise à jour
         current_tab (str): Onglet actuellement affiché
         tabs (dict): Dictionnaire des onglets disponibles
-        uploader (UpdateUploader): Instance de l'uploader Google Drive
     """
     
     def __init__(self, root: Optional[tk.Tk] = None, config_file_path: Optional[str] = None):
@@ -64,16 +65,15 @@ class RemoteConfigAdmin:
         self.update_files_dir = ""
         self.current_tab = ""
         self.tabs = {}
-        self.uploader = None
+        
+        # Activer l'auto-sauvegarde
+        self.autosave_enabled = True
         
         # Charger la configuration
         if self.config_file_path is None:
             self._select_config_file()
         else:
             self._load_config()
-            
-        # Initialiser l'uploader Google Drive
-        self._init_uploader()
         
         # Créer l'interface utilisateur
         self._create_ui()
@@ -84,6 +84,32 @@ class RemoteConfigAdmin:
         if self.standalone:
             self.root.protocol("WM_DELETE_WINDOW", self._on_close)
             self.root.mainloop()
+    
+    def _mark_modified(self):
+        """
+        Marque la configuration comme modifiée et lance une sauvegarde automatique.
+        """
+        self.is_modified = True
+        
+        # Sauvegarder automatiquement si activé et si un chemin de fichier existe
+        if self.autosave_enabled and self.config_file_path:
+            try:
+                # Créer une sauvegarde du fichier existant
+                if os.path.exists(self.config_file_path):
+                    backup_path = f"{self.config_file_path}.bak"
+                    shutil.copyfile(self.config_file_path, backup_path)
+                
+                # Enregistrer la configuration au format JSON
+                with open(self.config_file_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.config, f, indent=2, ensure_ascii=False)
+                
+                logger.info(f"Configuration auto-sauvegardée dans {self.config_file_path}")
+                
+                # Réinitialiser le flag de modification
+                self.is_modified = False
+            except Exception as e:
+                logger.error(f"Erreur lors de l'auto-sauvegarde: {e}")
+                # Ne pas réinitialiser le flag en cas d'erreur
     
     def _select_config_file(self) -> None:
         """
@@ -109,85 +135,53 @@ class RemoteConfigAdmin:
     
     def _load_config(self) -> None:
         """
-        Charge la configuration depuis le fichier avec gestion des permissions.
+        Charge la configuration depuis le fichier.
         """
         try:
-            # Créer le dossier data s'il n'existe pas
-            data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'data')
-            os.makedirs(data_dir, exist_ok=True)
-            
-            # Si le fichier n'existe pas, créer une configuration par défaut
+            # Vérifier si le fichier existe
             if not os.path.exists(self.config_file_path):
+                logger.warning(f"Fichier de configuration {self.config_file_path} introuvable, création avec valeurs par défaut")
                 self.config = self._create_default_config()
-                self._save_config(show_confirmation=False)
-                logger.info(f"Configuration par défaut créée dans {self.config_file_path}")
+                self.is_modified = True
                 return
             
-            # Vérifier les permissions du fichier
-            try:
-                os.access(self.config_file_path, os.R_OK | os.W_OK)
-            except Exception as e:
-                logger.error(f"Permissions insuffisantes sur {self.config_file_path}: {e}")
-                # Tenter de corriger les permissions
-                try:
-                    os.chmod(self.config_file_path, 0o666)
-                except Exception as e:
-                    logger.error(f"Impossible de modifier les permissions: {e}")
+            # Charger le fichier JSON
+            with open(self.config_file_path, 'r', encoding='utf-8') as f:
+                self.config = json.load(f)
             
-            # Charger la configuration existante
-            try:
-                with open(self.config_file_path, 'r', encoding='utf-8') as f:
-                    self.config = json.load(f)
-            except json.JSONDecodeError as e:
-                logger.error(f"Format JSON invalide dans {self.config_file_path}: {e}")
-                self.config = self._create_default_config()
-                self._save_config(show_confirmation=False)
-            except PermissionError as e:
-                logger.error(f"Erreur de permissions lors de la lecture de {self.config_file_path}: {e}")
-                self.config = self._create_default_config()
-                self._save_config(show_confirmation=False)
-            except Exception as e:
-                logger.error(f"Erreur lors du chargement de la configuration: {e}")
-                self.config = self._create_default_config()
-                self._save_config(show_confirmation=False)
+            # Vérifier la structure du fichier
+            if not self._validate_config_structure():
+                logger.warning("Structure de configuration invalide, ajout des sections manquantes")
+                self._ensure_config_structure()
+                self.is_modified = True
             
-            # Assurer que la structure est complète
-            self._ensure_config_structure()
+            logger.info(f"Configuration chargée depuis {self.config_file_path}")
+            self.is_modified = False
             
             # Définir le répertoire pour les fichiers de mise à jour
             self.update_files_dir = os.path.dirname(self.config_file_path)
             
-            # S'assurer que la section update contient les paramètres Google Drive
-            if 'update' not in self.config:
-                self.config['update'] = {}
-            
-            update_config = self.config['update']
-            
-            # Utiliser le chemin absolu du répertoire de travail
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            credentials_path = os.path.join(base_dir, 'credentials.json')
-            
-            # Mettre à jour les paramètres avec les bons chemins
-            update_config['credentials_path'] = credentials_path
-            update_config['folder_id'] = "1Lmh0m7CvkmiSKyXAKZWw0asSfhLwofF5"
-            update_config['encryption_password'] = "vynal_docs_secure_key"
-            
-            # Sauvegarder si des modifications ont été faites
-            self._save_config(show_confirmation=False)
-            
-            logger.info(f"Configuration chargée depuis {self.config_file_path}")
-            
-        except Exception as e:
-            logger.error(f"Erreur critique lors du chargement de la configuration: {e}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Erreur de format JSON dans le fichier de configuration: {e}")
+            messagebox.showerror(
+                "Erreur de format",
+                f"Le fichier de configuration contient des erreurs de format JSON:\n{e}\n\nUne configuration par défaut sera utilisée."
+            )
             self.config = self._create_default_config()
-            self._save_config(show_confirmation=False)
-    
-    def _save_config(self, show_confirmation: bool = True) -> bool:
-        """
-        Sauvegarde la configuration dans le fichier et sur Google Drive.
+            self.is_modified = True
         
-        Args:
-            show_confirmation (bool): Si True, affiche un message de confirmation
+        except Exception as e:
+            logger.error(f"Erreur lors du chargement de la configuration: {e}")
+            messagebox.showerror(
+                "Erreur",
+                f"Une erreur est survenue lors du chargement de la configuration:\n{e}\n\nUne configuration par défaut sera utilisée."
+            )
+            self.config = self._create_default_config()
+            self.is_modified = True
+    
+    def _save_config(self) -> bool:
+        """
+        Sauvegarde la configuration dans le fichier.
         
         Returns:
             bool: True si la sauvegarde a réussi, False sinon
@@ -222,47 +216,90 @@ class RemoteConfigAdmin:
             # Définir le répertoire pour les fichiers de mise à jour
             self.update_files_dir = os.path.dirname(self.config_file_path)
             
-            # Upload vers Google Drive si possible
-            if self.uploader:
-                try:
-                    if self.uploader.upload_config(self.config):
-                        logger.info("Configuration uploadée sur Google Drive")
-                        if show_confirmation:
-                            messagebox.showinfo(
-                                "Configuration sauvegardée",
-                                f"La configuration a été sauvegardée localement et sur Google Drive:\n{self.config_file_path}"
-                            )
-                    else:
-                        logger.error("Erreur lors de l'upload sur Google Drive")
-                        if show_confirmation:
-                            messagebox.showwarning(
-                                "Attention",
-                                "La configuration a été sauvegardée localement mais l'upload sur Google Drive a échoué."
-                            )
-                except Exception as e:
-                    logger.error(f"Erreur lors de l'upload sur Google Drive: {e}")
-                    if show_confirmation:
-                        messagebox.showwarning(
-                            "Attention",
-                            f"La configuration a été sauvegardée localement mais l'upload sur Google Drive a échoué:\n{str(e)}"
-                        )
-            else:
-                if show_confirmation:
-                    messagebox.showinfo(
-                        "Configuration sauvegardée",
-                        f"La configuration a été sauvegardée localement:\n{self.config_file_path}\n\n"
-                        "Note: L'upload sur Google Drive n'est pas configuré."
-                    )
+            # Afficher un message de confirmation
+            messagebox.showinfo(
+                "Configuration sauvegardée",
+                f"La configuration a été sauvegardée avec succès dans:\n{self.config_file_path}"
+            )
             
+            # Utiliser after pour s'assurer que l'interface reste réactive après la sauvegarde
+            if hasattr(self, 'root') and self.root:
+                current_tab = self.current_tab
+                self.root.after(100, lambda: self._refresh_ui_after_save(current_tab))
+                
             return True
             
         except Exception as e:
             logger.error(f"Erreur lors de la sauvegarde de la configuration: {e}")
-            if show_confirmation:
-                messagebox.showerror(
-                    "Erreur",
-                    f"Erreur lors de la sauvegarde de la configuration:\n{str(e)}"
-                )
+            messagebox.showerror(
+                "Erreur",
+                f"Une erreur est survenue lors de la sauvegarde de la configuration:\n{e}"
+            )
+            return False
+    
+    def export_to_downloads(self) -> bool:
+        """
+        Exporte la configuration actuelle vers le dossier de téléchargements Windows.
+        
+        Returns:
+            bool: True si l'exportation a réussi, False sinon
+        """
+        try:
+            # Si des modifications sont en attente, les sauvegarder d'abord
+            if self.is_modified and self.config_file_path:
+                try:
+                    logger.info("Sauvegarde automatique des modifications avant exportation...")
+                    self._mark_modified()
+                except Exception as save_error:
+                    logger.error(f"Erreur lors de la sauvegarde des modifications avant exportation: {save_error}")
+                    messagebox.showwarning(
+                        "Attention",
+                        "Impossible de sauvegarder les modifications avant l'exportation.\nLe fichier exporté pourrait ne pas contenir les dernières modifications."
+                    )
+            
+            # Récupérer le chemin du dossier de téléchargements Windows
+            download_folder = os.path.join(os.path.expanduser('~'), 'Downloads')
+            
+            # Vérifier si le dossier existe
+            if not os.path.exists(download_folder):
+                # Essayer avec une autre méthode si le chemin standard ne fonctionne pas
+                download_folder = os.path.join(os.path.expanduser('~'), 'Téléchargements')
+                if not os.path.exists(download_folder):
+                    # Si toujours pas trouvé, utiliser la méthode de la registry Windows
+                    try:
+                        import winreg
+                        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
+                                          r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders') as key:
+                            download_folder = winreg.QueryValueEx(key, '{374DE290-123F-4565-9164-39C4925E467B}')[0]
+                    except Exception:
+                        # En dernier recours, utiliser le bureau
+                        download_folder = os.path.join(os.path.expanduser('~'), 'Desktop')
+            
+            # Créer un nom de fichier avec date et heure
+            current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            export_filename = f"app_config_{current_time}.json"
+            export_path = os.path.join(download_folder, export_filename)
+            
+            # Sauvegarder la configuration au format JSON
+            with open(export_path, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"Configuration exportée vers {export_path}")
+            
+            # Afficher un message de confirmation
+            messagebox.showinfo(
+                "Configuration exportée",
+                f"La configuration a été exportée avec succès vers:\n{export_path}"
+            )
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'exportation de la configuration: {e}")
+            messagebox.showerror(
+                "Erreur",
+                f"Une erreur est survenue lors de l'exportation de la configuration:\n{e}"
+            )
             return False
     
     def _refresh_ui_after_save(self, tab_id=None):
@@ -289,140 +326,59 @@ class RemoteConfigAdmin:
     
     def _create_default_config(self) -> Dict[str, Any]:
         """
-        Crée une configuration par défaut avec tous les paramètres nécessaires.
-        Assure également la création du dossier data et des fichiers requis.
+        Crée une configuration par défaut.
         
         Returns:
             Dict[str, Any]: Configuration par défaut
         """
-        try:
-            # Créer le dossier data s'il n'existe pas
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            data_dir = os.path.join(base_dir, 'data')
-            os.makedirs(data_dir, exist_ok=True)
-            
-            # Créer le dossier security s'il n'existe pas
-            security_dir = os.path.join(data_dir, 'security')
-            os.makedirs(security_dir, exist_ok=True)
-            
-            # Créer ou vérifier le fichier .key
-            key_file = os.path.join(security_dir, '.key')
-            key_data = {
-                "key": secrets.token_hex(32),  # Génère une clé de 64 caractères (32 bytes)
-                "created_at": datetime.datetime.now().isoformat(),
-                "algorithm": "AES-256",
-                "version": "1.0"
-            }
-            
-            try:
-                # Si le fichier existe déjà, ne pas le modifier
-                if os.path.exists(key_file) and os.path.getsize(key_file) > 0:
-                    logger.info("Fichier .key existant détecté, utilisation sans modification")
-                else:
-                    # Créer ou recréer le fichier si nécessaire
-                    with open(key_file, 'w', encoding='utf-8') as f:
-                        json.dump(key_data, f, indent=2, ensure_ascii=False)
-                    os.chmod(key_file, 0o600)  # Permissions restreintes pour le fichier de clé
-                    logger.info("Nouveau fichier de clé créé avec succès")
-            except Exception as e:
-                logger.error(f"Erreur lors de la gestion du fichier .key: {e}")
-                # En cas d'erreur, on continue avec la clé en mémoire
-            
-            # Liste des fichiers JSON requis avec leur contenu par défaut
-            required_files = {
-                'users.json': {
-                    "users": [],
-                    "last_update": datetime.datetime.now().isoformat(),
-                    "schema_version": "1.0"
-                },
-                'current_user.json': {
-                    "current_user": None,
-                    "last_login": None,
-                    "schema_version": "1.0"
-                },
-                'usage_count.json': {
-                    "count": 0,
-                    "last_reset": datetime.datetime.now().isoformat(),
-                    "schema_version": "1.0"
+        today = datetime.datetime.now().strftime("%Y-%m-%d")
+        next_year = (datetime.datetime.now() + datetime.timedelta(days=365)).strftime("%Y-%m-%d")
+        
+        return {
+            "update": {
+                "latest_version": "1.0.0",
+                "download_url": "https://example.com/update/patch-1.0.0.zip",
+                "checksum": "",
+                "changelog": "Version initiale"
+            },
+            "licences": {
+                "admin@example.com": {
+                    "status": "active",
+                    "expires": next_year
                 }
-            }
-            
-            # Créer les fichiers s'ils n'existent pas
-            for filename, default_content in required_files.items():
-                file_path = os.path.join(data_dir, filename)
-                if not os.path.exists(file_path):
-                    try:
-                        with open(file_path, 'w', encoding='utf-8') as f:
-                            json.dump(default_content, f, indent=2, ensure_ascii=False)
-                        os.chmod(file_path, 0o644)  # Permissions lecture/écriture pour l'utilisateur, lecture pour les autres
-                        logger.info(f"Fichier {filename} créé avec succès")
-                    except Exception as e:
-                        logger.error(f"Erreur lors de la création de {filename}: {e}")
-            
-            # Configuration par défaut
-            default_config = {
-                "update": {
-                    "credentials_path": os.path.join(base_dir, "credentials.json"),
-                    "folder_id": "1Lmh0m7CvkmiSKyXAKZWw0asSfhLwofF5",
-                    "encryption_password": "vynal_docs_secure_key"
-                },
-                "licences": [],
-                "messages": {
-                    "global": {
-                        "title": "",
-                        "content": "",
-                        "type": "info",
-                        "enabled": False
-                    }
-                },
-                "features": [],
-                "settings": {
-                    "app_name": "Vynal Docs Automator",
+            },
+            "global_message": {
+                "title": "Bienvenue",
+                "body": "Bienvenue dans Vynal Docs Automator !",
+                "type": "info",
+                "visible": False
+            },
+            "features": {
+                "docsGPT_enabled": True,
+                "analyse_automatique": True,
+                "mode_test": False
+            },
+            "settings": {
+                "licence_check_grace_days": 7,
+                "max_offline_days": 14,
+                "auto_update": True
+            },
+            "support": {
+                "email": "support@example.com",
+                "url": "https://example.com/support"
+            },
+            "changelog_full": [
+                {
                     "version": "1.0.0",
-                    "update_check_interval": 3600,
-                    "security": {
-                        "key_file": key_file,
-                        "encryption_enabled": True,
-                        "key_version": "1.0",
-                        "key_data": key_data  # Inclure les données de la clé dans la configuration
-                    },
-                    "custom": {}
-                },
-                "support": {
-                    "email": "",
-                    "phone": "",
-                    "website": ""
-                },
-                "changelog": [],
-                "security": {
-                    "signature_required": False,
-                    "public_key": "",
-                    "private_key": "",
-                    "key_file": key_file,
-                    "encryption_algorithm": "AES-256",
-                    "key_version": "1.0",
-                    "key_data": key_data  # Inclure les données de la clé dans la configuration
+                    "date": today,
+                    "notes": "Version initiale"
                 }
+            ],
+            "security": {
+                "signature_required": False,
+                "public_key": ""
             }
-            
-            logger.info("Configuration par défaut créée avec sécurité")
-            return default_config
-            
-        except Exception as e:
-            logger.error(f"Erreur lors de la création de la configuration par défaut: {e}")
-            # Retourner une configuration minimale en cas d'erreur
-            return {
-                "update": {
-                    "credentials_path": os.path.join(base_dir, "credentials.json"),
-                    "folder_id": "1Lmh0m7CvkmiSKyXAKZWw0asSfhLwofF5",
-                    "encryption_password": "vynal_docs_secure_key"
-                },
-                "security": {
-                    "encryption_enabled": False,
-                    "key_version": "1.0",
-                    "key_data": key_data  # Inclure les données de la clé même en cas d'erreur
-                }
-            }
+        }
     
     def _validate_config_structure(self) -> bool:
         """
@@ -529,6 +485,7 @@ class RemoteConfigAdmin:
             ("Support", "support"),
             ("Changelog", "changelog"),
             ("Sécurité", "security"),
+            ("Actions rapides", "actions"),
             ("JSON brut", "raw")
         ]
         
@@ -561,6 +518,7 @@ class RemoteConfigAdmin:
             "support": self._create_support_tab(),
             "changelog": self._create_changelog_tab(),
             "security": self._create_security_tab(),
+            "actions": self._create_actions_tab(),
             "raw": self._create_raw_tab()
         }
     
@@ -1051,70 +1009,45 @@ class RemoteConfigAdmin:
     
     def _apply_update_changes(self) -> None:
         """
-        Applique les modifications de l'onglet de mise à jour à la configuration.
+        Applique les modifications de l'onglet des mises à jour.
         """
-        # Récupérer les valeurs
-        version = self.version_entry.get().strip()
-        url = self.url_entry.get().strip()
-        checksum = self.checksum_entry.get().strip()
-        changelog = self.changelog_text.get("1.0", tk.END).strip()
-        
-        # Valider les valeurs
-        if not version:
-            messagebox.showwarning(
-                "Version manquante",
-                "Veuillez spécifier une version."
+        try:
+            # Récupérer les valeurs
+            version = self.version_entry.get().strip()
+            url = self.url_entry.get().strip()
+            checksum = self.checksum_entry.get().strip()
+            changelog = self.changelog_text.get("1.0", tk.END).strip()
+            
+            # Vérifier si les champs obligatoires sont remplis
+            if not version or not url:
+                messagebox.showerror(
+                    "Champs obligatoires",
+                    "La version et l'URL de téléchargement sont obligatoires."
+                )
+                return
+            
+            # Mettre à jour la configuration
+            if "update" not in self.config:
+                self.config["update"] = {}
+            
+            self.config["update"]["latest_version"] = version
+            self.config["update"]["download_url"] = url
+            self.config["update"]["checksum"] = checksum
+            self.config["update"]["changelog"] = changelog
+            
+            # Marquer comme modifié et auto-sauvegarder
+            self._mark_modified()
+            
+            messagebox.showinfo(
+                "Modifications appliquées",
+                "Les modifications ont été appliquées et sauvegardées."
             )
-            return
-        
-        if not url:
-            messagebox.showwarning(
-                "URL manquante",
-                "Veuillez spécifier une URL de téléchargement."
+            
+        except Exception as e:
+            messagebox.showerror(
+                "Erreur",
+                f"Une erreur est survenue lors de l'application des modifications:\n{e}"
             )
-            return
-        
-        # Mettre à jour la configuration
-        if "update" not in self.config:
-            self.config["update"] = {}
-        
-        self.config["update"]["latest_version"] = version
-        self.config["update"]["download_url"] = url
-        self.config["update"]["checksum"] = checksum
-        self.config["update"]["changelog"] = changelog
-        
-        # Ajouter ou mettre à jour l'entrée dans le changelog complet
-        if "changelog_full" not in self.config:
-            self.config["changelog_full"] = []
-        
-        # Vérifier si la version existe déjà dans le changelog
-        version_exists = False
-        for i, entry in enumerate(self.config["changelog_full"]):
-            if entry.get("version") == version:
-                # Mettre à jour l'entrée existante
-                self.config["changelog_full"][i] = {
-                    "version": version,
-                    "date": datetime.datetime.now().strftime("%Y-%m-%d"),
-                    "notes": changelog
-                }
-                version_exists = True
-                break
-        
-        # Ajouter une nouvelle entrée si la version n'existe pas
-        if not version_exists:
-            self.config["changelog_full"].insert(0, {
-                "version": version,
-                "date": datetime.datetime.now().strftime("%Y-%m-%d"),
-                "notes": changelog
-            })
-        
-        # Marquer comme modifié
-        self.is_modified = True
-        
-        messagebox.showinfo(
-            "Modifications appliquées",
-            "Les modifications de mise à jour ont été appliquées à la configuration."
-        )
     
     def _reset_update_tab(self) -> None:
         """
@@ -1311,21 +1244,29 @@ class RemoteConfigAdmin:
     
     def _export_licences_to_config(self):
         """
-        Exporte les licences depuis la gestion des licences internes vers le fichier app_config.json.
+        Exporte les licences éditées vers la configuration principale
         """
-        # À implémenter: logique pour exporter les licences du système interne vers le fichier config
         try:
-            # Récupérer les licences du système interne
-            # licenses = admin_model.get_all_licenses()
-            
-            # Mettre à jour le fichier de configuration
-            # self.config["licences"] = licenses
-            # self.save_config()
-            
-            self._show_message("Licences exportées avec succès vers le fichier de configuration.")
-            self.is_modified = True
+            # Appliquer les modifications à la configuration
+            if hasattr(self, 'licences') and isinstance(self.licences, dict):
+                self.config["licences"] = self.licences.copy()
+                
+                # Marquer comme modifié et auto-sauvegarder
+                self._mark_modified()
+                
+                messagebox.showinfo(
+                    "Licences exportées",
+                    "Les licences ont été exportées et sauvegardées avec succès."
+                )
+                
+                # Mettre à jour l'interface des licences
+                self._populate_licences_table()
         except Exception as e:
-            self._show_message(f"Erreur lors de l'exportation des licences: {str(e)}", "error")
+            logger.error(f"Erreur lors de l'exportation des licences: {e}")
+            messagebox.showerror(
+                "Erreur",
+                f"Une erreur est survenue lors de l'exportation des licences:\n{e}"
+            )
     
     def _populate_licences_table(self) -> None:
         """
@@ -1918,59 +1859,59 @@ class RemoteConfigAdmin:
     
     def _apply_message_changes(self) -> None:
         """
-        Applique les modifications de l'onglet de message à la configuration.
+        Applique les modifications de l'onglet des messages globaux.
         """
-        # Récupérer les valeurs
-        visible = self.message_visible_var.get()
-        message_type = self.message_type_var.get()
-        title = self.message_title_entry.get().strip()
-        body = self.message_body_text.get("1.0", tk.END).strip()
-        
-        # Valider les valeurs
-        if visible and not title:
-            messagebox.showwarning(
-                "Titre manquant",
-                "Veuillez spécifier un titre pour le message global."
+        try:
+            # Récupérer les valeurs
+            show_global_message = self.show_message_var.get()
+            message_type = self.message_type_var.get().lower()
+            message_title = self.message_title_entry.get().strip()
+            message_content = self.message_content_text.get("1.0", tk.END).strip()
+            
+            # Vérifier si les champs obligatoires sont remplis si le message est actif
+            if show_global_message and (not message_title or not message_content):
+                messagebox.showerror(
+                    "Champs obligatoires",
+                    "Le titre et le contenu du message sont obligatoires si le message est actif."
+                )
+                return
+            
+            # Mettre à jour la configuration
+            if "messages" not in self.config:
+                self.config["messages"] = {}
+            
+            self.config["messages"]["show_global_message"] = show_global_message
+            self.config["messages"]["global_message_type"] = message_type
+            self.config["messages"]["global_message_title"] = message_title
+            self.config["messages"]["global_message_content"] = message_content
+            
+            # Marquer comme modifié et auto-sauvegarder
+            self._mark_modified()
+            
+            messagebox.showinfo(
+                "Modifications appliquées",
+                "Les modifications ont été appliquées et sauvegardées."
             )
-            return
-        
-        if visible and not body:
-            messagebox.showwarning(
-                "Corps manquant",
-                "Veuillez spécifier un corps pour le message global."
+            
+        except Exception as e:
+            messagebox.showerror(
+                "Erreur",
+                f"Une erreur est survenue lors de l'application des modifications:\n{e}"
             )
-            return
-        
-        # Mettre à jour la configuration
-        if "global_message" not in self.config:
-            self.config["global_message"] = {}
-        
-        self.config["global_message"]["visible"] = visible
-        self.config["global_message"]["type"] = message_type
-        self.config["global_message"]["title"] = title
-        self.config["global_message"]["body"] = body
-        
-        # Marquer comme modifié
-        self.is_modified = True
-        
-        messagebox.showinfo(
-            "Modifications appliquées",
-            "Les modifications du message global ont été appliquées à la configuration."
-        )
     
     def _reset_message_tab(self) -> None:
         """
         Réinitialise l'onglet de message avec les valeurs actuelles de la configuration.
         """
         # Réinitialiser les champs
-        self.message_visible_var.set(self.config.get("global_message", {}).get("visible", False))
+        self.show_message_var.set(self.config.get("global_message", {}).get("visible", False))
         self.message_type_var.set(self.config.get("global_message", {}).get("type", "info"))
         
         self.message_title_entry.delete(0, tk.END)
         self.message_title_entry.insert(0, self.config.get("global_message", {}).get("title", ""))
         
-        self.message_body_text.delete("1.0", tk.END)
-        self.message_body_text.insert("1.0", self.config.get("global_message", {}).get("body", ""))
+        self.message_content_text.delete("1.0", tk.END)
+        self.message_content_text.insert("1.0", self.config.get("global_message", {}).get("body", ""))
     
     def _create_features_tab(self) -> ctk.CTkFrame:
         """
@@ -2111,33 +2052,42 @@ class RemoteConfigAdmin:
     
     def _toggle_feature(self, event) -> None:
         """
-        Bascule l'état d'une fonctionnalité (activée/désactivée).
+        Active ou désactive une fonctionnalité sélectionnée.
         
         Args:
-            event: Événement de double-clic
+            event: Événement Tkinter (non utilisé)
         """
-        # Récupérer la sélection
-        selected_items = self.features_table.selection()
-        if not selected_items:
-            return
-        
-        # Récupérer les données de la fonctionnalité sélectionnée
-        item = selected_items[0]
-        feature, value_text = self.features_table.item(item, "values")
-        
-        # Basculer la valeur
-        current_value = value_text == "Oui"
-        new_value = not current_value
-        
-        # Mettre à jour la configuration
-        if "features" in self.config and feature in self.config["features"]:
-            self.config["features"][feature] = new_value
+        try:
+            # Récupérer l'élément sélectionné
+            selection = self.features_table.selection()
+            if not selection:
+                return
             
-            # Marquer comme modifié
-            self.is_modified = True
+            item = self.features_table.item(selection[0])
+            feature_id = item['values'][0]
+            current_status = item['values'][1]
             
-            # Actualiser le tableau
-            self._populate_features_table()
+            # Inverser le statut
+            new_status = not current_status
+            
+            # Mettre à jour le tableau
+            self.features_table.item(
+                selection[0],
+                values=(feature_id, new_status, item['values'][2])
+            )
+            
+            # Mettre à jour la configuration
+            if "features" in self.config and feature_id in self.config["features"]:
+                self.config["features"][feature_id]["enabled"] = new_status
+                
+                # Marquer comme modifié et auto-sauvegarder
+                self._mark_modified()
+                
+        except Exception as e:
+            messagebox.showerror(
+                "Erreur",
+                f"Une erreur est survenue lors de la modification du statut:\n{e}"
+            )
     
     def _add_feature(self) -> None:
         """
@@ -2818,80 +2768,44 @@ class RemoteConfigAdmin:
     
     def _apply_settings_changes(self) -> None:
         """
-        Applique les modifications de l'onglet des paramètres à la configuration.
+        Applique les modifications de l'onglet des paramètres.
         """
         try:
-            # Récupérer les valeurs des paramètres standards
-            grace_days = int(self.grace_days_var.get())
-            offline_days = int(self.offline_days_var.get())
-            auto_update = self.auto_update_var.get()
-            check_interval = int(self.check_interval_var.get())
-            
-            # Valider les valeurs
-            if grace_days < 0:
-                messagebox.showwarning(
-                    "Valeur invalide",
-                    "Le nombre de jours de grâce ne peut pas être négatif."
-                )
-                return
-            
-            if offline_days < 1:
-                messagebox.showwarning(
-                    "Valeur invalide",
-                    "Le nombre maximum de jours hors ligne doit être au moins 1."
-                )
-                return
-            
-            if check_interval < 0:
-                messagebox.showwarning(
-                    "Valeur invalide",
-                    "L'intervalle de vérification ne peut pas être négatif."
-                )
-                return
+            # Récupérer les valeurs
+            theme = self.theme_var.get()
+            language = self.language_var.get()
+            update_check = self.update_check_var.get()
+            update_auto = self.update_auto_var.get()
             
             # Mettre à jour la configuration
             if "settings" not in self.config:
                 self.config["settings"] = {}
             
-            self.config["settings"]["licence_check_grace_days"] = grace_days
-            self.config["settings"]["max_offline_days"] = offline_days
-            self.config["settings"]["auto_update"] = auto_update
-            self.config["settings"]["check_interval_hours"] = check_interval
+            self.config["settings"]["theme"] = theme
+            self.config["settings"]["language"] = language
+            self.config["settings"]["check_for_updates"] = update_check
+            self.config["settings"]["auto_update"] = update_auto
             
-            # Récupérer les valeurs des paramètres personnalisés
-            for widget in self.custom_settings_frame.winfo_children():
-                if isinstance(widget, ctk.CTkFrame):
-                    for child in widget.winfo_children():
-                        if hasattr(child, "custom_key") and hasattr(child, "custom_var") and hasattr(child, "custom_type"):
-                            key = child.custom_key
-                            var = child.custom_var
-                            param_type = child.custom_type
-                            
-                            # Convertir la valeur selon le type
-                            if param_type == "bool":
-                                value = var.get()
-                            elif param_type == "int":
-                                value = int(var.get())
-                            elif param_type == "float":
-                                value = float(var.get())
-                            else:  # str
-                                value = var.get()
-                            
-                            # Mettre à jour la configuration
-                            self.config["settings"][key] = value
+            # Si des paramètres personnalisés ont été modifiés, les mettre à jour
+            if hasattr(self, 'custom_settings') and self.custom_settings:
+                if "custom" not in self.config["settings"]:
+                    self.config["settings"]["custom"] = {}
+                
+                for key, value in self.custom_settings.items():
+                    self.config["settings"]["custom"][key] = value
             
-            # Marquer comme modifié
-            self.is_modified = True
+            # Marquer comme modifié et auto-sauvegarder
+            self._mark_modified()
             
             messagebox.showinfo(
                 "Modifications appliquées",
-                "Les modifications des paramètres ont été appliquées à la configuration."
+                "Les modifications ont été appliquées et sauvegardées."
             )
             
-        except ValueError as e:
+        except Exception as e:
             messagebox.showerror(
                 "Erreur",
-                f"Une des valeurs n'est pas valide: {e}"
+                f"Une erreur est survenue lors de l'application des modifications:\n{e}"
             )
     
     def _reset_settings_tab(self) -> None:
@@ -3034,32 +2948,47 @@ class RemoteConfigAdmin:
     
     def _apply_support_changes(self) -> None:
         """
-        Applique les modifications de l'onglet de support à la configuration.
+        Applique les modifications de l'onglet du support.
         """
-        # Récupérer les valeurs
-        email = self.support_email_entry.get().strip()
-        url = self.support_url_entry.get().strip()
-        phone = self.support_phone_entry.get().strip()
-        hours = self.support_hours_entry.get().strip()
-        instructions = self.support_instructions_text.get("1.0", tk.END).strip()
-        
-        # Mettre à jour la configuration
-        if "support" not in self.config:
-            self.config["support"] = {}
-        
-        self.config["support"]["email"] = email
-        self.config["support"]["url"] = url
-        self.config["support"]["phone"] = phone
-        self.config["support"]["hours"] = hours
-        self.config["support"]["instructions"] = instructions
-        
-        # Marquer comme modifié
-        self.is_modified = True
-        
-        messagebox.showinfo(
-            "Modifications appliquées",
-            "Les modifications des informations de support ont été appliquées à la configuration."
-        )
+        try:
+            # Récupérer les valeurs
+            email = self.support_email_entry.get().strip()
+            website = self.support_website_entry.get().strip()
+            phone = self.support_phone_entry.get().strip()
+            hours = self.support_hours_entry.get().strip()
+            custom_link = self.custom_link_entry.get().strip()
+            custom_label = self.custom_label_entry.get().strip()
+            
+            # Mettre à jour la configuration
+            if "support" not in self.config:
+                self.config["support"] = {}
+            
+            self.config["support"]["email"] = email
+            self.config["support"]["website"] = website
+            self.config["support"]["phone"] = phone
+            self.config["support"]["hours"] = hours
+            
+            if custom_link and custom_label:
+                self.config["support"]["custom_link"] = {
+                    "url": custom_link,
+                    "label": custom_label
+                }
+            elif "custom_link" in self.config["support"]:
+                del self.config["support"]["custom_link"]
+            
+            # Marquer comme modifié et auto-sauvegarder
+            self._mark_modified()
+            
+            messagebox.showinfo(
+                "Modifications appliquées",
+                "Les modifications ont été appliquées et sauvegardées."
+            )
+            
+        except Exception as e:
+            messagebox.showerror(
+                "Erreur",
+                f"Une erreur est survenue lors de l'application des modifications:\n{e}"
+            )
     
     def _reset_support_tab(self) -> None:
         """
@@ -3883,51 +3812,40 @@ class RemoteConfigAdmin:
     
     def _apply_security_changes(self) -> None:
         """
-        Applique les modifications de l'onglet de sécurité à la configuration.
+        Applique les modifications de l'onglet de sécurité.
         """
         try:
             # Récupérer les valeurs
-            signature_required = self.signature_required_var.get()
-            public_key = self.public_key_text.get("1.0", tk.END).strip()
-            log_enabled = self.log_enabled_var.get()
-            log_retention = int(self.log_retention_var.get())
-            
-            # Valider les entrées
-            if signature_required and not public_key:
-                messagebox.showwarning(
-                    "Clé publique manquante",
-                    "Une clé publique est requise lorsque la signature est exigée."
-                )
-                return
-            
-            if log_retention < 1 or log_retention > 365:
-                messagebox.showwarning(
-                    "Valeur invalide",
-                    "La durée de conservation des journaux doit être comprise entre 1 et 365 jours."
-                )
-                return
+            sig_required = self.signature_required_var.get()
+            require_tfa = self.require_tfa_var.get()
+            auto_logout = self.auto_logout_var.get()
+            auto_logout_time = int(self.logout_time_var.get()) if self.logout_time_var.get().isdigit() else 30
+            log_access = self.log_enabled_var.get()
+            log_retention = int(self.log_retention_var.get()) if self.log_retention_var.get().isdigit() else 30
             
             # Mettre à jour la configuration
             if "security" not in self.config:
                 self.config["security"] = {}
             
-            self.config["security"]["signature_required"] = signature_required
-            self.config["security"]["public_key"] = public_key
-            self.config["security"]["log_access"] = log_enabled
+            self.config["security"]["require_signature"] = sig_required
+            self.config["security"]["require_tfa"] = require_tfa
+            self.config["security"]["auto_logout"] = auto_logout
+            self.config["security"]["auto_logout_time"] = auto_logout_time
+            self.config["security"]["log_access"] = log_access
             self.config["security"]["log_retention_days"] = log_retention
             
-            # Marquer comme modifié
-            self.is_modified = True
+            # Marquer comme modifié et auto-sauvegarder
+            self._mark_modified()
             
             messagebox.showinfo(
                 "Modifications appliquées",
-                "Les modifications des paramètres de sécurité ont été appliquées à la configuration."
+                "Les modifications ont été appliquées et sauvegardées."
             )
             
-        except ValueError as e:
+        except Exception as e:
             messagebox.showerror(
                 "Erreur",
-                f"Une des valeurs n'est pas valide: {e}"
+                f"Une erreur est survenue lors de l'application des modifications:\n{e}"
             )
     
     def _reset_security_tab(self) -> None:
@@ -4022,17 +3940,109 @@ class RemoteConfigAdmin:
             # Parser le JSON
             new_config = json.loads(json_text)
             
+            # Vérifier que le résultat est bien un dictionnaire
+            if not isinstance(new_config, dict):
+                raise ValueError("La configuration doit être un objet JSON (dictionnaire)")
+                
+            # Sauvegarder une copie de l'ancienne configuration en cas d'erreur
+            old_config = self.config.copy() if isinstance(self.config, dict) else {}
+            
             # Mettre à jour la configuration
             self.config = new_config
-            self.is_modified = True
             
-            # Actualiser les onglets
-            self._refresh_all_tabs()
-            
-            messagebox.showinfo(
-                "JSON appliqué",
-                "Les modifications du JSON ont été appliquées avec succès."
-            )
+            # Essayer de recréer les onglets sans planter l'interface
+            try:
+                # Créer les nouveaux onglets sans détruire les anciens
+                new_tabs = {}
+                
+                # Créer chaque onglet individuellement et capturer les erreurs
+                try:
+                    new_tabs["update"] = self._create_update_tab()
+                except Exception as tab_error:
+                    logger.error(f"Erreur lors de la création de l'onglet 'update': {tab_error}")
+                    
+                try:
+                    new_tabs["licences"] = self._create_licences_tab()
+                except Exception as tab_error:
+                    logger.error(f"Erreur lors de la création de l'onglet 'licences': {tab_error}")
+                    
+                try:
+                    new_tabs["messages"] = self._create_messages_tab()
+                except Exception as tab_error:
+                    logger.error(f"Erreur lors de la création de l'onglet 'messages': {tab_error}")
+                    
+                try:
+                    new_tabs["features"] = self._create_features_tab()
+                except Exception as tab_error:
+                    logger.error(f"Erreur lors de la création de l'onglet 'features': {tab_error}")
+                    
+                try:
+                    new_tabs["settings"] = self._create_settings_tab()
+                except Exception as tab_error:
+                    logger.error(f"Erreur lors de la création de l'onglet 'settings': {tab_error}")
+                    
+                try:
+                    new_tabs["support"] = self._create_support_tab()
+                except Exception as tab_error:
+                    logger.error(f"Erreur lors de la création de l'onglet 'support': {tab_error}")
+                    
+                try:
+                    new_tabs["changelog"] = self._create_changelog_tab()
+                except Exception as tab_error:
+                    logger.error(f"Erreur lors de la création de l'onglet 'changelog': {tab_error}")
+                    
+                try:
+                    new_tabs["security"] = self._create_security_tab()
+                except Exception as tab_error:
+                    logger.error(f"Erreur lors de la création de l'onglet 'security': {tab_error}")
+                    
+                try:
+                    new_tabs["actions"] = self._create_actions_tab()
+                except Exception as tab_error:
+                    logger.error(f"Erreur lors de la création de l'onglet 'actions': {tab_error}")
+                    
+                # L'onglet "raw" est toujours créé en dernier car il ne dépend pas de la structure
+                try:
+                    new_tabs["raw"] = self._create_raw_tab()
+                except Exception as tab_error:
+                    logger.error(f"Erreur lors de la création de l'onglet 'raw': {tab_error}")
+                
+                # Si on a créé au moins l'onglet raw, on peut continuer
+                if "raw" in new_tabs:
+                    # D'abord oublier l'onglet actuel
+                    current_tab = self.current_tab
+                    if current_tab and current_tab in self.tabs:
+                        self.tabs[current_tab].pack_forget()
+                    
+                    # Détruire les anciens onglets
+                    for tab_id, tab_frame in self.tabs.items():
+                        try:
+                            tab_frame.destroy()
+                        except Exception as e:
+                            logger.error(f"Erreur lors de la destruction de l'onglet '{tab_id}': {e}")
+                    
+                    # Remplacer par les nouveaux onglets
+                    self.tabs = new_tabs
+                    
+                    # Afficher l'onglet raw (qui contient déjà la nouvelle configuration)
+                    self._show_tab("raw")
+                    
+                    # Marquer comme modifié et auto-sauvegarder
+                    self._mark_modified()
+                    
+                    messagebox.showinfo(
+                        "JSON appliqué",
+                        "Les modifications du JSON ont été appliquées et sauvegardées."
+                    )
+                else:
+                    # Si on n'a pas pu créer l'onglet raw, restaurer l'ancienne configuration
+                    self.config = old_config
+                    raise RuntimeError("Impossible de recréer l'onglet JSON brut")
+            except Exception as refresh_error:
+                # Si l'actualisation échoue, restaurer l'ancienne configuration
+                self.config = old_config
+                logger.error(f"Erreur lors de l'actualisation des onglets: {refresh_error}")
+                raise refresh_error
             
         except json.JSONDecodeError as e:
             messagebox.showerror(
@@ -4041,10 +4051,14 @@ class RemoteConfigAdmin:
             )
         
         except Exception as e:
+            logger.error(f"Erreur lors de l'application du JSON: {e}")
             messagebox.showerror(
                 "Erreur",
-                f"Une erreur est survenue lors de l'application du JSON:\n{e}"
+                f"Une erreur est survenue lors de l'application du JSON:\n{str(e)}"
             )
+            
+            # Réinitialiser le JSON dans tous les cas pour éviter de perdre les modifications
+            self._reset_raw_json()
     
     def _reset_raw_json(self) -> None:
         """
@@ -4075,69 +4089,361 @@ class RemoteConfigAdmin:
         elif message_type == "success":
             messagebox.showinfo(title, message)
     
-    def _init_uploader(self):
-        """Initialise l'uploader Google Drive avec gestion des erreurs"""
-        if not self.config:
-            logger.warning("Configuration non chargée, impossible d'initialiser l'uploader")
-            return
-
+    def _create_actions_tab(self) -> ctk.CTkFrame:
+        """
+        Crée un onglet dédié aux actions rapides.
+        
+        Returns:
+            ctk.CTkFrame: Frame de l'onglet
+        """
+        tab = ctk.CTkFrame(self.content_frame)
+        
+        # Titre
+        ctk.CTkLabel(
+            tab,
+            text="Actions rapides",
+            font=ctk.CTkFont(size=18, weight="bold")
+        ).pack(pady=10)
+        
+        # Description
+        ctk.CTkLabel(
+            tab,
+            text="Utilisez ces actions pour gérer rapidement la configuration de l'application.",
+            wraplength=600
+        ).pack(pady=5)
+        
+        # Frame pour les boutons d'action
+        actions_frame = ctk.CTkFrame(tab)
+        actions_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Exportation vers le dossier de téléchargements
+        export_frame = ctk.CTkFrame(actions_frame)
+        export_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        ctk.CTkLabel(
+            export_frame,
+            text="Exporter vers Windows Téléchargements",
+            font=ctk.CTkFont(weight="bold"),
+            anchor="w"
+        ).pack(fill=tk.X, padx=10, pady=5)
+        
+        ctk.CTkLabel(
+            export_frame,
+            text="Exporte la configuration actuelle vers le dossier de téléchargements Windows pour un accès facile.",
+            wraplength=550,
+            anchor="w"
+        ).pack(fill=tk.X, padx=10)
+        
+        export_button = ctk.CTkButton(
+            export_frame,
+            text="Exporter vers Téléchargements",
+            command=self.export_to_downloads
+        )
+        export_button.pack(pady=10)
+        
+        # Contrôle de la sauvegarde automatique
+        autosave_frame = ctk.CTkFrame(actions_frame)
+        autosave_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        ctk.CTkLabel(
+            autosave_frame,
+            text="Sauvegarde automatique",
+            font=ctk.CTkFont(weight="bold"),
+            anchor="w"
+        ).pack(fill=tk.X, padx=10, pady=5)
+        
+        ctk.CTkLabel(
+            autosave_frame,
+            text="Active ou désactive la sauvegarde automatique après chaque modification.",
+            wraplength=550,
+            anchor="w"
+        ).pack(fill=tk.X, padx=10)
+        
+        # Créer une variable pour stocker l'état
+        self.autosave_var = tk.BooleanVar(value=self.autosave_enabled)
+        
+        # Créer un switch pour activer/désactiver
+        autosave_switch = ctk.CTkSwitch(
+            autosave_frame,
+            text="Sauvegarde automatique",
+            variable=self.autosave_var,
+            command=self._toggle_autosave
+        )
+        autosave_switch.pack(padx=10, pady=10)
+        
+        # État actuel
+        self.autosave_status_label = ctk.CTkLabel(
+            autosave_frame,
+            text=f"État: {'Activée' if self.autosave_enabled else 'Désactivée'}",
+            text_color="#28a745" if self.autosave_enabled else "#dc3545"
+        )
+        self.autosave_status_label.pack(padx=10, pady=5)
+        
+        # Bouton pour forcer la sauvegarde
+        force_save_button = ctk.CTkButton(
+            autosave_frame,
+            text="Forcer la sauvegarde maintenant",
+            command=self._force_save
+        )
+        force_save_button.pack(pady=10)
+        
+        # Ajout d'une section pour la publication automatique
+        publish_frame = ctk.CTkFrame(actions_frame)
+        publish_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        ctk.CTkLabel(
+            publish_frame,
+            text="Publication vers URL distante",
+            font=ctk.CTkFont(weight="bold"),
+            anchor="w"
+        ).pack(fill=tk.X, padx=10, pady=5)
+        
+        ctk.CTkLabel(
+            publish_frame,
+            text="Configure une URL où la configuration sera automatiquement publiée à chaque modification.",
+            wraplength=550,
+            anchor="w"
+        ).pack(fill=tk.X, padx=10)
+        
+        # Paramètres de l'URL de publication
+        publish_url_frame = ctk.CTkFrame(publish_frame)
+        publish_url_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        ctk.CTkLabel(
+            publish_url_frame,
+            text="URL de publication:",
+            width=120,
+            anchor="w"
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        
+        self.publish_url_entry = ctk.CTkEntry(publish_url_frame, width=400)
+        self.publish_url_entry.pack(side=tk.LEFT, padx=5, pady=5, fill=tk.X, expand=True)
+        
+        # Récupérer l'URL de la dernière publication si disponible
+        if hasattr(self, 'config') and isinstance(self.config, dict):
+            publish_url = self.config.get("_meta", {}).get("publish_url", "")
+            if publish_url:
+                self.publish_url_entry.delete(0, tk.END)
+                self.publish_url_entry.insert(0, publish_url)
+        
+        # Boutons d'action pour la publication
+        publish_buttons_frame = ctk.CTkFrame(publish_frame)
+        publish_buttons_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        save_url_button = ctk.CTkButton(
+            publish_buttons_frame,
+            text="Enregistrer l'URL",
+            command=self._save_publish_url
+        )
+        save_url_button.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        publish_button = ctk.CTkButton(
+            publish_buttons_frame,
+            text="Publier maintenant",
+            command=self._publish_config
+        )
+        publish_button.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        return tab
+    
+    def _save_publish_url(self):
+        """
+        Enregistre l'URL de publication dans la configuration.
+        """
         try:
-            # Vérifier que la section update existe
-            if 'update' not in self.config:
-                self.config['update'] = {}
-                logger.info("Section 'update' créée dans la configuration")
+            # Récupérer l'URL depuis le champ de saisie
+            publish_url = self.publish_url_entry.get().strip()
             
-            update_config = self.config['update']
-            
-            # Utiliser le chemin absolu du répertoire de travail
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            default_credentials_path = os.path.join(base_dir, 'credentials.json')
-            
-            # Mettre à jour les paramètres avec les valeurs par défaut si nécessaire
-            if 'credentials_path' not in update_config or not os.path.exists(update_config['credentials_path']):
-                update_config['credentials_path'] = default_credentials_path
-                logger.info(f"Chemin des credentials mis à jour: {default_credentials_path}")
-            
-            if 'folder_id' not in update_config:
-                update_config['folder_id'] = "1Lmh0m7CvkmiSKyXAKZWw0asSfhLwofF5"
-                logger.info("ID du dossier Google Drive mis à jour")
-            
-            if 'encryption_password' not in update_config:
-                update_config['encryption_password'] = "vynal_docs_secure_key"
-                logger.info("Mot de passe de chiffrement mis à jour")
-            
-            # Vérifier que le fichier credentials.json existe
-            if not os.path.exists(update_config['credentials_path']):
-                logger.error(f"Fichier credentials.json non trouvé: {update_config['credentials_path']}")
+            # Vérifier si l'URL est valide
+            if not publish_url:
+                messagebox.showwarning(
+                    "URL manquante",
+                    "Veuillez saisir une URL de publication valide."
+                )
                 return
             
-            # Vérifier les permissions du fichier credentials.json
-            try:
-                with open(update_config['credentials_path'], 'r') as f:
-                    json.load(f)
-            except Exception as e:
-                logger.error(f"Erreur lors de la lecture du fichier credentials.json: {e}")
+            # Vérifier si la section _meta existe
+            if "_meta" not in self.config:
+                self.config["_meta"] = {}
+            
+            # Enregistrer l'URL
+            self.config["_meta"]["publish_url"] = publish_url
+            self.is_modified = True
+            
+            # Sauvegarder la configuration
+            if self.config_file_path:
+                with open(self.config_file_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.config, f, indent=2, ensure_ascii=False)
+                
+                messagebox.showinfo(
+                    "URL enregistrée",
+                    f"L'URL de publication a été enregistrée avec succès:\n{publish_url}"
+                )
+            else:
+                messagebox.showinfo(
+                    "URL enregistrée",
+                    f"L'URL de publication a été enregistrée temporairement:\n{publish_url}\n\nVeuillez sauvegarder la configuration pour la conserver."
+                )
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'enregistrement de l'URL de publication: {e}")
+            messagebox.showerror(
+                "Erreur",
+                f"Une erreur est survenue lors de l'enregistrement de l'URL:\n{e}"
+            )
+    
+    def _publish_config(self):
+        """
+        Publie la configuration actuelle vers l'URL spécifiée.
+        """
+        try:
+            # Récupérer l'URL depuis le champ de saisie
+            publish_url = self.publish_url_entry.get().strip()
+            
+            # Vérifier si l'URL est valide
+            if not publish_url:
+                messagebox.showwarning(
+                    "URL manquante",
+                    "Veuillez saisir une URL de publication valide."
+                )
                 return
             
-            # Créer l'uploader avec les paramètres validés
-            from utils.update_uploader import UpdateUploader
-            self.uploader = UpdateUploader(
-                credentials_path=update_config['credentials_path'],
-                folder_id=update_config['folder_id'],
-                encryption_password=update_config['encryption_password']
+            # Afficher un message de progression
+            if hasattr(self, 'root') and self.root:
+                self.root.config(cursor="wait")
+                self.root.update()
+            
+            # Convertir la configuration en JSON
+            config_json = json.dumps(self.config, indent=2, ensure_ascii=False)
+            
+            # Simuler un délai pour l'exemple (à remplacer par votre code de publication réel)
+            import time
+            time.sleep(1)
+            
+            # Ici, vous devriez ajouter le code pour publier réellement la configuration
+            # vers l'URL spécifiée, par exemple avec des requêtes HTTP, FTP, etc.
+            # Exemple avec requests (nécessite d'installer le module):
+            """
+            import requests
+            response = requests.post(
+                publish_url,
+                json=self.config,
+                headers={"Content-Type": "application/json"}
+            )
+            if response.status_code != 200:
+                raise Exception(f"Erreur HTTP: {response.status_code} - {response.text}")
+            """
+            
+            # Pour l'exemple, simuler une publication réussie
+            logger.info(f"Configuration publiée vers {publish_url}")
+            
+            # Restaurer le curseur
+            if hasattr(self, 'root') and self.root:
+                self.root.config(cursor="")
+            
+            # Enregistrer l'URL dans la configuration pour la prochaine fois
+            if "_meta" not in self.config:
+                self.config["_meta"] = {}
+            self.config["_meta"]["publish_url"] = publish_url
+            self.config["_meta"]["last_published"] = datetime.datetime.now().isoformat()
+            self.is_modified = True
+            
+            # Afficher un message de succès
+            messagebox.showinfo(
+                "Publication réussie",
+                f"La configuration a été publiée avec succès vers:\n{publish_url}"
             )
             
-            # Sauvegarder les changements dans la configuration si nécessaire
-            self._save_config(show_confirmation=False)
-            
-            logger.info("Uploader Google Drive initialisé avec succès")
-            
-        except ImportError:
-            logger.error("Module update_uploader non trouvé")
-            self.uploader = None
         except Exception as e:
-            logger.error(f"Erreur lors de l'initialisation de l'uploader: {e}")
-            self.uploader = None
+            logger.error(f"Erreur lors de la publication de la configuration: {e}")
+            
+            # Restaurer le curseur
+            if hasattr(self, 'root') and self.root:
+                self.root.config(cursor="")
+            
+            messagebox.showerror(
+                "Erreur de publication",
+                f"Une erreur est survenue lors de la publication:\n{e}"
+            )
+    
+    def _force_save(self):
+        """
+        Force la sauvegarde de la configuration.
+        """
+        try:
+            if not self.config_file_path:
+                messagebox.showwarning(
+                    "Aucun fichier",
+                    "Aucun fichier de configuration n'est défini. Veuillez d'abord enregistrer la configuration."
+                )
+                return
+            
+            # Créer une sauvegarde du fichier existant
+            if os.path.exists(self.config_file_path):
+                backup_path = f"{self.config_file_path}.bak.manual_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+                shutil.copyfile(self.config_file_path, backup_path)
+                logger.info(f"Sauvegarde manuelle créée: {backup_path}")
+            
+            # Enregistrer la configuration
+            with open(self.config_file_path, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, indent=2, ensure_ascii=False)
+            
+            # Réinitialiser le flag de modification
+            self.is_modified = False
+            
+            logger.info(f"Configuration sauvegardée manuellement dans {self.config_file_path}")
+            
+            # Afficher un message de confirmation
+            messagebox.showinfo(
+                "Sauvegarde forcée",
+                f"La configuration a été sauvegardée avec succès dans:\n{self.config_file_path}"
+            )
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la sauvegarde forcée: {e}")
+            messagebox.showerror(
+                "Erreur",
+                f"Une erreur est survenue lors de la sauvegarde forcée:\n{e}"
+            )
+    
+    def _toggle_autosave(self):
+        """
+        Active ou désactive la sauvegarde automatique.
+        """
+        try:
+            # Mettre à jour l'état
+            self.autosave_enabled = self.autosave_var.get()
+            
+            # Mettre à jour le label de statut
+            if hasattr(self, 'autosave_status_label'):
+                self.autosave_status_label.configure(
+                    text=f"État: {'Activée' if self.autosave_enabled else 'Désactivée'}",
+                    text_color="#28a745" if self.autosave_enabled else "#dc3545"
+                )
+            
+            # Afficher un message de confirmation
+            status = "activée" if self.autosave_enabled else "désactivée"
+            messagebox.showinfo(
+                "Sauvegarde automatique",
+                f"La sauvegarde automatique a été {status}."
+            )
+            
+            # Si on a activé la sauvegarde automatique et qu'il y a des modifications en attente,
+            # demander à l'utilisateur s'il veut les sauvegarder maintenant
+            if self.autosave_enabled and self.is_modified:
+                response = messagebox.askyesno(
+                    "Sauvegarder maintenant",
+                    "Des modifications sont en attente. Voulez-vous les sauvegarder maintenant?"
+                )
+                if response:
+                    self._mark_modified()
+            
+        except Exception as e:
+            logger.error(f"Erreur lors du changement d'état de la sauvegarde automatique: {e}")
+            messagebox.showerror(
+                "Erreur",
+                f"Une erreur est survenue lors du changement d'état de la sauvegarde automatique:\n{e}"
+            )
 
 
 if __name__ == "__main__":

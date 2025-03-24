@@ -74,6 +74,18 @@ class ChatAIView:
     def create_widgets(self):
         """Crée les widgets pour l'onglet"""
         try:
+            # Vérifier si l'utilisateur a une licence active
+            has_license = self.model.check_license()
+            
+            # Si l'utilisateur n'a pas de licence, vérifier l'accès au chat IA
+            if not has_license:
+                # Vérifier l'accès via le gestionnaire de version gratuite
+                can_access, message = self.model.free_version_manager.check_ai_chat_access()
+                if not can_access:
+                    # Afficher le message sur les limitations de la version gratuite
+                    self.afficher_limitation_version_gratuite(message)
+                    return
+            
             # Créer un conteneur pour l'interface de chat
             self.chat_container = ttk.Frame(self.frame)
             self.chat_container.pack(fill="both", expand=True, padx=0, pady=0)
@@ -151,4 +163,68 @@ class ChatAIView:
     
     def ouvrir_aide(self):
         """Ouvre la documentation d'aide pour installer Ollama"""
-        webbrowser.open("https://ollama.com/download") 
+        webbrowser.open("https://ollama.com/download")
+    
+    def afficher_limitation_version_gratuite(self, message):
+        """Affiche un message concernant les limitations de la version gratuite"""
+        try:
+            # Vider le cadre principal
+            for widget in self.frame.winfo_children():
+                widget.destroy()
+            
+            # Créer un cadre pour le message
+            message_frame = ctk.CTkFrame(self.frame)
+            message_frame.pack(fill="both", expand=True, padx=20, pady=20)
+            
+            # Icône de verrou (ou texte si pas d'image disponible)
+            lock_label = ctk.CTkLabel(
+                message_frame,
+                text="🔒",  # Emoji verrou
+                font=ctk.CTkFont(size=48)
+            )
+            lock_label.pack(pady=(30, 10))
+            
+            # Titre
+            title_label = ctk.CTkLabel(
+                message_frame,
+                text="Fonctionnalité Premium",
+                font=ctk.CTkFont(size=24, weight="bold")
+            )
+            title_label.pack(pady=(10, 5))
+            
+            # Message
+            info_label = ctk.CTkLabel(
+                message_frame,
+                text=message,
+                font=ctk.CTkFont(size=14),
+                wraplength=500,
+                justify="center"
+            )
+            info_label.pack(pady=(5, 20))
+            
+            # Bouton pour activer une licence
+            activate_button = ctk.CTkButton(
+                message_frame,
+                text="Activer une licence",
+                command=self.ouvrir_activation_licence
+            )
+            activate_button.pack(pady=(0, 30))
+            
+            logger.info("Message de limitation de version gratuite affiché")
+        except Exception as e:
+            logger.error(f"Erreur lors de l'affichage du message de limitation: {e}", exc_info=True)
+            # En cas d'erreur, afficher un message simple
+            self.afficher_erreur(f"Version gratuite - Chat IA non disponible\n\n{message}")
+    
+    def ouvrir_activation_licence(self):
+        """Ouvre la boîte de dialogue d'activation de licence"""
+        try:
+            # Accéder à la vue du compte si disponible
+            if hasattr(self.model, 'main_view') and hasattr(self.model.main_view, 'show_account'):
+                # Naviguer vers la vue Mon Compte
+                self.model.main_view.show_account()
+                logger.info("Navigation vers la vue Mon Compte pour activation de licence")
+            else:
+                logger.warning("Impossible de naviguer vers la vue Mon Compte")
+        except Exception as e:
+            logger.error(f"Erreur lors de l'ouverture de l'activation de licence: {e}", exc_info=True) 
