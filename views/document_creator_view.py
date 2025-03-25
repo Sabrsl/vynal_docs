@@ -107,9 +107,10 @@ class DocumentCreatorView:
         """
         Crée les widgets de l'interface
         """
-        # Barre de progression
+        # Barre de progression (initialement masquée)
         self.progress_frame = ctk.CTkFrame(self.main_frame)
-        self.progress_frame.pack(fill="x", pady=(0, 20))
+        # Ne pas l'afficher au démarrage, seulement quand un processus commence
+        # self.progress_frame.pack(fill="x", pady=(0, 20))
         
         # Créer les indicateurs d'étape
         self.step_indicators = []
@@ -163,91 +164,133 @@ class DocumentCreatorView:
         Args:
             step: Numéro de l'étape à afficher
         """
-        # S'assurer que l'indice est valide
-        if step < 0 or step >= len(self.steps):
-            logger.error(f"Indice d'étape invalide: {step}")
-            return
-        
-        # Initialiser selected_template comme un dictionnaire vide s'il n'existe pas
-        # pour éviter les erreurs AttributeError: 'NoneType' object has no attribute 'get'
-        if not hasattr(self, 'selected_template') or self.selected_template is None:
-            self.selected_template = {}
-            
-        # Mettre à jour les indicateurs d'étape
-        for i, indicator in enumerate(self.step_indicators):
-            if i < step:
-                # Étape terminée
-                indicator["number"].configure(
-                    fg_color="green",
-                    text="✓",
-                    text_color="white"
-                )
-            elif i == step:
-                # Étape en cours
-                indicator["number"].configure(
-                    fg_color="#1f538d",
-                    text=str(i + 1),
-                    text_color="white"
-                )
-            else:
-                # Étape à venir
-                indicator["number"].configure(
-                    fg_color=("gray75", "gray25"),
-                    text=str(i + 1),
-                    text_color=("gray20", "gray80")
-                )
-                
-        # Mettre à jour le titre de la fenêtre
-        self.title_label.configure(text=f"Création de document - {self.steps[step]}")
-        
-        # Nettoyer la zone de contenu
-        for widget in self.content_frame.winfo_children():
-            widget.destroy()
-            
-        # Afficher le contenu de l'étape
-        if step == 0:
-            self.show_initial_options()
-        elif step == 1:
-            self.show_document_types()
-        elif step == 2:
-            self.show_client_form()
-        elif step == 3:
-            self.show_validation()
-        elif step == 4:
-            self.show_customization()
-        elif step == 5:
-            self.show_finalization()
-            
-        self.current_step = step
-        
-        # Mettre à jour les boutons de navigation
-        self.update_navigation()
-        
-        # Faire défiler vers le haut du contenu - méthode corrigée
         try:
-            # Utiliser _parent_canvas qui est l'attribut interne de CTkScrollableFrame
-            if hasattr(self.scroll_container, '_parent_canvas'):
-                self.scroll_container._parent_canvas.yview_moveto(0)
+            # S'assurer que l'indice est valide
+            if step < 0 or step >= len(self.steps):
+                logger.error(f"Indice d'étape invalide: {step}")
+                # Réinitialiser à l'étape 0 en cas d'erreur
+                step = 0
+            
+            # Gérer l'affichage de la barre de progression
+            if step == 0:
+                # Masquer la barre de progression à l'étape initiale
+                if hasattr(self, 'progress_frame') and self.progress_frame:
+                    self.progress_frame.pack_forget()
+            else:
+                # Afficher la barre de progression pour les autres étapes
+                if hasattr(self, 'progress_frame') and self.progress_frame:
+                    if not self.progress_frame.winfo_ismapped():
+                        self.progress_frame.pack(fill="x", pady=(0, 20), before=self.content_frame)
+            
+            # Initialiser selected_template comme un dictionnaire vide s'il n'existe pas
+            # pour éviter les erreurs AttributeError: 'NoneType' object has no attribute 'get'
+            if not hasattr(self, 'selected_template') or self.selected_template is None:
+                self.selected_template = {}
+                
+            # Mettre à jour les indicateurs d'étape
+            if hasattr(self, 'step_indicators') and self.step_indicators:
+                for i, indicator in enumerate(self.step_indicators):
+                    if i < step:
+                        # Étape terminée
+                        indicator["number"].configure(
+                            fg_color="green",
+                            text="✓",
+                            text_color="white"
+                        )
+                    elif i == step:
+                        # Étape en cours
+                        indicator["number"].configure(
+                            fg_color="#1f538d",
+                            text=str(i + 1),
+                            text_color="white"
+                        )
+                    else:
+                        # Étape à venir
+                        indicator["number"].configure(
+                            fg_color=("gray75", "gray25"),
+                            text=str(i + 1),
+                            text_color=("gray20", "gray80")
+                        )
+                    
+            # Mettre à jour le titre de la fenêtre
+            if hasattr(self, 'title_label') and self.title_label:
+                self.title_label.configure(text=f"Création de document - {self.steps[step]}")
+            
+            # Nettoyer la zone de contenu
+            if hasattr(self, 'content_frame') and self.content_frame:
+                for widget in self.content_frame.winfo_children():
+                    widget.destroy()
+                
+            # Afficher le contenu de l'étape
+            if step == 0:
+                self.show_initial_options()
+            elif step == 1:
+                self.show_document_types()
+            elif step == 2:
+                self.show_client_form()
+            elif step == 3:
+                self.show_validation()
+            elif step == 4:
+                self.show_customization()
+            elif step == 5:
+                self.show_finalization()
+                
+            self.current_step = step
+            
+            # Mettre à jour les boutons de navigation
+            self.update_navigation()
+            
+            # Faire défiler vers le haut du contenu - méthode corrigée
+            try:
+                # Utiliser _parent_canvas qui est l'attribut interne de CTkScrollableFrame
+                if hasattr(self, 'scroll_container') and hasattr(self.scroll_container, '_parent_canvas'):
+                    self.scroll_container._parent_canvas.yview_moveto(0)
+            except Exception as e:
+                logger.warning(f"Impossible de faire défiler vers le haut: {e}")
+            
+            logger.info(f"Affichage de l'étape {step}: {self.steps[step]}")
+            
         except Exception as e:
-            logger.warning(f"Impossible de faire défiler vers le haut: {e}")
-        
-        logger.info(f"Affichage de l'étape {step}: {self.steps[step]}")
+            logger.error(f"Erreur lors de l'affichage de l'étape {step}: {e}", exc_info=True)
+            # En cas d'erreur grave, essayer de revenir à l'état initial
+            self.reset_process()
         
     def show_initial_options(self) -> None:
         """
         Affiche les options initiales (nouveau document ou modèle existant)
         """
+        # Réinitialiser l'étape actuelle
+        self.current_step = 0
+        
         # Nettoyer la zone de contenu
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
-        # Titre
+        # Conteneur pour le titre et la description
+        header_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        header_frame.pack(pady=(20, 30), fill="x")
+        
+        # Titre avec style moderne
         title = ctk.CTkLabel(
-            self.content_frame,
-            text="Choisissez une option",
-            font=("", 24, "bold")  # Taille réduite
+            header_frame,
+            text="Créer un nouveau document",
+            font=ctk.CTkFont(size=28, weight="bold"),
+            text_color=("#2C3E50", "#ECF0F1")
         )
-        title.pack(pady=(10, 20))  # Padding vertical réduit
+        title.pack(pady=(0, 10))
+        
+        # Ligne de séparation élégante
+        separator = ctk.CTkFrame(header_frame, height=2, fg_color=("#3498DB", "#3498DB"))
+        separator.pack(fill="x", padx=100, pady=(0, 10))
+        
+        # Description explicative
+        description = ctk.CTkLabel(
+            header_frame,
+            text="Choisissez l'une des options ci-dessous pour commencer",
+            font=ctk.CTkFont(size=14),
+            text_color=("#7F8C8D", "#BDC3C7")
+        )
+        description.pack(pady=(0, 10))
         
         # Ajouter un message de débogage pour s'assurer que cette méthode est bien appelée
         logger.info("Affichage des options initiales - traiter un document")
@@ -258,92 +301,135 @@ class DocumentCreatorView:
 
         # Fonction pour créer un bouton avec une icône plus grande
         def create_button_with_large_icon(parent, icon, text, command, **kwargs):
-            # Créer un cadre pour contenir l'icône et le texte
-            button_frame = ctk.CTkFrame(parent, fg_color=kwargs.get('fg_color', ("gray90", "gray20")))
-            button_frame.pack(side="left", padx=kwargs.get('padx', 20))  # Espacement horizontal réduit
+            # Créer un cadre pour contenir l'icône et le texte avec des coins plus arrondis
+            button_frame = ctk.CTkFrame(
+                parent, 
+                fg_color=kwargs.get('fg_color', ("gray95", "gray20")),
+                corner_radius=kwargs.get('corner_radius', 25),
+                border_width=kwargs.get('border_width', 2),
+                border_color=kwargs.get('border_color', ("gray85", "gray30"))
+            )
+            button_frame.pack(side="left", padx=kwargs.get('padx', 20))
             
-            # Ajouter l'icône en grand
+            # Ajouter l'icône avec une couleur plus vive
             icon_label = ctk.CTkLabel(
                 button_frame,
                 text=icon,
-                font=("", 80),  # Taille d'icône réduite
-                fg_color=kwargs.get('fg_color', ("gray90", "gray20")),
-                text_color=kwargs.get('text_color', ("gray10", "gray90"))
+                font=("", 90),  # Icône légèrement plus grande
+                fg_color="transparent",
+                text_color=kwargs.get('icon_color', ("#2E86C1", "#3498DB"))
             )
-            icon_label.pack(pady=(20, 10))  # Padding vertical réduit
+            icon_label.pack(pady=(30, 15))
             
-            # Ajouter le texte
-            text_label = ctk.CTkLabel(
-                button_frame,
-                text=text,
-                font=("", 18),  # Taille de police réduite
-                fg_color=kwargs.get('fg_color', ("gray90", "gray20")),
+            # Ajouter un conteneur pour le titre et la description
+            text_container = ctk.CTkFrame(button_frame, fg_color="transparent")
+            text_container.pack(fill="x", pady=(0, 25), padx=15)
+            
+            # Ajouter le titre principal
+            title_parts = text.split('\n')
+            title_text = title_parts[0]
+            
+            title_label = ctk.CTkLabel(
+                text_container,
+                text=title_text,
+                font=ctk.CTkFont(size=20, weight="bold"),
+                fg_color="transparent",
                 text_color=kwargs.get('text_color', ("gray10", "gray90"))
             )
-            text_label.pack(pady=(0, 20))  # Padding vertical réduit
+            title_label.pack(pady=(0, 5))
+            
+            # Ajouter la description si disponible
+            if len(title_parts) > 1:
+                desc_text = title_parts[1]
+                desc_label = ctk.CTkLabel(
+                    text_container,
+                    text=desc_text,
+                    font=ctk.CTkFont(size=14),
+                    fg_color="transparent",
+                    text_color=kwargs.get('desc_color', ("gray40", "gray70"))
+                )
+                desc_label.pack(pady=(0, 5))
             
             # Configurer les dimensions du cadre
             button_frame.configure(
-                width=kwargs.get('width', 450),
-                height=kwargs.get('height', 450),
-                corner_radius=kwargs.get('corner_radius', 20)
+                width=kwargs.get('width', 420),
+                height=kwargs.get('height', 320),
             )
             
             # Rendre le bouton cliquable
             button_frame.bind("<Button-1>", lambda e: command())
             icon_label.bind("<Button-1>", lambda e: command())
-            text_label.bind("<Button-1>", lambda e: command())
+            text_container.bind("<Button-1>", lambda e: command())
             
-            # Effet de survol
-            hover_color = kwargs.get('hover_color', ("gray80", "gray30"))
-            orig_color = kwargs.get('fg_color', ("gray90", "gray20"))
+            # Effet de survol amélioré
+            hover_color = kwargs.get('hover_color', ("#EBF5FB", "#2C3E50"))
+            hover_border = kwargs.get('hover_border', ("#2E86C1", "#3498DB"))
+            orig_color = kwargs.get('fg_color', ("gray95", "gray20"))
+            orig_border = kwargs.get('border_color', ("gray85", "gray30"))
             
             def on_enter(e):
-                button_frame.configure(fg_color=hover_color)
-                icon_label.configure(fg_color=hover_color)
-                text_label.configure(fg_color=hover_color)
+                button_frame.configure(
+                    fg_color=hover_color,
+                    border_color=hover_border
+                )
+                icon_label.configure(fg_color="transparent")
                 
             def on_leave(e):
-                button_frame.configure(fg_color=orig_color)
-                icon_label.configure(fg_color=orig_color)
-                text_label.configure(fg_color=orig_color)
+                button_frame.configure(
+                    fg_color=orig_color,
+                    border_color=orig_border
+                )
+                icon_label.configure(fg_color="transparent")
             
+            # Lier les événements de survol
             button_frame.bind("<Enter>", on_enter)
             button_frame.bind("<Leave>", on_leave)
             icon_label.bind("<Enter>", on_enter)
             icon_label.bind("<Leave>", on_leave)
-            text_label.bind("<Enter>", on_enter)
-            text_label.bind("<Leave>", on_leave)
+            text_container.bind("<Enter>", on_enter)
+            text_container.bind("<Leave>", on_leave)
             
             # Configurer le curseur
             button_frame.configure(cursor="hand2")
             icon_label.configure(cursor="hand2")
-            text_label.configure(cursor="hand2")
+            text_container.configure(cursor="hand2")
             
             return button_frame
         
-        # Créer le bouton pour utiliser un modèle existant
+        # Créer le bouton pour utiliser un modèle existant avec un look moderne
         template_btn = create_button_with_large_icon(
             buttons_frame,
-            icon="📂",
-            text="Utiliser un modèle\nexistant",
+            icon="📋",
+            text="Utiliser un modèle\nexistant dans votre bibliothèque",
             command=self._use_existing_template,
-            width=350,  # Réduction de la taille
-            height=300,  # Réduction de la taille
-            fg_color=("gray90", "gray20"),
-            hover_color=("gray80", "gray30")
+            width=380,
+            height=340,
+            fg_color=("#F5F5F5", "#1E293B"),
+            hover_color=("#EBF5FB", "#2C3E50"),
+            border_color=("#E1E5E9", "#34495E"),
+            hover_border=("#3498DB", "#3498DB"),
+            icon_color=("#2E86C1", "#3498DB"),
+            text_color=("#2C3E50", "#ECF0F1"),
+            desc_color=("#7F8C8D", "#BDC3C7"),
+            corner_radius=15
         )
         
-        # Créer le bouton pour importer un document
+        # Créer le bouton pour importer un document avec un look moderne
         import_btn = create_button_with_large_icon(
             buttons_frame,
             icon="📄",
-            text="À partir d'un\ndocument",
+            text="À partir d'un document\nexistant sur votre ordinateur",
             command=self.import_document,
-            width=350,  # Réduction de la taille
-            height=300,  # Réduction de la taille
-            fg_color=("gray90", "gray20"),
-            hover_color=("gray80", "gray30")
+            width=380,
+            height=340,
+            fg_color=("#F5F5F5", "#1E293B"),
+            hover_color=("#E8F8F5", "#21618C"),
+            border_color=("#E1E5E9", "#34495E"),
+            hover_border=("#1ABC9C", "#2ECC71"),
+            icon_color=("#16A085", "#2ECC71"),
+            text_color=("#2C3E50", "#ECF0F1"),
+            desc_color=("#7F8C8D", "#BDC3C7"),
+            corner_radius=15
         )
         
         # S'assurer que les boutons sont visibles
@@ -401,224 +487,12 @@ class DocumentCreatorView:
                     logger.error(f"Erreur lors de la redirection: {e}")
                     self.show()
             
-            # Vérifier si le modèle possède la méthode save_document
-            # Si ce n'est pas le cas, ajouter un adaptateur temporaire
-            if not hasattr(self.model, 'save_document'):
-                logger.info("Ajout d'un adaptateur save_document au modèle")
-                
-                # Créer un adaptateur qui sauvegarde un document
-                def save_document_adapter(document):
-                    """
-                    Sauvegarde un document dans la base de données et le génère sous forme de fichier
-                    """
-                    try:
-                        # Récupérer les informations nécessaires
-                        title = document.get('name', 'Document')
-                        client_id = document.get('client_id')
-                        client_name = document.get('client_name', 'Client non spécifié')
-                        
-                        # Préparer le dossier de sortie
-                        output_dir = os.path.join("data", "documents", "outputs")
-                        os.makedirs(output_dir, exist_ok=True)
-                        
-                        # Générer un nom de fichier unique
-                        from datetime import datetime
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        filename_base = f"{title}_{client_name}_{timestamp}"
-                        
-                        # Nettoyer le nom du fichier (enlever les caractères spéciaux)
-                        filename = re.sub(r'[^\w\-_\. ]', '_', filename_base)
-                        
-                        # Chemins pour différents formats de documents
-                        pdf_path = os.path.join(output_dir, f"{filename}.pdf")
-                        txt_path = os.path.join(output_dir, f"{filename}.txt")
-                        
-                        # Obtenir le contenu du modèle
-                        template_content = document.get('content', '')
-                        
-                        # Si le modèle a un chemin de fichier, l'utiliser pour obtenir le contenu
-                        if 'file_path' in document and document['file_path']:
-                            try:
-                                template_file = document['file_path']
-                                if not os.path.isabs(template_file):
-                                    # Chemin relatif - chercher dans les dossiers standard
-                                    possible_paths = [
-                                        os.path.join("data", "templates", template_file),
-                                        os.path.join("data", "models", template_file),
-                                        template_file
-                                    ]
-                                    
-                                    for path in possible_paths:
-                                        if os.path.exists(path):
-                                            with open(path, 'r', encoding='utf-8') as f:
-                                                template_content = f.read()
-                                            logger.info(f"Contenu du modèle chargé depuis le fichier: {path}")
-                                            break
-                            except Exception as e:
-                                logger.warning(f"Impossible de charger le contenu du fichier modèle: {e}")
-                        
-                        # Remplacer les variables dans le modèle
-                        variables = {}
-                        if 'variables' in document:
-                            for var_name, var_info in document.get('variables', {}).items():
-                                if isinstance(var_info, dict):
-                                    variables[var_name] = var_info.get('current_value', '')
-                                else:
-                                    variables[var_name] = str(var_info)
-                        
-                        # Ajouter les variables standard
-                        variables.update({
-                            "client_name": client_name,
-                            "date": datetime.now().strftime('%Y-%m-%d'),
-                            "datetime": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                            "template_name": title
-                        })
-                        
-                        # Tenter de récupérer les informations complètes du client
-                        if client_id and hasattr(self.model, 'get_client'):
-                            try:
-                                client_data = self.model.get_client(client_id)
-                                if client_data:
-                                    # Ajouter les informations du client aux variables
-                                    for key, value in client_data.items():
-                                        if value:  # Ne pas ajouter les valeurs vides
-                                            variables[f"client_{key}"] = value
-                            except Exception as client_error:
-                                logger.warning(f"Impossible de récupérer les informations du client {client_id}: {client_error}")
-                        
-                        # Remplacer les variables dans le contenu
-                        final_content = template_content
-                        for var_name, var_value in variables.items():
-                            # Format {variable}
-                            final_content = final_content.replace(f"{{{var_name}}}", str(var_value))
-                            # Format {{variable}} (double accolades)
-                            final_content = final_content.replace(f"{{{{{var_name}}}}}", str(var_value))
-                        
-                        # Tenter de générer un PDF
-                        try:
-                            # Utiliser ReportLab pour générer un PDF
-                            from reportlab.lib.pagesizes import letter
-                            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-                            from reportlab.lib.styles import getSampleStyleSheet
-                            
-                            styles = getSampleStyleSheet()
-                            doc = SimpleDocTemplate(pdf_path, pagesize=letter)
-                            
-                            # Convertir le contenu en paragraphes
-                            content_lines = final_content.split('\n')
-                            pdf_content = []
-                            
-                            for line in content_lines:
-                                if line.strip():  # Ne pas ajouter les lignes vides
-                                    pdf_content.append(Paragraph(line, styles['Normal']))
-                                    pdf_content.append(Spacer(1, 6))  # Petit espace entre les lignes
-                            
-                            # Générer le PDF
-                            doc.build(pdf_content)
-                            
-                            # Vérifier que le PDF a été généré correctement
-                            if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0:
-                                logger.info(f"Document PDF généré avec succès: {pdf_path}")
-                                file_path = pdf_path
-                            else:
-                                raise Exception("Le fichier PDF généré est vide ou n'a pas été créé.")
-                            
-                        except Exception as pdf_error:
-                            logger.error(f"Erreur lors de la génération du PDF: {pdf_error}")
-                            
-                            # En cas d'échec, générer un fichier texte
-                            with open(txt_path, 'w', encoding='utf-8') as f:
-                                f.write(final_content)
-                            logger.info(f"Document texte créé: {txt_path}")
-                            file_path = txt_path
-                        
-                        # Ajouter le chemin du fichier au document
-                        document['file_path'] = file_path
-                        
-                        # Générer un ID si nécessaire
-                        if 'id' not in document:
-                            document['id'] = str(uuid.uuid4())
-                            
-                        # S'assurer que la liste des documents existe
-                        if not hasattr(self.model, 'documents'):
-                            self.model.documents = []
-                            
-                        # Ajouter ou mettre à jour le document
-                        doc_updated = False
-                        if isinstance(self.model.documents, list):
-                            # Mettre à jour le document existant s'il existe
-                            for i, doc in enumerate(self.model.documents):
-                                if doc.get('id') == document.get('id'):
-                                    self.model.documents[i] = document
-                                    doc_updated = True
-                                    break
-                            
-                            # Ajouter le document s'il n'existe pas
-                            if not doc_updated:
-                                self.model.documents.append(document)
-                        
-                        # Sauvegarder la liste des documents
-                        if hasattr(self.model, 'save_documents'):
-                            self.model.save_documents()
-                        
-                        # Planifier la redirection vers le tableau de bord
-                        # Utiliser after pour différer l'exécution et éviter les erreurs de fenêtre
-                        def redirect_to_dashboard():
-                            try:
-                                # Vérifier différentes options pour trouver la méthode show_view
-                                if hasattr(self.parent, 'show_view'):
-                                    logger.info("Redirection vers le tableau de bord via self.parent")
-                                    self.parent.after(100, lambda: self.parent.show_view('dashboard'))
-                                    return True
-                                elif hasattr(self, 'parent') and hasattr(self.parent, 'master') and hasattr(self.parent.master, 'show_view'):
-                                    logger.info("Redirection vers le tableau de bord via self.parent.master")
-                                    self.parent.after(100, lambda: self.parent.master.show_view('dashboard'))
-                                    return True
-                                else:
-                                    # Remonter la hiérarchie des widgets
-                                    root = self.parent
-                                    max_depth = 5  # Limiter la profondeur de recherche pour éviter les boucles infinies
-                                    depth = 0
-                                    while root is not None and depth < max_depth:
-                                        if hasattr(root, 'show_view'):
-                                            logger.info(f"Redirection vers le tableau de bord trouvée à la profondeur {depth}")
-                                            root.after(100, lambda r=root: r.show_view('dashboard'))
-                                            return True
-                                        if hasattr(root, 'master'):
-                                            root = root.master
-                                        else:
-                                            break
-                                        depth += 1
-                                            
-                                    logger.error("Impossible de rediriger vers le tableau de bord: méthode show_view non trouvée")
-                                    return False
-                            except Exception as e:
-                                logger.error(f"Erreur lors de la tentative de redirection: {e}")
-                                return False
-                        
-                        # Exécuter la redirection
-                        redirect_success = redirect_to_dashboard()
-                        
-                        # Si la redirection a échoué, tenter de revenir à l'état précédent
-                        if not redirect_success:
-                            self.show()
-                        
-                        return document
-                    except Exception as e:
-                        logger.error(f"Erreur dans l'adaptateur save_document: {e}")
-                        # Tenter de revenir à l'état précédent
-                        self.show()
-                        return None
-                
-                # Attacher l'adaptateur au modèle
-                setattr(self.model, 'save_document', save_document_adapter)
-            
             # Créer le formulaire avec les données vides
             form = DocumentFormView(
                 self.parent,
                 self.model,
                 document_data={},
-                on_save_callback=on_save_callback,  # Utiliser notre nouveau callback
+                on_save_callback=on_save_callback,
                 on_cancel_callback=on_cancel_callback
             )
             
@@ -626,10 +500,10 @@ class DocumentCreatorView:
             
         except Exception as e:
             logger.error(f"Erreur lors de la création du formulaire de document: {e}")
-            self.show_error(f"Erreur: {str(e)}")
+            self.show_message("Erreur", f"Impossible de créer le formulaire: {str(e)}", "error")
             # En cas d'erreur, réafficher cette vue
             self.show()
-            
+    
     def _on_document_saved(self, document_id=None, client_id=None, client_name=None, **kwargs):
         """
         Callback appelé après la sauvegarde d'un document
@@ -668,186 +542,187 @@ class DocumentCreatorView:
         """
         Affiche les types de documents disponibles sous forme de cartes
         """
-        # Nettoyer la zone de contenu
-        for widget in self.content_frame.winfo_children():
-            widget.destroy()
-
-        # Titre
-        title = ctk.CTkLabel(
-            self.content_frame,
-            text="Types de documents disponibles",
-            font=("", 24, "bold")
+        try:
+            # Nettoyer la zone de contenu
+            for widget in self.content_frame.winfo_children():
+                widget.destroy()
+    
+            # Titre
+            title = ctk.CTkLabel(
+                self.content_frame,
+                text="Types de documents disponibles",
+                font=("", 24, "bold")
+            )
+            title.pack(pady=(0, 20))
+    
+            # Grille pour les cartes
+            grid_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+            grid_frame.pack(expand=True, fill="both", padx=20, pady=20)
+    
+            # Configuration de la grille (3 colonnes)
+            grid_frame.grid_columnconfigure((0, 1, 2), weight=1)
+    
+            # Charger les types depuis le dossier data/documents/types
+            types_dir = os.path.join("data", "documents", "types")
+            if not os.path.exists(types_dir):
+                # Créer le dossier s'il n'existe pas
+                os.makedirs(types_dir, exist_ok=True)
+                logger.info(f"Dossier créé : {types_dir}")
+    
+            # Liste pour stocker les types de documents
+            document_types = []
+            
+            # Dictionnaire de correspondance type -> icône
+            type_icons = {
+                "contrat": "📜",
+                "facture": "💰",
+                "devis": "📋",
+                "lettre": "✉️",
+                "rapport": "📊",
+                "presentation": "🎯",
+                "proposition": "💡",
+                "convention": "🤝",
+                "certificat": "🏆",
+                "attestation": "📝",
+                "formulaire": "📄",
+                "note": "📌",
+                "procès-verbal": "📋",
+                "plan": "🗺️",
+                "budget": "💰",
+                "planning": "📅",
+                # ... autres types d'icônes ...
+            }
+            
+            # Parcourir le dossier des types
+            if os.path.exists(types_dir):
+                try:
+                    for type_name in os.listdir(types_dir):
+                        type_path = os.path.join(types_dir, type_name)
+                        if os.path.isdir(type_path):
+                            # Compter le nombre de modèles dans le dossier
+                            try:
+                                model_count = len([f for f in os.listdir(type_path) if f.endswith(('.docx', '.pdf', '.txt'))])
+                            except Exception as e:
+                                logger.warning(f"Impossible de lire le contenu du dossier {type_path}: {e}")
+                                model_count = 0
+                            
+                            # Déterminer l'icône en fonction du type de dossier
+                            icon = "📁"  # Icône par défaut
+                            type_lower = type_name.lower()
+                            for key, value in type_icons.items():
+                                if key in type_lower:
+                                    icon = value
+                                    break
+                            
+                            # Ajouter le type à la liste
+                            document_types.append({
+                                "name": type_name,
+                                "icon": icon,
+                                "count": f"{model_count} modèle{'s' if model_count > 1 else ''}"
+                            })
+                except Exception as e:
+                    logger.error(f"Erreur lors de la lecture du dossier des types: {e}")
+                    self.show_message("Erreur", "Impossible de lire les types de documents.", "error")
+    
+            # Vérifier s'il y a des types de documents
+            if not document_types:
+                # Afficher un message si aucun type n'est disponible
+                no_types_label = ctk.CTkLabel(
+                    grid_frame,
+                    text="Aucun type de document disponible",
+                    font=("", 16),
+                    text_color=("gray50", "gray70")
+                )
+                no_types_label.pack(pady=50)
+                
+                # Ajouter un bouton pour créer un nouveau type
+                create_type_btn = ctk.CTkButton(
+                    grid_frame,
+                    text="Créer un nouveau type",
+                    command=self._create_new_type,
+                    width=200
+                )
+                create_type_btn.pack(pady=20)
+                
+                return
+    
+            # Créer une carte pour chaque type
+            for i, doc_type in enumerate(document_types):
+                # Créer un cadre pour la carte
+                card = ctk.CTkFrame(
+                    grid_frame,
+                    corner_radius=10,
+                    fg_color=("gray90", "gray20"),
+                    width=200,
+                    height=150
+                )
+                row = i // 3
+                col = i % 3
+                card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+                card.grid_propagate(False)
+    
+                # Contenu de la carte
+                icon_label = ctk.CTkLabel(
+                    card,
+                    text=doc_type["icon"],
+                    font=("", 32)
+                )
+                icon_label.pack(pady=(15, 5))
+                
+                # Nom du type
+                name_label = ctk.CTkLabel(
+                    card,
+                    text=doc_type["name"],
+                    font=("", 16, "bold")
+                )
+                name_label.pack(pady=5)
+                
+                # Nombre de modèles
+                count_label = ctk.CTkLabel(
+                    card,
+                    text=doc_type["count"],
+                    font=("", 12),
+                    text_color=("gray50", "gray70")
+                )
+                count_label.pack(pady=5)
+                
+                # Rendre la carte cliquable
+                card.bind("<Button-1>", lambda e, tn=doc_type["name"]: self.show_models_for_type(tn))
+                icon_label.bind("<Button-1>", lambda e, tn=doc_type["name"]: self.show_models_for_type(tn))
+                name_label.bind("<Button-1>", lambda e, tn=doc_type["name"]: self.show_models_for_type(tn))
+                count_label.bind("<Button-1>", lambda e, tn=doc_type["name"]: self.show_models_for_type(tn))
+                
+                # Configurer le curseur
+                card.configure(cursor="hand2")
+                icon_label.configure(cursor="hand2")
+                name_label.configure(cursor="hand2")
+                count_label.configure(cursor="hand2")
+            
+            # Ajouter un bouton "Retour" en bas
+            back_button = ctk.CTkButton(
+                self.content_frame,
+                text="Retour",
+                command=lambda: self.show_step(0),
+                width=100
+            )
+            back_button.pack(pady=20)
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'affichage des types de documents: {e}", exc_info=True)
+            self.show_message("Erreur", f"Une erreur est survenue lors de l'affichage des types de documents: {str(e)}", "error")
+            # Retourner à l'étape précédente en cas d'erreur
+            self.show_step(0)
+    
+    def _create_new_type(self):
+        """
+        Affiche une boîte de dialogue pour créer un nouveau type de document
+        """
+        # Afficher un message indiquant que cette fonctionnalité n'est pas encore implémentée
+        self.show_message(
+            "Fonctionnalité en développement", 
+            "La création de nouveaux types de documents sera disponible dans une prochaine version.", 
+            "info"
         )
-        title.pack(pady=(0, 20))
-
-        # Grille pour les cartes
-        grid_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
-        grid_frame.pack(expand=True, fill="both", padx=20, pady=20)
-
-        # Configuration de la grille (3 colonnes)
-        grid_frame.grid_columnconfigure((0, 1, 2), weight=1)
-
-        # Charger les types depuis le dossier data/documents/types
-        types_dir = os.path.join("data", "documents", "types")
-        if not os.path.exists(types_dir):
-            # Créer le dossier s'il n'existe pas
-            os.makedirs(types_dir)
-            logger.info(f"Dossier créé : {types_dir}")
-
-        # Liste pour stocker les types de documents
-        document_types = []
-        
-        # Dictionnaire de correspondance type -> icône
-        type_icons = {
-            "contrat": "📜",
-            "facture": "💰",
-            "devis": "📋",
-            "lettre": "✉️",
-            "rapport": "📊",
-            "presentation": "🎯",
-            "proposition": "💡",
-            "convention": "🤝",
-            "certificat": "🏆",
-            "attestation": "📝",
-            "formulaire": "📄",
-            "note": "📌",
-            "procès-verbal": "📋",
-            "plan": "🗺️",
-            "budget": "💰",
-            "planning": "📅",
-            "inventaire": "📦",
-            "catalogue": "📚",
-            "manuel": "📖",
-            "guide": "📗",
-            "tutoriel": "📘",
-            "documentation": "📑",
-            "spécification": "📋",
-            "analyse": "🔍",
-            "étude": "📊",
-            "projet": "🎯",
-            "résumé": "📝",
-            "synthèse": "📊",
-            "évaluation": "📈",
-            "audit": "🔍",
-            "statistiques": "📈",
-            "graphique": "📊",
-            "tableau": "📋",
-            "liste": "📋",
-            "registre": "📑",
-            "journal": "📓",
-            "carnet": "📔",
-            "agenda": "📅",
-            "calendrier": "📅",
-            "horaire": "⏰",
-            "emploi du temps": "📅",
-            "programme": "📋",
-            "plan d'action": "🎯",
-            "stratégie": "🎯",
-            "objectif": "🎯",
-            "mission": "🎯",
-            "vision": "👀",
-            "suggestion": "💡",
-            "recommandation": "💡",
-            "avis": "💡",
-            "expertise": "🔍",
-            "consultation": "💡",
-            "recherche": "🔍",
-            "enquête": "🔍",
-            "sondage": "📊",
-            "questionnaire": "📋",
-            "demande": "📝",
-            "requête": "📝",
-            "pétition": "📝",
-            "plainte": "📝",
-            "réclamation": "📝"
-        }
-        
-        # Parcourir le dossier des types
-        if os.path.exists(types_dir):
-            for type_name in os.listdir(types_dir):
-                type_path = os.path.join(types_dir, type_name)
-                if os.path.isdir(type_path):
-                    # Compter le nombre de modèles dans le dossier
-                    model_count = len([f for f in os.listdir(type_path) if f.endswith(('.docx', '.pdf', '.txt'))])
-                    
-                    # Déterminer l'icône en fonction du type de dossier
-                    icon = "📁"  # Icône par défaut
-                    type_lower = type_name.lower()
-                    for key, value in type_icons.items():
-                        if key in type_lower:
-                            icon = value
-                            break
-                    
-                    # Ajouter le type à la liste
-                    document_types.append({
-                        "name": type_name,
-                        "icon": icon,
-                        "count": f"{model_count} modèle{'s' if model_count > 1 else ''}"
-                    })
-
-        # Créer une carte pour chaque type
-        for i, doc_type in enumerate(document_types):
-            # Créer un cadre pour la carte
-            card = ctk.CTkFrame(
-                grid_frame,
-                corner_radius=10,
-                fg_color=("gray90", "gray20"),
-                width=200,
-                height=150
-            )
-            row = i // 3
-            col = i % 3
-            card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
-            card.grid_propagate(False)
-
-            # Contenu de la carte
-            icon_label = ctk.CTkLabel(
-                card,
-                text=doc_type["icon"],
-                font=("", 32)
-            )
-            icon_label.pack(pady=(20, 5))
-
-            name_label = ctk.CTkLabel(
-                card,
-                text=doc_type["name"],
-                font=("", 16, "bold")
-            )
-            name_label.pack(pady=5)
-
-            count_label = ctk.CTkLabel(
-                card,
-                text=doc_type["count"],
-                font=("", 12),
-                text_color=("gray50", "gray70")
-            )
-            count_label.pack(pady=5)
-
-            # Rendre la carte cliquable
-            for widget in [card, icon_label, name_label, count_label]:
-                widget.bind("<Button-1>", lambda e, type_name=doc_type["name"]: self.show_models_for_type(type_name))
-                widget.bind("<Enter>", lambda e, frame=card: frame.configure(fg_color=("gray80", "gray30")))
-                widget.bind("<Leave>", lambda e, frame=card: frame.configure(fg_color=("gray90", "gray20")))
-                widget.configure(cursor="hand2")
-
-        # Message si aucun type n'est trouvé
-        if not document_types:
-            no_types_label = ctk.CTkLabel(
-                grid_frame,
-                text="Aucun type de document trouvé\ndans le dossier data/documents/types",
-                font=("", 14),
-                text_color=("gray50", "gray70")
-            )
-            no_types_label.pack(pady=50)
-
-        # Bouton retour
-        back_button = ctk.CTkButton(
-            self.content_frame,
-            text="Retour",
-            command=lambda: self.show_step(0),
-            width=100
-        )
-        back_button.pack(pady=20)
 
     def show_models_for_type(self, type_name: str) -> None:
         """
@@ -1461,11 +1336,11 @@ class DocumentCreatorView:
                 "from_analysis": True
             }
             
-            # Passer directement à l'étape de recherche de client
-            self.show_step(2)
-            
             # Démarrer l'analyse du document
             self._start_document_analysis(file_path)
+            
+            # Passer directement à l'étape de recherche de client (l'affichage des étapes sera géré par show_step)
+            self.show_step(2)
             
         except Exception as e:
             logger.error(f"Erreur lors de l'importation du document: {e}")
@@ -1615,67 +1490,99 @@ class DocumentCreatorView:
  
     def update_navigation(self) -> None:
         """
-        Met à jour les boutons de navigation selon l'étape actuelle
+        Met à jour la barre de navigation pour refléter l'étape actuelle
         """
         try:
-            # Nettoyer la zone de navigation
-            for widget in self.nav_frame.winfo_children():
-                widget.destroy()
-                
-            logger.info(f"Mise à jour de la navigation à l'étape {self.current_step}")
+            # Vérifier quelle barre de navigation utiliser (compatibilité)
+            navigation_frame = getattr(self, 'navigation_frame', None) or getattr(self, 'progress_frame', None)
             
-            # Bouton de retour (sauf pour la première étape)
-            if self.current_step > 0:
-                back_btn = ctk.CTkButton(
+            # Si aucune frame de navigation n'existe, ne rien faire
+            if navigation_frame is None:
+                logger.warning("Aucune frame de navigation trouvée, impossible de mettre à jour la navigation")
+                return
+                
+            # Si nous sommes à l'étape initiale, masquer la navigation
+            if self.current_step == 0:
+                navigation_frame.pack_forget()
+                return
+    
+            # S'assurer que la frame de navigation est visible pour les autres étapes
+            if not navigation_frame.winfo_ismapped():
+                navigation_frame.pack(fill="x", pady=10, padx=20, before=self.content_frame)
+            
+            # Mettre à jour les indicateurs d'étape si disponibles
+            if hasattr(self, 'step_indicators') and self.step_indicators:
+                for i, indicator in enumerate(self.step_indicators):
+                    if i < self.current_step:
+                        # Étape terminée
+                        indicator["number"].configure(
+                            fg_color=("#3498DB", "#2980B9"),
+                            text="✓",
+                            text_color="white"
+                        )
+                    elif i == self.current_step:
+                        # Étape actuelle
+                        indicator["number"].configure(
+                            fg_color=("#2E86C1", "#21618C"),
+                            text=str(i+1),
+                            text_color="white"
+                        )
+                    else:
+                        # Étape future
+                        indicator["number"].configure(
+                            fg_color=("gray80", "gray30"),
+                            text=str(i+1),
+                            text_color=("gray20", "gray90")
+                        )
+                
+                    # Mettre à jour la couleur du texte de l'étape
+                    if i == self.current_step:
+                        indicator["label"].configure(text_color=("#2E86C1", "#3498DB"))
+                    else:
+                        indicator["label"].configure(text_color=("gray20", "gray80"))
+            
+            # Mettre à jour les boutons de navigation si nav_frame existe
+            if hasattr(self, 'nav_frame') and self.nav_frame:
+                # Nettoyer la zone de navigation
+                for widget in self.nav_frame.winfo_children():
+                    widget.destroy()
+                    
+                # Bouton de retour (sauf pour la première étape)
+                if self.current_step > 0:
+                    back_btn = ctk.CTkButton(
+                        self.nav_frame,
+                        text="← Retour",
+                        command=lambda: self.show_step(self.current_step - 1),
+                        width=100,
+                        fg_color=("gray80", "gray30"),
+                        text_color=("gray10", "gray90")
+                    )
+                    back_btn.pack(side="left", padx=10)
+                    
+                # Bouton de réinitialisation
+                reset_btn = ctk.CTkButton(
                     self.nav_frame,
-                    text="← Retour",
-                    command=lambda: self.show_step(self.current_step - 1),
+                    text="↺ Réinitialiser",
+                    command=self.reset_process,
                     width=100,
                     fg_color=("gray80", "gray30"),
                     text_color=("gray10", "gray90")
                 )
-                back_btn.pack(side="left", padx=10)
+                reset_btn.pack(side="left", padx=10)
                 
-            # Bouton de réinitialisation
-            reset_btn = ctk.CTkButton(
-                self.nav_frame,
-                text="↺ Réinitialiser",
-                command=self.reset_process,
-                width=100,
-                fg_color=("gray80", "gray30"),
-                text_color=("gray10", "gray90")
-            )
-            reset_btn.pack(side="left", padx=10)
-            
-            # Bouton suivant (sauf pour la première étape qui utilise directement les grands boutons)
-            if self.current_step > 0:
-                next_btn = ctk.CTkButton(
-                    self.nav_frame,
-                    text="Suivant →",
-                    command=lambda: self.show_step(self.current_step + 1),
-                    width=100
-                )
+                # Bouton suivant (sauf pour la première étape)
+                if self.current_step > 0 and self.current_step < len(self.steps) - 1:
+                    next_btn = ctk.CTkButton(
+                        self.nav_frame,
+                        text="Suivant →",
+                        command=lambda: self.show_step(self.current_step + 1),
+                        width=100
+                    )
+                    next_btn.pack(side="right", padx=10)
                 
-                # Déterminer si le bouton suivant doit être activé
-                enabled = True
-                
-                # Gestion de l'état du bouton selon l'étape
-                if self.current_step == 2:  # Étape client
-                    if not getattr(self, 'client_selected', False):
-                        enabled = False
-                    # Si on est en cours d'analyse, désactiver le bouton
-                    if getattr(self, 'analysis_in_progress', False) and not getattr(self, 'analysis_complete', False):
-                        enabled = False
-                
-                # Configurer l'état du bouton
-                if not enabled:
-                    next_btn.configure(state="disabled", fg_color=("gray75", "gray45"))
-                
-                next_btn.pack(side="right", padx=10)
-            
         except Exception as e:
-            logger.error(f"Erreur lors de la mise à jour de la navigation: {e}")
-            
+            logger.error(f"Erreur lors de la mise à jour de la navigation: {e}", exc_info=True)
+    
     def reset_process(self) -> None:
         """
         Réinitialise le processus de création

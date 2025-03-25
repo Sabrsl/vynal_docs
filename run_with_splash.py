@@ -288,7 +288,7 @@ class SplashScreen:
         # Version discrète
         version_label = tk.Label(
             footer_frame,
-            text="v1.0",
+            text="v1.1.0",
             font=("Arial", 8),
             fg="#72757E",
             bg=self.bg_color

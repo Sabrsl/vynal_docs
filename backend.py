@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Vynal Docs Automator API",
     description="API pour l'automatisation de la gestion des documents",
-    version="1.0.0"
+    version="1.1.0"
 )
 
 # Configuration CORS
@@ -120,7 +120,7 @@ async def home():
     """Endpoint d'accueil de l'API"""
     return {
         "message": "Bienvenue sur l'API Vynal Docs Automator",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "status": "online",
         "endpoints": {
             "upload": "/upload/",

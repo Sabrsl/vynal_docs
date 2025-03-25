@@ -219,12 +219,336 @@ class ChatAIView:
     def ouvrir_activation_licence(self):
         """Ouvre la boîte de dialogue d'activation de licence"""
         try:
-            # Accéder à la vue du compte si disponible
-            if hasattr(self.model, 'main_view') and hasattr(self.model.main_view, 'show_account'):
-                # Naviguer vers la vue Mon Compte
-                self.model.main_view.show_account()
-                logger.info("Navigation vers la vue Mon Compte pour activation de licence")
-            else:
-                logger.warning("Impossible de naviguer vers la vue Mon Compte")
+            # Afficher un indicateur de chargement
+            self._show_loading_indicator()
+            
+            # Essayer d'accéder directement à la vue des paramètres avec un délai minimal
+            self.frame.after(50, self._try_open_license_dialog)
+            
         except Exception as e:
-            logger.error(f"Erreur lors de l'ouverture de l'activation de licence: {e}", exc_info=True) 
+            logger.error(f"Erreur lors de l'ouverture de l'activation de licence: {e}", exc_info=True)
+            # En cas d'erreur, afficher un message à l'utilisateur
+            try:
+                from CTkMessagebox import CTkMessagebox
+                CTkMessagebox(
+                    title="Activation de licence",
+                    message="Une erreur s'est produite. Veuillez réessayer.",
+                    icon="info"
+                )
+            except Exception:
+                logger.error("Impossible d'afficher le message d'information")
+    
+    def _show_loading_indicator(self):
+        """Affiche un indicateur de chargement temporaire"""
+        try:
+            # Désactiver temporairement le bouton d'activation pour éviter les doubles clics
+            for widget in self.frame.winfo_children():
+                if isinstance(widget, ctk.CTkFrame):
+                    for subwidget in widget.winfo_children():
+                        if isinstance(subwidget, ctk.CTkButton) and subwidget.cget("text") == "Activer une licence":
+                            subwidget.configure(state="disabled", text="Chargement...")
+                            break
+        except Exception as e:
+            logger.error(f"Erreur lors de l'affichage de l'indicateur de chargement: {e}")
+    
+    def _try_open_license_dialog(self):
+        """Tente d'ouvrir la boîte de dialogue de licence avec différentes méthodes"""
+        # Réactiver le bouton en cas d'échec
+        def restore_button():
+            try:
+                for widget in self.frame.winfo_children():
+                    if isinstance(widget, ctk.CTkFrame):
+                        for subwidget in widget.winfo_children():
+                            if isinstance(subwidget, ctk.CTkButton) and subwidget.cget("text") == "Chargement...":
+                                subwidget.configure(state="normal", text="Activer une licence")
+                                break
+            except Exception:
+                pass
+        
+        try:
+            # Méthode 1: Accéder à la vue des paramètres et ouvrir la gestion des licences
+            if hasattr(self.model, 'settings_view') and self.model.settings_view:
+                if hasattr(self.model.settings_view, 'show_license_management'):
+                    self.model.settings_view.show_license_management()
+                    logger.info("Ouverture de la gestion des licences depuis la vue des paramètres")
+                    return
+            
+            # Méthode 2: Utiliser la vue principale
+            if hasattr(self.model, 'main_view'):
+                main_view = self.model.main_view
+                # Vérifier si la vue principale a une vue des paramètres
+                if hasattr(main_view, 'settings_view') and main_view.settings_view:
+                    if hasattr(main_view.settings_view, 'show_license_management'):
+                        main_view.settings_view.show_license_management()
+                        logger.info("Ouverture de la gestion des licences depuis la vue principale")
+                        return
+                
+                # Méthode 3: Ouvrir les paramètres
+                if hasattr(main_view, 'show_settings'):
+                    main_view.show_settings()
+                    logger.info("Navigation vers les paramètres pour activation de licence")
+                    return
+            
+            # Méthode 4 (en dernier recours): Créer notre propre boîte de dialogue
+            restore_button()  # Restaurer le bouton avant de créer la boîte de dialogue
+            self._create_license_activation_dialog()
+            logger.info("Création directe d'une boîte de dialogue d'activation de licence")
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la tentative d'ouverture de licence: {e}", exc_info=True)
+            restore_button()
+            # Afficher un message d'erreur
+            try:
+                from CTkMessagebox import CTkMessagebox
+                CTkMessagebox(
+                    title="Activation de licence",
+                    message="Impossible d'ouvrir le gestionnaire de licences. Veuillez réessayer.",
+                    icon="warning"
+                )
+            except Exception:
+                logger.error("Impossible d'afficher le message d'erreur")
+    
+    def _create_license_activation_dialog(self):
+        """Crée une boîte de dialogue simple pour l'activation de licence"""
+        try:
+            from CTkMessagebox import CTkMessagebox
+            
+            # Créer la fenêtre de dialogue avec des paramètres optimisés
+            dialog = ctk.CTkToplevel(self.frame)
+            dialog.title("Activation de licence")
+            dialog.geometry("480x360")  # Légèrement plus petite pour un chargement plus rapide
+            dialog.attributes("-topmost", True)  # Garder au premier plan
+            dialog.resizable(True, True)
+            dialog.minsize(400, 360)
+            
+            # Cadre principal sans défilement pour éviter les problèmes de performance
+            main_frame = ctk.CTkFrame(dialog)
+            main_frame.pack(fill="both", expand=True, padx=15, pady=15)
+            
+            # Titre
+            title_label = ctk.CTkLabel(
+                main_frame,
+                text="Activer une licence",
+                font=ctk.CTkFont(size=18, weight="bold")
+            )
+            title_label.pack(pady=(5, 15))
+            
+            # Vérifier si l'utilisateur est connecté
+            user_email = ""
+            user_registered = False
+            
+            if hasattr(self.model, 'current_user') and self.model.current_user:
+                user_email = self.model.current_user.get('email', '')
+                user_registered = bool(user_email)
+            
+            # Formulaire simplifié
+            form_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+            form_frame.pack(fill="x", padx=10, pady=10)
+            
+            # Email
+            email_label = ctk.CTkLabel(form_frame, text="Email :", anchor="w")
+            email_label.pack(anchor="w", pady=(5, 0))
+            
+            email_var = ctk.StringVar(value=user_email)
+            email_entry = ctk.CTkEntry(
+                form_frame, 
+                textvariable=email_var,
+                state="disabled" if user_registered else "normal",
+                fg_color=("#D3D3D3", "#4A4A4A") if user_registered else None
+            )
+            email_entry.pack(fill="x", pady=(0, 10))
+            
+            # Clé de licence
+            key_label = ctk.CTkLabel(form_frame, text="Clé de licence :", anchor="w")
+            key_label.pack(anchor="w", pady=(5, 0))
+            
+            key_var = ctk.StringVar()
+            key_entry = ctk.CTkEntry(form_frame, textvariable=key_var)
+            key_entry.pack(fill="x", pady=(0, 10))
+            
+            # Message informatif
+            info_text = "La licence sera activée pour votre compte." if user_registered else "L'activation créera un compte avec l'email fourni."
+            
+            # Cadre pour le message informatif (avec fond de couleur)
+            info_frame = ctk.CTkFrame(form_frame, fg_color=("gray95", "gray10"), corner_radius=6)
+            info_frame.pack(fill="x", pady=10)
+            
+            info_label = ctk.CTkLabel(
+                info_frame,
+                text=info_text,
+                font=ctk.CTkFont(size=12),
+                text_color=("gray60", "gray45"),
+                wraplength=350,  # Valeur initiale qui sera ajustée
+                justify="left"
+            )
+            info_label.pack(padx=10, pady=10)
+            
+            # Mettre à jour la largeur du texte lorsque la fenêtre change de taille
+            def update_wraplength(event):
+                new_width = info_frame.winfo_width() - 20  # 20 pixels de marge
+                if new_width > 50:  # Éviter les valeurs négatives ou trop petites
+                    info_label.configure(wraplength=new_width)
+            
+            # Lier l'événement de redimensionnement
+            info_frame.bind("<Configure>", update_wraplength)
+            
+            # Fonction d'activation
+            def activate_license():
+                license_key = key_var.get().strip()
+                email = email_var.get().strip()
+                
+                # Validation basique
+                if not license_key:
+                    CTkMessagebox(title="Erreur", message="Veuillez entrer une clé de licence.", icon="warning")
+                    return
+                
+                if not user_registered and not email:
+                    CTkMessagebox(title="Erreur", message="Veuillez entrer un email valide.", icon="warning")
+                    return
+                
+                # Désactiver les boutons pendant le traitement
+                cancel_btn.configure(state="disabled")
+                activate_btn.configure(state="disabled", text="Traitement...")
+                
+                # Traiter l'activation
+                dialog.after(100, lambda: self._process_license_activation(dialog, email if not user_registered else user_email, license_key))
+            
+            # Boutons placés directement sous le cadre informatif
+            button_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
+            button_frame.pack(pady=(15, 0))
+            
+            cancel_btn = ctk.CTkButton(
+                button_frame,
+                text="Annuler",
+                command=dialog.destroy,
+                width=115,
+                height=32
+            )
+            cancel_btn.pack(side="left", padx=5)
+            
+            activate_btn = ctk.CTkButton(
+                button_frame,
+                text="Activer",
+                command=activate_license,
+                width=115,
+                height=32,
+                fg_color="#2ecc71",
+                hover_color="#27ae60"
+            )
+            activate_btn.pack(side="left", padx=5)
+            
+            # Centrer la fenêtre après avoir défini les widgets
+            dialog.update_idletasks()
+            width = dialog.winfo_width()
+            height = dialog.winfo_height()
+            x = (dialog.winfo_screenwidth() // 2) - (width // 2)
+            y = (dialog.winfo_screenheight() // 2) - (height // 2)
+            dialog.geometry(f"+{x}+{y}")
+            
+            # Donner le focus à l'entrée qui peut être modifiée
+            if not user_registered:
+                email_entry.focus_set()
+            else:
+                key_entry.focus_set()
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la création de la boîte de dialogue: {e}", exc_info=True)
+    
+    def _process_license_activation(self, dialog, email, license_key):
+        """Traite l'activation de licence de manière asynchrone"""
+        try:
+            from CTkMessagebox import CTkMessagebox
+            
+            # Vérifier que le modèle de licence existe
+            if not hasattr(self.model, 'license_model') or not self.model.license_model:
+                CTkMessagebox(
+                    title="Erreur",
+                    message="Le modèle de licence n'est pas disponible.",
+                    icon="cancel"
+                )
+                dialog.destroy()
+                return
+            
+            # Si l'utilisateur n'est pas inscrit, créer un compte
+            user_registered = bool(self.model.current_user and self.model.current_user.get('email'))
+            if not user_registered:
+                success_registration = self._register_new_user(email)
+                if not success_registration:
+                    CTkMessagebox(
+                        title="Erreur",
+                        message="Impossible de créer un compte avec cet email.",
+                        icon="cancel"
+                    )
+                    dialog.destroy()
+                    return
+            
+            # Activer la licence
+            success, message = self.model.license_model.activate_license(email, license_key)
+            
+            if success:
+                CTkMessagebox(
+                    title="Succès",
+                    message="Licence activée avec succès. L'application va être rechargée.",
+                    icon="check"
+                )
+                dialog.destroy()
+                # Recharger l'interface après activation
+                self.frame.after(500, self.recharger_interface)
+            else:
+                CTkMessagebox(
+                    title="Erreur",
+                    message=f"Impossible d'activer la licence: {message}",
+                    icon="cancel"
+                )
+                dialog.destroy()
+                
+        except Exception as e:
+            logger.error(f"Erreur lors de l'activation: {e}", exc_info=True)
+            CTkMessagebox(
+                title="Erreur",
+                message="Une erreur s'est produite lors de l'activation de la licence.",
+                icon="cancel"
+            )
+            dialog.destroy()
+    
+    def _register_new_user(self, email):
+        """Inscrit un nouvel utilisateur avec l'email fourni
+        
+        Args:
+            email: Adresse email du nouvel utilisateur
+            
+        Returns:
+            bool: True si l'inscription a réussi, False sinon
+        """
+        try:
+            if not hasattr(self.model, 'register_user'):
+                # Si la méthode n'existe pas directement, chercher dans d'autres objets
+                if hasattr(self.model, 'main_view') and hasattr(self.model.main_view, 'register_user'):
+                    register_method = self.model.main_view.register_user
+                elif hasattr(self.model, 'auth_model') and hasattr(self.model.auth_model, 'register_user'):
+                    register_method = self.model.auth_model.register_user
+                else:
+                    # Si pas de méthode d'inscription trouvée, utiliser le modèle d'usage
+                    from utils.usage_tracker import UsageTracker
+                    usage_tracker = UsageTracker()
+                    # Créer des données utilisateur simples
+                    user_data = {
+                        "email": email,
+                        "created_at": self.model.get_current_time_iso() if hasattr(self.model, 'get_current_time_iso') else None,
+                        "is_registered": True
+                    }
+                    usage_tracker.save_user_data(user_data)
+                    return True
+            else:
+                register_method = self.model.register_user
+            
+            # Appeler la méthode d'inscription
+            result = register_method(email=email, password="", auto_generated=True)
+            
+            if isinstance(result, tuple):
+                return result[0]  # Supposons que le premier élément est un booléen indiquant le succès
+            return bool(result)  # Sinon, convertir le résultat en booléen
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'inscription d'un nouvel utilisateur: {e}")
+            return False 

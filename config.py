@@ -71,7 +71,7 @@ def ensure_directories():
             sys.exit(1)
 
 # Version de l'application
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 
 # Nom de l'entreprise
 COMPANY_NAME = "Vynal Agency LTD"

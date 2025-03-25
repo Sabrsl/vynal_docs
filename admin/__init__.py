@@ -6,7 +6,7 @@ Module d'administration pour l'application Vynal Docs Automator
 Permet la gestion des utilisateurs, paramètres système et surveillance
 """
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 # Importations du module principal
 from admin.admin_main import AdminMain

@@ -7,4 +7,4 @@ Ces modèles gèrent le stockage, la manipulation et la récupération des donn�
 from .app_model import AppModel
 
 # Version du package
-__version__ = '1.0.0'
+__version__ = '1.1.0'

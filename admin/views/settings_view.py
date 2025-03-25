@@ -289,7 +289,7 @@ class AdminSettingsView:
             section,
             "app.version",
             "Version",
-            "1.0.0",
+            "1.1.0",
             "Version actuelle de l'application",
             widget_type="entry",
             readonly=True

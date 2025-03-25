@@ -199,9 +199,36 @@ class SecureFileManager:
                 ret = ctypes.windll.kernel32.SetFileAttributesW(self.data_dir, FILE_ATTRIBUTE_HIDDEN)
                 if not ret:
                     logger.warning("Impossible de masquer le répertoire de données")
-            
-            # Définir les permissions sous Unix
+                
+                # Définir les permissions Windows
+                import win32security
+                import ntsecuritycon as con
+                
+                # Obtenir le SID de l'utilisateur actuel
+                user_sid = win32security.GetTokenInformation(
+                    win32security.OpenProcessToken(win32security.GetCurrentProcess(), win32security.TOKEN_QUERY),
+                    win32security.TokenUser
+                )[0]
+                
+                # Créer une DACL qui donne le contrôle total à l'utilisateur actuel
+                dacl = win32security.ACL()
+                dacl.Initialize()
+                dacl.AddAccessAllowedAce(
+                    win32security.ACL_REVISION,
+                    con.FILE_ALL_ACCESS,
+                    user_sid
+                )
+                
+                # Appliquer la DACL au répertoire
+                security = win32security.SECURITY_DESCRIPTOR()
+                security.SetSecurityDescriptorDacl(1, dacl, 0)
+                win32security.SetFileSecurity(
+                    self.data_dir,
+                    win32security.DACL_SECURITY_INFORMATION,
+                    security
+                )
             else:
+                # Définir les permissions sous Unix
                 os.chmod(self.data_dir, 0o700)  # rwx------ (propriétaire uniquement)
             
             logger.info("Répertoire de données sécurisé")
@@ -326,17 +353,38 @@ class SecureFileManager:
             if not os.path.exists(filepath):
                 return {}
             
-            with open(filepath, 'rb') as f:
-                encrypted_data = f.read()
+            # Essayer d'abord de lire en mode binaire (fichier chiffré)
+            try:
+                with open(filepath, 'rb') as f:
+                    encrypted_data = f.read()
+                
+                if self.cipher and encrypted_data:
+                    # Déchiffrer les données
+                    decrypted_data = self.cipher.decrypt(encrypted_data)
+                    return json.loads(decrypted_data)
+            except Exception as e:
+                logger.warning(f"Échec de la lecture chiffrée de {filename}: {e}")
             
-            if self.cipher and encrypted_data:
-                # Déchiffrer les données
-                decrypted_data = self.cipher.decrypt(encrypted_data)
-                return json.loads(decrypted_data)
-            else:
-                # Fallback en cas d'erreur de chiffrement
+            # Fallback : essayer de lire en mode texte (fichier non chiffré)
+            try:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     return json.load(f)
+            except json.JSONDecodeError:
+                # Si le fichier n'est pas un JSON valide, essayer de lire la sauvegarde
+                backup_path = f"{filepath}.bak"
+                if os.path.exists(backup_path):
+                    try:
+                        with open(backup_path, 'r', encoding='utf-8') as f:
+                            return json.load(f)
+                    except Exception as e:
+                        logger.error(f"Échec de la lecture de la sauvegarde de {filename}: {e}")
+                
+                # Si tout échoue, retourner un dictionnaire vide
+                return {}
+            except Exception as e:
+                logger.error(f"Erreur lors de la lecture du fichier {filename}: {e}")
+                return {}
+                
         except Exception as e:
             logger.error(f"Erreur lors de la lecture du fichier {filename}: {e}")
             return {}
@@ -354,20 +402,39 @@ class SecureFileManager:
         """
         try:
             filepath = os.path.join(self.data_dir, filename)
+            backup_path = f"{filepath}.bak"
             
             # Créer une copie de sauvegarde si le fichier existe
             if os.path.exists(filepath):
-                backup_path = f"{filepath}.bak"
-                import shutil
-                shutil.copy2(filepath, backup_path)
-                self._hide_file(backup_path)
+                try:
+                    import shutil
+                    shutil.copy2(filepath, backup_path)
+                    self._hide_file(backup_path)
+                except Exception as e:
+                    logger.warning(f"Impossible de créer la sauvegarde de {filename}: {e}")
             
             # Chiffrer et écrire les données
             json_data = json.dumps(data, indent=4)
             if self.cipher:
                 encrypted_data = self.cipher.encrypt(json_data.encode())
-                with open(filepath, 'wb') as f:
+                # Écrire d'abord dans un fichier temporaire
+                temp_path = f"{filepath}.tmp"
+                with open(temp_path, 'wb') as f:
                     f.write(encrypted_data)
+                
+                # Renommer le fichier temporaire en fichier final
+                try:
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                    os.rename(temp_path, filepath)
+                except Exception as e:
+                    logger.error(f"Erreur lors du remplacement du fichier {filename}: {e}")
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                    # Restaurer la sauvegarde si elle existe
+                    if os.path.exists(backup_path):
+                        shutil.copy2(backup_path, filepath)
+                    return False
             else:
                 # Fallback en cas d'erreur de chiffrement
                 with open(filepath, 'w', encoding='utf-8') as f:
@@ -375,6 +442,13 @@ class SecureFileManager:
             
             # Masquer le fichier
             self._hide_file(filepath)
+            
+            # Supprimer la sauvegarde si tout s'est bien passé
+            if os.path.exists(backup_path):
+                try:
+                    os.remove(backup_path)
+                except Exception as e:
+                    logger.warning(f"Impossible de supprimer la sauvegarde de {filename}: {e}")
             
             logger.info(f"Fichier {filename} écrit et sécurisé")
             return True
@@ -438,5 +512,97 @@ class SecureFileManager:
             return is_hidden if os.name == 'nt' else (is_hidden and is_secure)
         except Exception as e:
             logger.error(f"Erreur lors de la vérification de la sécurité de {filename}: {e}")
-            return False 
+            return False
+    
+    def reset_data_files(self):
+        """
+        Réinitialise les fichiers de données en cas de corruption
+        """
+        try:
+            # Sauvegarder les fichiers existants
+            backup_dir = os.path.join(self.data_dir, "backup")
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            for filename in self.sensitive_files:
+                filepath = os.path.join(self.data_dir, filename)
+                if os.path.exists(filepath):
+                    try:
+                        backup_path = os.path.join(backup_dir, f"{filename}.bak")
+                        import shutil
+                        shutil.copy2(filepath, backup_path)
+                        logger.info(f"Sauvegarde de {filename} créée")
+                    except Exception as e:
+                        logger.error(f"Erreur lors de la sauvegarde de {filename}: {e}")
+            
+            # Réinitialiser les fichiers avec des données par défaut
+            default_data = {
+                "users.json": {"users": []},
+                "current_user.json": {"user": None, "session": None},
+                "session.json": {"sessions": []},
+                "licenses.json": {"licenses": []}
+            }
+            
+            for filename, data in default_data.items():
+                try:
+                    self.write_secure_file(filename, data)
+                    logger.info(f"Fichier {filename} réinitialisé")
+                except Exception as e:
+                    logger.error(f"Erreur lors de la réinitialisation de {filename}: {e}")
+            
+            logger.info("Fichiers de données réinitialisés")
+            return True
+        except Exception as e:
+            logger.error(f"Erreur lors de la réinitialisation des fichiers: {e}")
+            return False
+    
+    def fix_file_permissions(self):
+        """
+        Vérifie et corrige les permissions des fichiers sensibles
+        """
+        try:
+            for filename in self.sensitive_files:
+                filepath = os.path.join(self.data_dir, filename)
+                if os.path.exists(filepath):
+                    try:
+                        if os.name == 'nt':  # Windows
+                            import win32security
+                            import ntsecuritycon as con
+                            
+                            # Obtenir le SID de l'utilisateur actuel
+                            user_sid = win32security.GetTokenInformation(
+                                win32security.OpenProcessToken(win32security.GetCurrentProcess(), win32security.TOKEN_QUERY),
+                                win32security.TokenUser
+                            )[0]
+                            
+                            # Créer une DACL qui donne le contrôle total à l'utilisateur actuel
+                            dacl = win32security.ACL()
+                            dacl.Initialize()
+                            dacl.AddAccessAllowedAce(
+                                win32security.ACL_REVISION,
+                                con.FILE_ALL_ACCESS,
+                                user_sid
+                            )
+                            
+                            # Appliquer la DACL au fichier
+                            security = win32security.SECURITY_DESCRIPTOR()
+                            security.SetSecurityDescriptorDacl(1, dacl, 0)
+                            win32security.SetFileSecurity(
+                                filepath,
+                                win32security.DACL_SECURITY_INFORMATION,
+                                security
+                            )
+                        else:
+                            # Sous Unix, définir les permissions rw------- (600)
+                            os.chmod(filepath, 0o600)
+                        
+                        # Masquer le fichier
+                        self._hide_file(filepath)
+                        logger.info(f"Permissions corrigées pour {filename}")
+                    except Exception as e:
+                        logger.error(f"Erreur lors de la correction des permissions de {filename}: {e}")
+            
+            logger.info("Vérification des permissions terminée")
+            return True
+        except Exception as e:
+            logger.error(f"Erreur lors de la correction des permissions: {e}")
             return False 

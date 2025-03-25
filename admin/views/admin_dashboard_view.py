@@ -159,6 +159,7 @@ class AdminDashboardView:
         system_info_items = [
             {"label": "Système d'exploitation", "key": "os"},
             {"label": "Version Python", "key": "python_version"},
+            {"label": "Version de l'application", "key": "app_version"},
             {"label": "Utilisation CPU", "key": "cpu_usage"},
             {"label": "Utilisation mémoire", "key": "memory_usage"},
             {"label": "Espace disque", "key": "disk_space"},
@@ -694,7 +695,8 @@ class AdminDashboardView:
             if not hasattr(self, '_static_info'):
                 self._static_info = {
                     'os': f"{platform.system()} {platform.release()}",
-                    'python_version': platform.python_version()
+                    'python_version': platform.python_version(),
+                    'app_version': self.model.get_app_version() if hasattr(self.model, 'get_app_version') else "1.1.0"
                 }
             info.update(self._static_info)
             

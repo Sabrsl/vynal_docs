@@ -1775,10 +1775,10 @@ class AdminModel:
             return self.app_model.version
         
         if hasattr(self.app_model, 'config') and hasattr(self.app_model.config, 'get'):
-            return self.app_model.config.get('app.version', '1.0.0')
+            return self.app_model.config.get('app.version', '1.1.0')
         
         # Valeur par défaut
-        return "1.0.0"
+        return "1.1.0"
     
     def is_update_available(self):
         """

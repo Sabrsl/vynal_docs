@@ -1,9 +1,9 @@
 {
   "update": {
-    "latest_version": "1.0.0",
-    "download_url": "https://example.com/update/patch-1.0.0.zip",
+    "latest_version": "1.1.0",
+    "download_url": "https://example.com/update/patch-1.1.0.zip",
     "checksum": "",
-    "changelog": "Version initiale"
+    "changelog": "Ajout de nouvelles fonctionnalités et corrections de bugs"
   },
   "licences": {
     "admin@example.com": {
@@ -32,6 +32,11 @@
     "url": "https://example.com/support"
   },
   "changelog_full": [
+    {
+      "version": "1.1.0",
+      "date": "2025-03-25",
+      "notes": "Ajout de nouvelles fonctionnalités et corrections de bugs"
+    },
     {
       "version": "1.0.0",
       "date": "2025-03-24",
