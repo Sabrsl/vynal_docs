@@ -14,6 +14,25 @@
   gap: 8px;
 }
 
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button i {
+  font-size: 18px;
+  margin-right: 8px;
+}
+
+.button-icon-only {
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.button-icon-only i {
+  margin-right: 0;
+}
+
 /* Variantes de boutons */
 .button-default {
   background-color: #f8f9fa;
@@ -54,11 +73,11 @@
 
 .button-transparent {
   background-color: transparent;
-  color: #6c757d;
+  color: var(--text-color, #6c757d);
 }
 
 .button-transparent:hover {
-  background-color: rgba(108, 117, 125, 0.1);
+  background-color: var(--hover-background, rgba(108, 117, 125, 0.1));
 }
 
 .button-outline {
@@ -124,4 +143,17 @@
 
 .button-large i {
   font-size: 20px;
+}
+
+body.dark-mode .button-default {
+  border-color: var(--border-color);
+}
+
+body.dark-mode .button-outline {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+body.dark-mode .button-outline:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.15);
 } 

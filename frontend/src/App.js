@@ -29,6 +29,8 @@ import StatsPage from './pages/StatsPage';
 import TrashPage from './pages/TrashPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import VynalGPTPage from './pages/VynalGPTPage';
+import SettingsPage from './pages/SettingsPage';
 
 const MainApp = () => {
   const { 
@@ -36,7 +38,9 @@ const MainApp = () => {
     setActiveSection, 
     isLoading,
     documents,
-    activities
+    activities,
+    darkMode,
+    toggleDarkMode
   } = useAppContext();
   
   const { user, logout } = useAuth();
@@ -69,8 +73,11 @@ const MainApp = () => {
   
   const handleSettingsClick = () => {
     console.log('Settings clicked');
-    alert('Paramètres cliqués!');
-    // Implémenter l'ouverture des paramètres
+    navigate('/settings');
+  };
+  
+  const handleDarkModeClick = () => {
+    toggleDarkMode();
   };
   
   const handleSearchChange = (e) => {
@@ -87,7 +94,7 @@ const MainApp = () => {
   };
   
   const handleSettingsMenuClick = () => {
-    alert('Paramètres du compte');
+    navigate('/settings');
     setShowUserMenu(false);
   };
   
@@ -114,6 +121,9 @@ const MainApp = () => {
         </div>
         <SearchBar placeholder="Rechercher..." />
         <div className="navbar-actions">
+          <Button variant="transparent" onClick={handleDarkModeClick} className="dark-mode-toggle">
+            <i className={`bx ${darkMode ? 'bx-sun' : 'bx-moon'}`}></i>
+          </Button>
           <Button variant="transparent" onClick={handleSettingsClick}>
             <i className='bx bx-cog'></i>
           </Button>
@@ -162,6 +172,8 @@ const MainApp = () => {
             <Route path="/share" element={<SharePage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/trash" element={<TrashPage />} />
+            <Route path="/vynalgpt" element={<VynalGPTPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </div>
       </div>

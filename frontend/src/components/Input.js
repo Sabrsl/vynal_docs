@@ -15,7 +15,7 @@ const Input = ({
   ...props
 }) => {
   const inputClass = `input-wrapper ${error ? 'error' : ''} ${className || ''}`;
-  
+
   return (
     <div className={inputClass}>
       {prefixIcon && (
@@ -32,6 +32,7 @@ const Input = ({
       {suffixIcon && (
         <i className={`bx ${suffixIcon}`}></i>
       )}
+      {error && <div className="error-message">{error}</div>}
     </div>
   );
 };

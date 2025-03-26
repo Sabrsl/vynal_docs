@@ -38,6 +38,13 @@ const Sidebar = ({ onSectionClick, activeSection }) => {
           <span>Catégories</span>
         </div>
         <div 
+          className={`sidebar-item ${activeSection === 'vynalgpt' ? 'active' : ''}`} 
+          onClick={() => onSectionClick('vynalgpt')}
+        >
+          <i className='bx bx-bot'></i>
+          <span>Vynal GPT</span>
+        </div>
+        <div 
           className={`sidebar-item ${activeSection === 'users' ? 'active' : ''}`} 
           onClick={() => onSectionClick('users')}
         >

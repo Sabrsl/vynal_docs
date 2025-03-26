@@ -4,20 +4,20 @@
   align-items: center;
   width: 100%;
   max-width: 100%;
-  border: 1px solid var(--color-border, #dee2e6);
-  background-color: white;
+  border: 1px solid var(--border-color, #dee2e6);
+  background-color: var(--card-background, white);
   border-radius: 6px;
   transition: all 0.2s ease;
   overflow: hidden;
 }
 
 .input-wrapper:focus-within {
-  border-color: var(--color-primary, #0d6efd);
-  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+  border-color: var(--primary-color, #0d6efd);
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 13, 110, 253), 0.25);
 }
 
 .input-wrapper.error {
-  border-color: var(--color-danger, #dc3545);
+  border-color: var(--error-color, #dc3545);
 }
 
 .input-wrapper.error:focus-within {
@@ -25,7 +25,7 @@
 }
 
 .input-wrapper i {
-  color: var(--color-text-secondary, #6c757d);
+  color: var(--text-color-light, #6c757d);
   font-size: 18px;
   position: absolute;
   z-index: 1;
@@ -46,12 +46,12 @@
   border: none;
   background: none;
   font-size: 14px;
-  color: var(--color-text-primary, #212529);
+  color: var(--text-color, #212529);
   outline: none;
 }
 
 .input-wrapper input::placeholder {
-  color: var(--color-text-muted, #adb5bd);
+  color: var(--text-color-light, #adb5bd);
 }
 
 /* Si un préfixe est présent, ajuster le padding de l'input */
@@ -67,7 +67,19 @@
 }
 
 .error-message {
-  color: var(--color-danger, #dc3545);
+  color: var(--error-color, #dc3545);
   font-size: 12px;
   margin-top: 4px;
+}
+
+body.dark-mode .input-wrapper {
+  background-color: var(--card-background);
+}
+
+body.dark-mode .input-wrapper input {
+  color: var(--text-color);
+}
+
+body.dark-mode .input-wrapper input::placeholder {
+  color: var(--text-color-light);
 } 

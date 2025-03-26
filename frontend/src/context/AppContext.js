@@ -14,7 +14,14 @@ const initialState = {
   activeDocument: null,
   activeSection: 'dashboard',
   isLoading: false,
-  error: null
+  error: null,
+  darkMode: false,
+  userSettings: {
+    language: 'fr',
+    notificationsEnabled: true,
+    autoSave: true,
+    saveInterval: 5
+  }
 };
 
 // Reducer pour gérer les actions
@@ -69,10 +76,28 @@ const appReducer = (state, action) => {
         ...state,
         documents: state.documents.filter(doc => doc.id !== action.payload)
       };
+    case 'FETCH_TEMPLATES_SUCCESS':
+      return {
+        ...state,
+        templates: action.payload
+      };
     case 'FETCH_ACTIVITIES_SUCCESS':
       return {
         ...state,
         activities: action.payload
+      };
+    case 'TOGGLE_DARK_MODE':
+      return {
+        ...state,
+        darkMode: !state.darkMode
+      };
+    case 'UPDATE_USER_SETTINGS':
+      return {
+        ...state,
+        userSettings: {
+          ...state.userSettings,
+          ...action.payload
+        }
       };
     default:
       return state;
@@ -105,6 +130,14 @@ export const AppProvider = ({ children }) => {
             { id: userId*100 + 4, userId: userId, title: 'Plan de projet', modified: '1j', type: 'document', views: 32, content: 'Plan détaillé du projet...' }
           ];
           
+          // Données fictives pour les templates - liées à l'utilisateur connecté
+          const templatesData = [
+            { id: userId*100 + 10, userId: userId, title: 'Contrat de prestation', modified: '2j', type: 'document', views: 18, content: 'Template de contrat...' },
+            { id: userId*100 + 11, userId: userId, title: 'Facture standard', modified: '5j', type: 'document', views: 27, content: 'Template de facture...' },
+            { id: userId*100 + 12, userId: userId, title: 'Rapport technique', modified: '1s', type: 'document', views: 12, content: 'Template de rapport technique...' },
+            { id: userId*100 + 13, userId: userId, title: 'Cahier des charges', modified: '2s', type: 'document', views: 8, content: 'Template de cahier des charges...' }
+          ];
+          
           // Données fictives pour les activités - liées à l'utilisateur connecté
           const activitiesData = [
             { id: userId*100 + 1, userId: userId, user: user.name, action: 'a créé un document', document: 'Rapport annuel 2024', documentId: userId*100 + 1, time: '2h' },
@@ -115,6 +148,7 @@ export const AppProvider = ({ children }) => {
           ];
           
           dispatch({ type: 'FETCH_DOCUMENTS_SUCCESS', payload: documentsData });
+          dispatch({ type: 'FETCH_TEMPLATES_SUCCESS', payload: templatesData });
           dispatch({ type: 'FETCH_ACTIVITIES_SUCCESS', payload: activitiesData });
         } catch (error) {
           dispatch({ type: 'FETCH_DOCUMENTS_ERROR', payload: 'Erreur lors du chargement des données' });
@@ -125,9 +159,43 @@ export const AppProvider = ({ children }) => {
     } else {
       // Réinitialiser les données si l'utilisateur est déconnecté
       dispatch({ type: 'FETCH_DOCUMENTS_SUCCESS', payload: [] });
+      dispatch({ type: 'FETCH_TEMPLATES_SUCCESS', payload: [] });
       dispatch({ type: 'FETCH_ACTIVITIES_SUCCESS', payload: [] });
     }
   }, [isAuthenticated, user]);
+
+  // Charger les paramètres utilisateur depuis le localStorage si disponibles
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('userSettings');
+    if (savedSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedSettings);
+        dispatch({ type: 'UPDATE_USER_SETTINGS', payload: parsedSettings });
+      } catch (error) {
+        console.error('Erreur lors du chargement des paramètres utilisateur:', error);
+      }
+    }
+    
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode !== null) {
+      const isDarkMode = savedDarkMode === 'true';
+      if (isDarkMode !== state.darkMode) {
+        dispatch({ type: 'TOGGLE_DARK_MODE' });
+      }
+    }
+  }, []);
+  
+  // Effet pour appliquer le dark mode
+  useEffect(() => {
+    if (state.darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+    
+    // Sauvegarder le paramètre dans localStorage
+    localStorage.setItem('darkMode', state.darkMode);
+  }, [state.darkMode]);
   
   // Créer un document
   const createDocument = async (newDoc) => {
@@ -350,6 +418,23 @@ export const AppProvider = ({ children }) => {
     }
   };
   
+  // Mettre à jour les paramètres utilisateur
+  const updateUserSettings = (newSettings) => {
+    dispatch({ type: 'UPDATE_USER_SETTINGS', payload: newSettings });
+    
+    // Sauvegarder les paramètres dans localStorage
+    const updatedSettings = {
+      ...state.userSettings,
+      ...newSettings
+    };
+    localStorage.setItem('userSettings', JSON.stringify(updatedSettings));
+  };
+  
+  // Basculer le mode sombre
+  const toggleDarkMode = () => {
+    dispatch({ type: 'TOGGLE_DARK_MODE' });
+  };
+  
   // Valeur exposée par le contexte
   const value = {
     ...state,
@@ -358,7 +443,9 @@ export const AppProvider = ({ children }) => {
     deleteDocument,
     setActiveSection,
     openDocument,
-    shareDocument
+    shareDocument,
+    updateUserSettings,
+    toggleDarkMode
   };
   
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
