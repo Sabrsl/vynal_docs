@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Route, Routes, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 import logo from './assets/logo.svg';
 import avatar from './assets/avatar.svg';
@@ -7,6 +8,13 @@ import avatar from './assets/avatar.svg';
 import Button from './components/Button';
 import Card from './components/Card';
 import Input from './components/Input';
+import Loader from './components/Loader';
+import Navbar from './components/Navbar/Navbar';
+import Sidebar from './components/Sidebar/Sidebar';
+import SearchBar from './components/SearchBar/SearchBar';
+
+// Import du contexte
+import { useAppContext } from './context/AppContext';
 
 // Import des pages
 import HomePage from './pages/HomePage';
@@ -18,154 +26,132 @@ import SharePage from './pages/SharePage';
 import StatsPage from './pages/StatsPage';
 import TrashPage from './pages/TrashPage';
 
-function App() {
-  const [activeSection, setActiveSection] = useState('dashboard');
+const App = () => {
+  const { 
+    activeSection, 
+    setActiveSection, 
+    isLoading,
+    documents,
+    activities
+  } = useAppContext();
+  
   const [searchQuery, setSearchQuery] = useState('');
+  const [showUserMenu, setShowUserMenu] = useState(false);
   
-  // Données fictives pour le tableau de bord
-  const recentDocs = [
-    { id: 1, name: 'Contrat de vente.pdf', type: 'pdf', date: '2024-03-24' },
-    { id: 2, name: 'Procédure qualité.doc', type: 'doc', date: '2024-03-23' },
-    { id: 3, name: 'Notes de réunion.txt', type: 'txt', date: '2024-03-22' },
-  ];
+  const navigate = useNavigate();
+  const location = useLocation();
   
-  const stats = {
-    documents: 145,
-    templates: 12,
-    categories: 8,
-    storage: '2.4 GB',
+  // Synchroniser la section active avec le chemin de l'URL
+  useEffect(() => {
+    const path = location.pathname.substring(1) || 'dashboard';
+    if (path !== activeSection) {
+      setActiveSection(path);
+    }
+  }, [location, activeSection, setActiveSection]);
+  
+  // Gestionnaires d'événements explicites
+  const handleSectionClick = (section) => {
+    setActiveSection(section);
+    navigate(`/${section === 'dashboard' ? '' : section}`);
   };
   
-  // Fonction pour formater les dates
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('fr-FR', { 
-      day: '2-digit', month: '2-digit', year: 'numeric' 
-    }).format(date);
+  const handleBellClick = () => {
+    console.log('Notifications clicked');
+    alert('Notifications cliquées!');
+    // Implémenter l'ouverture du panneau de notifications
   };
   
-  // Fonction pour afficher la page active
-  const renderActivePage = () => {
-    switch (activeSection) {
-      case 'dashboard':
-        return <HomePage />;
-      case 'documents':
-        return <DocumentsPage />;
-      case 'templates':
-        return <TemplatesPage />;
-      case 'categories':
-        return <CategoriesPage />;
-      case 'users':
-        return <UsersPage />;
-      case 'share':
-        return <SharePage />;
-      case 'stats':
-        return <StatsPage />;
-      case 'trash':
-        return <TrashPage />;
-      default:
-        return <HomePage />;
+  const handleSettingsClick = () => {
+    console.log('Settings clicked');
+    alert('Paramètres cliqués!');
+    // Implémenter l'ouverture des paramètres
+  };
+  
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+  
+  const handleUserMenuClick = () => {
+    setShowUserMenu(!showUserMenu);
+  };
+  
+  const handleProfileClick = () => {
+    alert('Profil utilisateur');
+    setShowUserMenu(false);
+  };
+  
+  const handleSettingsMenuClick = () => {
+    alert('Paramètres du compte');
+    setShowUserMenu(false);
+  };
+  
+  const handleLogoutClick = () => {
+    alert('Déconnexion');
+    setShowUserMenu(false);
+  };
+  
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      alert(`Recherche de: ${searchQuery}`);
+      // Implémenter la recherche
     }
   };
   
   return (
-    <div className="app">
-      {/* En-tête */}
-      <header className="app-header">
-        <div className="app-logo">
-          <img src={logo} alt="Logo" width="26" />
-          <span>Vynal <span className="app-title">Docs</span></span>
+    <div className="app-container">
+      <Navbar>
+        <div className="logo" onClick={() => handleSectionClick('dashboard')}>
+          <img src={logo} alt="Vynal Docs" className="logo-image" />
+          <h1 className="logo-text">Vynal Docs</h1>
         </div>
-        
-        <div className="app-search">
-          <Input 
-            type="search" 
-            placeholder="Rechercher un document..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            icon="bx-search"
-          />
-        </div>
-        
-        <div className="app-actions">
-          <Button icon="bx-bell" variant="text" />
-          <Button icon="bx-cog" variant="text" />
-          <div className="user-menu">
-            <img src={avatar} alt="Avatar" className="user-avatar" />
-            <span className="user-name">Jean Dupont</span>
+        <SearchBar placeholder="Rechercher..." />
+        <div className="navbar-actions">
+          <Button variant="transparent" onClick={handleSettingsClick}>
+            <i className='bx bx-cog'></i>
+          </Button>
+          <Button variant="transparent" onClick={handleBellClick}>
+            <i className='bx bx-bell'></i>
+          </Button>
+          <div className="user-profile" onClick={handleUserMenuClick}>
+            <img src={avatar} alt="User Avatar" className="user-avatar" />
+            {showUserMenu && (
+              <div className="user-dropdown">
+                <div className="user-dropdown-item" onClick={handleProfileClick}>
+                  <i className="bx bx-user"></i> Profil
+                </div>
+                <div className="user-dropdown-item" onClick={handleSettingsMenuClick}>
+                  <i className="bx bx-cog"></i> Paramètres
+                </div>
+                <div className="user-dropdown-divider"></div>
+                <div className="user-dropdown-item" onClick={handleLogoutClick}>
+                  <i className="bx bx-log-out"></i> Déconnexion
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </header>
+      </Navbar>
       
-      {/* Contenu principal */}
-      <div className="app-content">
-        {/* Barre latérale */}
-        <nav className="app-sidebar">
-          <div 
-            className={`sidebar-item ${activeSection === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveSection('dashboard')}
-          >
-            <i className='bx bx-grid-alt'></i>
-            <span>Tableau de bord</span>
-          </div>
-          <div 
-            className={`sidebar-item ${activeSection === 'documents' ? 'active' : ''}`} 
-            onClick={() => setActiveSection('documents')}
-          >
-            <i className='bx bx-file'></i>
-            <span>Documents</span>
-          </div>
-          <div 
-            className={`sidebar-item ${activeSection === 'templates' ? 'active' : ''}`} 
-            onClick={() => setActiveSection('templates')}
-          >
-            <i className='bx bx-duplicate'></i>
-            <span>Modèles</span>
-          </div>
-          <div 
-            className={`sidebar-item ${activeSection === 'categories' ? 'active' : ''}`} 
-            onClick={() => setActiveSection('categories')}
-          >
-            <i className='bx bx-category'></i>
-            <span>Catégories</span>
-          </div>
-          <div 
-            className={`sidebar-item ${activeSection === 'users' ? 'active' : ''}`}
-            onClick={() => setActiveSection('users')}
-          >
-            <i className='bx bx-user'></i>
-            <span>Utilisateurs</span>
-          </div>
-          <div 
-            className={`sidebar-item ${activeSection === 'share' ? 'active' : ''}`} 
-            onClick={() => setActiveSection('share')}
-          >
-            <i className='bx bx-share-alt'></i>
-            <span>Partage</span>
-          </div>
-          <div 
-            className={`sidebar-item ${activeSection === 'stats' ? 'active' : ''}`} 
-            onClick={() => setActiveSection('stats')}
-          >
-            <i className='bx bx-bar-chart-alt-2'></i>
-            <span>Statistiques</span>
-          </div>
-          <div 
-            className={`sidebar-item ${activeSection === 'trash' ? 'active' : ''}`} 
-            onClick={() => setActiveSection('trash')}
-          >
-            <i className='bx bx-trash'></i>
-            <span>Corbeille</span>
-          </div>
-        </nav>
+      <div className="main-content">
+        <Sidebar onSectionClick={handleSectionClick} activeSection={activeSection} />
         
-        {/* Contenu principal - Rendu de la page active */}
-        <main className="app-main">
-          {renderActivePage()}
-        </main>
+        <div className="content-area">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/documents" element={<DocumentsPage />} />
+            <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/users" element={<UsersPage />} />
+            <Route path="/share" element={<SharePage />} />
+            <Route path="/stats" element={<StatsPage />} />
+            <Route path="/trash" element={<TrashPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
       </div>
     </div>
   );
-}
+};
 
 export default App;

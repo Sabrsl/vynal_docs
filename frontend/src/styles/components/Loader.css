@@ -1,0 +1,60 @@
+@import '../variables.css';
+
+.loader-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.loader-container.fullpage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 1000;
+}
+
+.loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.loader i {
+  color: var(--color-primary);
+}
+
+.loader--small i {
+  font-size: 24px;
+}
+
+.loader--medium i {
+  font-size: 32px;
+}
+
+.loader--large i {
+  font-size: 48px;
+}
+
+.loader-text {
+  font-size: var(--font-size-s);
+  color: var(--text-color);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bx-spin {
+  animation: spin 1s linear infinite;
+} 

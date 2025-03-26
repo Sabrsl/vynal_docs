@@ -31,96 +31,35 @@ const Input = ({
 }) => {
   const uniqueId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
   
-  const styles = {
-    container: {
-      display: 'flex',
-      flexDirection: 'column',
-      marginBottom: '16px',
-      width: '100%',
-    },
-    label: {
-      fontSize: '14px',
-      fontWeight: '500',
-      marginBottom: '8px',
-      color: '#333',
-    },
-    inputWrapper: {
-      position: 'relative',
-      display: 'flex',
-      alignItems: 'center',
-      width: '100%',
-    },
-    input: {
-      width: '100%',
-      padding: prefixIcon ? '8px 16px 8px 40px' : '8px 16px',
-      fontSize: '14px',
-      border: `1px solid ${error ? '#ff4d4f' : '#ddd'}`,
-      borderRadius: '4px',
-      backgroundColor: disabled ? '#f5f5f5' : 'white',
-      transition: 'border-color 0.2s ease',
-      outline: 'none',
-    },
-    icon: {
-      position: 'absolute',
-      left: '12px',
-      fontSize: '18px',
-      color: '#999',
-    },
-    error: {
-      color: '#ff4d4f',
-      fontSize: '12px',
-      marginTop: '4px',
-    },
-    helperText: {
-      color: '#666',
-      fontSize: '12px',
-      marginTop: '4px',
-    }
-  };
-  
-  // Styles pseudo-classes
-  const hoverStyle = !disabled && !readOnly ? {
-    ':hover': {
-      borderColor: '#6933FF',
-    }
-  } : {};
-  
-  const focusStyle = !disabled && !readOnly ? {
-    ':focus': {
-      borderColor: '#6933FF',
-      boxShadow: '0 0 0 2px rgba(105, 51, 255, 0.1)',
-    }
-  } : {};
-  
-  const inputStyles = {
-    ...styles.input,
-    ...hoverStyle,
-    ...focusStyle,
-  };
-
-  const inputClass = `n-input n-input--${size} ${
-    invalid ? 'n-input--invalid' : ''
-  } ${
-    disabled ? 'n-input--disabled' : ''
-  } ${
-    readOnly ? 'n-input--readonly' : ''
-  } ${
-    prefixIcon ? 'n-input--prefix-icon' : ''
-  } ${
-    suffixIcon ? 'n-input--suffix-icon' : ''
-  } ${className}`;
+  // Classes CSS pour le conteneur principal
+  const containerClasses = [
+    'n-input',
+    `n-input--${size}`,
+    invalid || error ? 'n-input--invalid' : '',
+    disabled ? 'n-input--disabled' : '',
+    readOnly ? 'n-input--readonly' : '',
+    prefixIcon ? 'n-input--prefix-icon' : '',
+    suffixIcon ? 'n-input--suffix-icon' : '',
+    className
+  ].filter(Boolean).join(' ');
 
   return (
-    <div style={styles.container} className={`input-field ${inputClass}`}>
+    <div className={containerClasses}>
       {label && (
-        <label htmlFor={uniqueId} style={styles.label}>
+        <label htmlFor={uniqueId} className="n-input__label">
           {label}
-          {required && <span style={{ color: '#ff4d4f' }}> *</span>}
+          {required && <span className="n-input__required">*</span>}
         </label>
       )}
       
-      <div style={styles.inputWrapper}>
-        {prefixIcon && <i className={`bx ${prefixIcon}`} style={styles.icon}></i>}
+      <div className="n-input__wrapper">
+        {prefixIcon && (
+          <div className="n-input__prefix-icon">
+            <i className={`bx ${prefixIcon}`}></i>
+          </div>
+        )}
+        
+        {prefix && <div className="n-input__prefix">{prefix}</div>}
         
         <input
           id={uniqueId}
@@ -131,14 +70,22 @@ const Input = ({
           disabled={disabled}
           readOnly={readOnly}
           required={required}
-          style={inputStyles}
+          className="n-input__inner"
           onChange={onChange}
           {...props}
         />
+        
+        {suffix && <div className="n-input__suffix">{suffix}</div>}
+        
+        {suffixIcon && (
+          <div className="n-input__suffix-icon">
+            <i className={`bx ${suffixIcon}`}></i>
+          </div>
+        )}
       </div>
       
-      {error && <p style={styles.error}>{error}</p>}
-      {helpText && !error && <p style={styles.helperText}>{helpText}</p>}
+      {error && <div className="n-input__error">{error}</div>}
+      {helpText && !error && <div className="n-input__help">{helpText}</div>}
     </div>
   );
 };

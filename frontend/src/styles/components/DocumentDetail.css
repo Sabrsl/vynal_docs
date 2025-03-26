@@ -1,0 +1,84 @@
+@import '../variables.css';
+
+.document-detail {
+  padding: 16px 0;
+}
+
+.document-metadata {
+  margin-bottom: 24px;
+  border-radius: var(--border-radius-s);
+  background-color: var(--color-background-light);
+  padding: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.metadata-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 160px;
+}
+
+.metadata-label {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-color-light);
+}
+
+.metadata-value {
+  color: var(--text-color-dark);
+}
+
+.document-content {
+  margin-top: 24px;
+}
+
+.document-content h3 {
+  font-size: var(--font-size-m);
+  margin-bottom: 12px;
+  color: var(--text-color-dark);
+}
+
+.document-content p {
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.document-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-color-dark);
+}
+
+.form-control {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-s);
+  font-family: var(--font-family);
+  font-size: var(--font-size-s);
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 120px;
+} 

@@ -1,36 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import Loader from '../components/Loader';
+import DocumentDetail from '../components/DocumentDetail';
+import { useAppContext } from '../context/AppContext';
 import '../styles/base.css';
 import '../styles/variables.css';
 import '../styles/modern.css';
+import '../styles/components/DocumentDetail.css';
 
 const HomePage = () => {
-  // Données de statistiques fictives
+  const { 
+    documents, 
+    activities, 
+    createDocument, 
+    isLoading, 
+    error,
+    setActiveSection
+  } = useAppContext();
+  
+  const [selectedDocumentId, setSelectedDocumentId] = useState(null);
+  const [showNewDocumentForm, setShowNewDocumentForm] = useState(false);
+  const [newDocumentData, setNewDocumentData] = useState({
+    title: '',
+    type: 'document',
+    content: ''
+  });
+  
+  // Statistiques calculées
   const stats = [
-    { id: 1, title: 'Documents', value: 254, icon: 'bx bx-file', color: 'primary' },
+    { id: 1, title: 'Documents', value: documents.length, icon: 'bx bx-file', color: 'primary' },
     { id: 2, title: 'Utilisateurs', value: 45, icon: 'bx bx-user', color: 'secondary' },
     { id: 3, title: 'Stockage utilisé', value: '2.7 GB', icon: 'bx bx-data', color: 'tertiary' },
-    { id: 4, title: 'Activités', value: 1458, icon: 'bx bx-bar-chart-alt-2', color: 'warning' }
+    { id: 4, title: 'Activités', value: activities.length, icon: 'bx bx-bar-chart-alt-2', color: 'warning' }
   ];
-
-  // Données d'activités récentes fictives
-  const recentActivities = [
-    { id: 1, user: 'John Doe', action: 'a créé un document', document: 'Rapport annuel 2024', time: '2h' },
-    { id: 2, user: 'Alice Smith', action: 'a modifié', document: 'Présentation client', time: '5h' },
-    { id: 3, user: 'Robert Johnson', action: 'a partagé', document: 'Données financières Q1', time: '12h' },
-    { id: 4, user: 'Emma Wilson', action: 'a supprimé', document: 'Ancien brouillon', time: '1j' },
-    { id: 5, user: 'Michael Brown', action: 'a commenté sur', document: 'Plan de projet', time: '2j' }
-  ];
-
-  // Données de documents récents fictives
-  const recentDocuments = [
-    { id: 1, title: 'Rapport annuel 2024', modified: '2h', type: 'document', views: 24 },
-    { id: 2, title: 'Présentation client', modified: '5h', type: 'presentation', views: 15 },
-    { id: 3, title: 'Données financières Q1', modified: '12h', type: 'spreadsheet', views: 8 },
-    { id: 4, title: 'Plan de projet', modified: '1j', type: 'document', views: 32 }
-  ];
-
+  
   // Fonction pour obtenir l'icône du type de document
   const getDocumentIcon = (type) => {
     switch (type) {
@@ -44,15 +49,137 @@ const HomePage = () => {
         return 'bx bx-file';
     }
   };
+  
+  // Gestionnaires d'événements pour les boutons
+  const handleNewDocument = () => {
+    setShowNewDocumentForm(true);
+  };
+  
+  const handleNewDocumentSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await createDocument(newDocumentData);
+      setShowNewDocumentForm(false);
+      setNewDocumentData({
+        title: '',
+        type: 'document',
+        content: ''
+      });
+    } catch (error) {
+      console.error('Erreur lors de la création:', error);
+    }
+  };
+  
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewDocumentData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const handleViewAll = () => {
+    setActiveSection('documents');
+  };
+  
+  const handleViewActivity = () => {
+    setActiveSection('stats');
+  };
+  
+  const handleDocumentClick = (docId) => {
+    setSelectedDocumentId(docId);
+  };
+  
+  const closeDocumentDetail = () => {
+    setSelectedDocumentId(null);
+  };
+  
+  if (isLoading && documents.length === 0) {
+    return <Loader fullPage text="Chargement du tableau de bord..." />;
+  }
+  
+  if (error) {
+    return (
+      <div className="error-message">
+        <h2>Erreur</h2>
+        <p>{error}</p>
+        <Button variant="primary" onClick={() => window.location.reload()}>Réessayer</Button>
+      </div>
+    );
+  }
 
+  // Si un document est sélectionné, afficher ses détails
+  if (selectedDocumentId) {
+    return <DocumentDetail documentId={selectedDocumentId} onClose={closeDocumentDetail} />;
+  }
+  
+  // Si le formulaire d'ajout est affiché
+  if (showNewDocumentForm) {
+    return (
+      <Card
+        title="Nouveau document"
+        icon="bx-file-plus"
+        actionButton={<Button variant="text" icon="bx-x" onClick={() => setShowNewDocumentForm(false)}></Button>}
+      >
+        <form onSubmit={handleNewDocumentSubmit} className="document-edit-form">
+          <div className="form-group">
+            <label htmlFor="title">Titre</label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value={newDocumentData.title}
+              onChange={handleInputChange}
+              className="form-control"
+              required
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="type">Type</label>
+            <select
+              id="type"
+              name="type"
+              value={newDocumentData.type}
+              onChange={handleInputChange}
+              className="form-control"
+            >
+              <option value="document">Document</option>
+              <option value="presentation">Présentation</option>
+              <option value="spreadsheet">Feuille de calcul</option>
+            </select>
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="content">Contenu</label>
+            <textarea
+              id="content"
+              name="content"
+              value={newDocumentData.content}
+              onChange={handleInputChange}
+              className="form-control"
+              rows="10"
+            />
+          </div>
+          
+          <div className="form-actions">
+            <Button variant="primary" submit>Créer</Button>
+            <Button variant="text" onClick={() => setShowNewDocumentForm(false)}>Annuler</Button>
+          </div>
+        </form>
+      </Card>
+    );
+  }
+  
   return (
     <div className="dashboard-page">
       <div className="page-header">
         <h1>Tableau de bord</h1>
         <div className="page-actions">
           <Button
-            type="primary"
-            icon="bx bx-plus"
+            variant="primary"
+            icon="bx-plus"
+            onClick={handleNewDocument}
           >
             Nouveau document
           </Button>
@@ -77,28 +204,46 @@ const HomePage = () => {
         <div className="dashboard-main">
           <Card
             title="Documents récents"
-            actions={<Button type="text" icon="bx bx-dots-horizontal-rounded" />}
+            actionButton={<Button variant="text" icon="bx-dots-horizontal-rounded" />}
           >
-            <div className="recent-documents">
-              {recentDocuments.map(doc => (
-                <div key={doc.id} className="document-item">
-                  <div className="document-icon">
-                    <i className={getDocumentIcon(doc.type)}></i>
+            {isLoading ? (
+              <Loader text="Chargement des documents..." />
+            ) : (
+              <div className="recent-documents">
+                {documents.map(doc => (
+                  <div 
+                    key={doc.id} 
+                    className="document-item"
+                    onClick={() => handleDocumentClick(doc.id)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="document-icon">
+                      <i className={getDocumentIcon(doc.type)}></i>
+                    </div>
+                    <div className="document-info">
+                      <h3 className="document-title">{doc.title}</h3>
+                      <p className="document-meta">Modifié il y a {doc.modified} • {doc.views} vues</p>
+                    </div>
+                    <div className="document-actions" onClick={e => e.stopPropagation()}>
+                      <Button variant="text" icon="bx-edit" onClick={(e) => {
+                        e.stopPropagation();
+                        handleDocumentClick(doc.id);
+                      }} />
+                      <Button variant="text" icon="bx-share-alt" onClick={(e) => {
+                        e.stopPropagation();
+                        alert(`Partage du document ${doc.id}`);
+                      }} />
+                      <Button variant="text" icon="bx-dots-vertical-rounded" onClick={(e) => {
+                        e.stopPropagation();
+                        alert(`Options pour le document ${doc.id}`);
+                      }} />
+                    </div>
                   </div>
-                  <div className="document-info">
-                    <h3 className="document-title">{doc.title}</h3>
-                    <p className="document-meta">Modifié il y a {doc.modified} • {doc.views} vues</p>
-                  </div>
-                  <div className="document-actions">
-                    <Button type="text" icon="bx bx-edit" />
-                    <Button type="text" icon="bx bx-share-alt" />
-                    <Button type="text" icon="bx bx-dots-vertical-rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
             <div className="view-all-link">
-              <Button type="text">Voir tous les documents</Button>
+              <Button variant="text" onClick={handleViewAll}>Voir tous les documents</Button>
             </div>
           </Card>
         </div>
@@ -106,29 +251,43 @@ const HomePage = () => {
         <div className="dashboard-sidebar">
           <Card
             title="Activité récente"
-            actions={<Button type="text" icon="bx bx-refresh" />}
+            actionButton={<Button variant="text" icon="bx-refresh" onClick={() => alert('Actualisation des activités')} />}
           >
-            <div className="activity-list">
-              {recentActivities.map(activity => (
-                <div key={activity.id} className="activity-item">
-                  <div className="activity-user">
-                    <div className="user-avatar-initials role-user">
-                      {activity.user.substring(0, 2)}
+            {isLoading ? (
+              <Loader text="Chargement des activités..." />
+            ) : (
+              <div className="activity-list">
+                {activities.map(activity => (
+                  <div key={activity.id} className="activity-item">
+                    <div className="activity-user">
+                      <div className="user-avatar-initials role-user">
+                        {activity.user.substring(0, 2)}
+                      </div>
+                    </div>
+                    <div className="activity-content">
+                      <p>
+                        <span className="activity-user-name">{activity.user}</span>
+                        <span className="activity-action"> {activity.action} </span>
+                        {activity.documentId ? (
+                          <span 
+                            className="activity-document"
+                            style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                            onClick={() => handleDocumentClick(activity.documentId)}
+                          >
+                            {activity.document}
+                          </span>
+                        ) : (
+                          <span className="activity-document">{activity.document}</span>
+                        )}
+                      </p>
+                      <span className="activity-time">{activity.time}</span>
                     </div>
                   </div>
-                  <div className="activity-content">
-                    <p>
-                      <span className="activity-user-name">{activity.user}</span>
-                      <span className="activity-action"> {activity.action} </span>
-                      <span className="activity-document">{activity.document}</span>
-                    </p>
-                    <span className="activity-time">{activity.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
             <div className="view-all-link">
-              <Button type="text">Voir toute l'activité</Button>
+              <Button variant="text" onClick={handleViewActivity}>Voir toute l'activité</Button>
             </div>
           </Card>
         </div>

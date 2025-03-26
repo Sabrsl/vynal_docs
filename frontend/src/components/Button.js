@@ -17,55 +17,26 @@ const Button = ({
   onClick,
   variant = 'secondary',
   fullWidth = false,
+  style = {},
   ...props
 }) => {
-  const baseClass = 'button';
-  const variantClass = `button-${variant}`;
-  const widthClass = fullWidth ? 'button-full' : '';
-  const iconClass = icon ? 'button-with-icon' : '';
+  // Utilisation des classes CSS correctes correspondant à Button.css
+  const baseClass = 'n-button';
+  const variantClass = `n-button--${variant}`;
+  const sizeClass = `n-button--${size}`;
+  const iconOnlyClass = icon && !children ? 'n-button--icon-only' : '';
+  const loadingClass = loading ? 'n-button--loading' : '';
+  const fullWidthClass = fullWidth ? 'n-button--full' : '';
   
   const classes = [
     baseClass,
     variantClass,
-    widthClass,
-    iconClass,
+    sizeClass,
+    iconOnlyClass,
+    loadingClass,
+    fullWidthClass,
     className
   ].filter(Boolean).join(' ');
-  
-  const styles = {
-    button: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '8px',
-      padding: '8px 16px',
-      borderRadius: '4px',
-      fontWeight: '500',
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-      border: 'none',
-      fontSize: '14px',
-      width: fullWidth ? '100%' : 'auto',
-    },
-    primary: {
-      backgroundColor: '#6933FF',
-      color: 'white',
-    },
-    secondary: {
-      backgroundColor: '#EAECFF',
-      color: '#6933FF',
-    },
-    text: {
-      backgroundColor: 'transparent',
-      color: '#555',
-      padding: icon && !children ? '8px' : '8px 16px',
-    }
-  };
-  
-  const combinedStyles = {
-    ...styles.button,
-    ...(styles[variant] || {}),
-  };
   
   return (
     <button
@@ -73,12 +44,12 @@ const Button = ({
       className={classes}
       disabled={disabled || loading}
       onClick={onClick}
-      style={combinedStyles}
+      style={style}
       {...props}
     >
-      {loading && <i className="bx bx-loader-alt bx-spin button-icon-left"></i>}
+      {loading && <i className="bx bx-loader-alt bx-spin"></i>}
       {icon && !loading && <i className={`bx ${icon}`}></i>}
-      {children}
+      <span>{children}</span>
     </button>
   );
 };
@@ -95,6 +66,7 @@ Button.propTypes = {
   onClick: PropTypes.func,
   variant: PropTypes.oneOf(['primary', 'secondary', 'tertiary', 'text', 'danger', 'outlined']),
   fullWidth: PropTypes.bool,
+  style: PropTypes.object,
 };
 
 export default Button; 

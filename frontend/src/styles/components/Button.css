@@ -16,6 +16,8 @@
   line-height: 1;
   white-space: nowrap;
   outline: none;
+  min-width: fit-content;
+  overflow: visible;
 }
 
 /* Types de boutons */
@@ -146,6 +148,11 @@
 .n-button--icon-only {
   width: 36px;
   padding: 0;
+}
+
+/* Largeur complète */
+.n-button--full {
+  width: 100%;
 }
 
 /* États des boutons */

@@ -6,6 +6,10 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   transition: all 0.2s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
 }
 
 .n-card:hover {
@@ -14,26 +18,37 @@
 
 /* Sections de la carte */
 .n-card__header {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f5;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #F0F0F5;
 }
 
-.n-card__header h1, 
-.n-card__header h2, 
-.n-card__header h3, 
-.n-card__header h4, 
-.n-card__header h5, 
-.n-card__header h6 {
-  margin-bottom: 0;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semi-bold);
+.n-card__header-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.n-card__header-titles {
-  flex: 1;
+.n-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6933FF;
+  font-size: 20px;
+}
+
+.n-card__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.n-card__action {
+  display: flex;
+  gap: 8px;
 }
 
 .n-card__body {
@@ -42,10 +57,11 @@
 
 .n-card__footer {
   padding: 12px 16px;
-  border-top: 1px solid #F0F0F5;
+  border-top: 1px solid #f0f0f5;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  background-color: #f9f9fb;
 }
 
 .n-card__footer--centered {
@@ -71,7 +87,7 @@
 
 .n-card--no-shadow {
   box-shadow: none;
-  border: 1px solid #EAEAEA;
+  border: 1px solid #e6e6e6;
 }
 
 .n-card--no-shadow:hover {
@@ -87,18 +103,11 @@
 }
 
 .n-card--hoverable:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Contenus spécifiques */
-.n-card__title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
 .n-card__subtitle {
   font-size: 14px;
   color: #666;
@@ -118,6 +127,7 @@
 
 .n-card__content {
   padding: 16px;
+  flex: 1;
 }
 
 .n-card__content--no-padding {
@@ -166,6 +176,39 @@
   100% {
     transform: translateX(100%);
   }
+}
+
+.n-card__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #6933FF;
+  gap: 12px;
+}
+
+.n-card__loading i {
+  font-size: 24px;
+}
+
+.n-card--loading .n-card__content {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Animation de chargement */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bx-spin {
+  animation: spin 1s linear infinite;
 }
 
 /* Card dans les grilles */
