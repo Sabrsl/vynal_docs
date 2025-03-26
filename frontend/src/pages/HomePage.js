@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Loader from '../components/Loader';
 import DocumentDetail from '../components/DocumentDetail';
 import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import '../styles/base.css';
 import '../styles/variables.css';
 import '../styles/modern.css';
@@ -19,6 +20,8 @@ const HomePage = () => {
     error,
     setActiveSection
   } = useAppContext();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   
   const [selectedDocumentId, setSelectedDocumentId] = useState(null);
   const [showNewDocumentForm, setShowNewDocumentForm] = useState(false);
@@ -50,9 +53,9 @@ const HomePage = () => {
     }
   };
   
-  // Gestionnaires d'événements pour les boutons
+  // Fonction pour rediriger vers la page Documents avec le modal ouvert
   const handleNewDocument = () => {
-    setShowNewDocumentForm(true);
+    navigate('/documents?new=true');
   };
   
   const handleNewDocumentSubmit = async (e) => {
@@ -93,6 +96,26 @@ const HomePage = () => {
   const closeDocumentDetail = () => {
     setSelectedDocumentId(null);
   };
+  
+  // Filtrer les documents et activités par utilisateur
+  const userDocuments = documents.filter(doc => doc.userId === user?.id);
+  const userActivities = activities.filter(activity => activity.userId === user?.id);
+  
+  // Récupérer les documents récents (les 4 derniers modifiés)
+  const recentDocuments = [...userDocuments]
+    .sort((a, b) => new Date(b.created) - new Date(a.created))
+    .slice(0, 4);
+  
+  // Récupérer les modèles (les 4 derniers créés)
+  const templates = userDocuments
+    .filter(doc => doc.isTemplate)
+    .sort((a, b) => new Date(b.created) - new Date(a.created))
+    .slice(0, 4);
+  
+  // Récupérer les activités récentes (les 5 dernières)
+  const recentActivities = [...userActivities]
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    .slice(0, 5);
   
   if (isLoading && documents.length === 0) {
     return <Loader fullPage text="Chargement du tableau de bord..." />;
@@ -176,12 +199,18 @@ const HomePage = () => {
       <div className="page-header">
         <h1>Tableau de bord</h1>
         <div className="page-actions">
-          <Button
-            variant="primary"
-            icon="bx-plus"
+          <Button 
+            variant="primary" 
+            icon="bx-plus" 
             onClick={handleNewDocument}
           >
             Nouveau document
+          </Button>
+          <Button 
+            variant="default" 
+            icon="bx-upload"
+          >
+            Importer un fichier
           </Button>
         </div>
       </div>
@@ -210,7 +239,7 @@ const HomePage = () => {
               <Loader text="Chargement des documents..." />
             ) : (
               <div className="recent-documents">
-                {documents.map(doc => (
+                {recentDocuments.map(doc => (
                   <div 
                     key={doc.id} 
                     className="document-item"
@@ -257,7 +286,7 @@ const HomePage = () => {
               <Loader text="Chargement des activités..." />
             ) : (
               <div className="activity-list">
-                {activities.map(activity => (
+                {recentActivities.map(activity => (
                   <div key={activity.id} className="activity-item">
                     <div className="activity-user">
                       <div className="user-avatar-initials role-user">

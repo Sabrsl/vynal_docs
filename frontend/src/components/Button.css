@@ -1,0 +1,127 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  outline: none;
+  padding: 0 16px;
+  font-family: inherit;
+  gap: 8px;
+}
+
+/* Variantes de boutons */
+.button-default {
+  background-color: #f8f9fa;
+  color: #212529;
+  border: 1px solid #dee2e6;
+}
+
+.button-default:hover {
+  background-color: #e9ecef;
+}
+
+.button-primary {
+  background-color: var(--color-primary, #0d6efd);
+  color: white;
+}
+
+.button-primary:hover {
+  background-color: #0b5ed7;
+}
+
+.button-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.button-secondary:hover {
+  background-color: #5a6268;
+}
+
+.button-danger {
+  background-color: var(--color-danger, #dc3545);
+  color: white;
+}
+
+.button-danger:hover {
+  background-color: #c82333;
+}
+
+.button-transparent {
+  background-color: transparent;
+  color: #6c757d;
+}
+
+.button-transparent:hover {
+  background-color: rgba(108, 117, 125, 0.1);
+}
+
+.button-outline {
+  background-color: transparent;
+  border: 1px solid var(--color-primary, #0d6efd);
+  color: var(--color-primary, #0d6efd);
+}
+
+.button-outline:hover {
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+/* Tailles de boutons */
+.button-small {
+  height: 32px;
+  font-size: 12px;
+}
+
+.button-medium {
+  height: 40px;
+  font-size: 14px;
+}
+
+.button-large {
+  height: 48px;
+  font-size: 16px;
+}
+
+/* Bouton pleine largeur */
+.button-full-width {
+  width: 100%;
+}
+
+/* Bouton désactivé */
+.button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Bouton avec icône uniquement */
+.button-icon-only {
+  width: 40px;
+  padding: 0;
+}
+
+.button-small.button-icon-only {
+  width: 32px;
+}
+
+.button-large.button-icon-only {
+  width: 48px;
+}
+
+/* Style pour les icônes */
+.button i {
+  font-size: 18px;
+}
+
+.button-small i {
+  font-size: 16px;
+}
+
+.button-large i {
+  font-size: 20px;
+} 

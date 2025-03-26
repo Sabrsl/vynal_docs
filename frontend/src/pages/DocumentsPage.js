@@ -1,160 +1,269 @@
-import React, { useState } from 'react';
-import Card from '../components/Card';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
+import Card from '../components/Card';
 import Input from '../components/Input';
-import Dropdown from '../components/Dropdown';
-import SearchBox from '../components/SearchBox';
-import '../styles/base.css';
-import '../styles/variables.css';
-import '../styles/modern.css';
-import '../styles/pages.css';
+import Loader from '../components/Loader';
+import './DocumentsPage.css';
 
 const DocumentsPage = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('recent');
-  
-  // Données fictives pour les documents
-  const documents = [
-    { id: 1, name: 'Rapport annuel 2024.pdf', type: 'pdf', date: '2024-03-24', size: '2.5 MB', owner: 'Jean Dupont' },
-    { id: 2, name: 'Procédure qualité v2.1.doc', type: 'doc', date: '2024-03-23', size: '1.8 MB', owner: 'Marie Martin' },
-    { id: 3, name: 'Notes de réunion mars.txt', type: 'txt', date: '2024-03-22', size: '0.2 MB', owner: 'Pierre Leroy' },
-    { id: 4, name: 'Présentation client Q1.ppt', type: 'ppt', date: '2024-03-20', size: '4.7 MB', owner: 'Sophie Dubois' },
-    { id: 5, name: 'Données financières 2024.xlsx', type: 'xlsx', date: '2024-03-19', size: '1.5 MB', owner: 'Thomas Bernard' },
-    { id: 6, name: 'Contrat de service.pdf', type: 'pdf', date: '2024-03-18', size: '3.2 MB', owner: 'Jean Dupont' },
-    { id: 7, name: 'Analyse de marché.doc', type: 'doc', date: '2024-03-15', size: '2.1 MB', owner: 'Marie Martin' },
-    { id: 8, name: 'Budget prévisionnel.xlsx', type: 'xlsx', date: '2024-03-12', size: '1.1 MB', owner: 'Thomas Bernard' },
-  ];
+  const location = useLocation();
+  const { documents, createDocument, deleteDocument, isLoading, error } = useAppContext();
+  const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
+  const [showNewDocumentModal, setShowNewDocumentModal] = useState(false);
+  const [newDocumentTitle, setNewDocumentTitle] = useState('');
+  const [newDocumentType, setNewDocumentType] = useState('document');
 
-  // Fonction pour filtrer les documents
-  const filteredDocuments = documents.filter(doc => {
-    // Filtrer par recherche
-    const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         doc.owner.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Filtrer par type de document
-    const matchesFilter = selectedFilter === 'all' || doc.type === selectedFilter;
-    
-    return matchesSearch && matchesFilter;
+  // Vérifier si l'URL contient ?new=true pour ouvrir le modal
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    if (queryParams.get('new') === 'true') {
+      setShowNewDocumentModal(true);
+      // Nettoyer le paramètre de l'URL sans recharger la page
+      window.history.replaceState({}, '', '/documents');
+    }
+  }, [location]);
+
+  // Filtrer les documents qui appartiennent à l'utilisateur actuel
+  const userDocuments = documents.filter(doc => doc.userId === user?.id);
+  
+  // Filtrer en fonction de la recherche et du type
+  const filteredDocuments = userDocuments.filter(doc => {
+    const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = selectedType === 'all' || doc.type === selectedType;
+    return matchesSearch && matchesType;
   });
 
-  // Fonction pour obtenir l'icône correspondant au type de document
-  const getDocumentIcon = (type) => {
-    switch (type) {
-      case 'pdf':
-        return 'bx bxs-file-pdf';
-      case 'doc':
-      case 'docx':
-        return 'bx bxs-file-doc';
-      case 'txt':
-        return 'bx bxs-file-txt';
-      case 'ppt':
-      case 'pptx':
-        return 'bx bxs-file-ppt';
-      case 'xlsx':
-      case 'xls':
-        return 'bx bxs-file-xlsx';
-      default:
-        return 'bx bx-file';
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleFilterChange = (type) => {
+    setSelectedType(type);
+  };
+
+  const handleCreateDocument = async () => {
+    if (!newDocumentTitle.trim()) {
+      alert('Veuillez saisir un titre pour le document');
+      return;
+    }
+
+    try {
+      await createDocument({
+        title: newDocumentTitle,
+        type: newDocumentType,
+        content: ''
+      });
+      
+      setNewDocumentTitle('');
+      setNewDocumentType('document');
+      setShowNewDocumentModal(false);
+    } catch (err) {
+      console.error('Erreur lors de la création du document:', err);
+      alert(`Erreur: ${err.message}`);
     }
   };
 
-  // Formater la date
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('fr-FR', { 
-      day: '2-digit', month: '2-digit', year: 'numeric' 
-    }).format(date);
+  const handleDeleteDocument = async (id) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) {
+      try {
+        await deleteDocument(id);
+      } catch (err) {
+        console.error('Erreur lors de la suppression du document:', err);
+        alert(`Erreur: ${err.message}`);
+      }
+    }
   };
 
   return (
-    <div className="page-container">
+    <div className="documents-page">
       <div className="page-header">
-        <div>
-          <h1>Documents</h1>
-          <p className="page-description">Gérez tous vos documents en un seul endroit</p>
+        <h1>Mes Documents</h1>
+        <Button 
+          variant="primary" 
+          onClick={() => setShowNewDocumentModal(true)}
+          icon="bx-plus"
+        >
+          Nouveau document
+        </Button>
+      </div>
+
+      <div className="documents-filters">
+        <div className="search-container">
+          <Input
+            type="text"
+            placeholder="Rechercher un document..."
+            value={searchTerm}
+            onChange={handleSearch}
+            prefixIcon="bx-search"
+          />
         </div>
-        <div className="page-actions">
-          <Button type="primary" icon="fas fa-plus">Nouveau document</Button>
-          <Button type="secondary" icon="fas fa-upload">Importer</Button>
+        <div className="type-filters">
+          <Button 
+            variant={selectedType === 'all' ? 'primary' : 'default'} 
+            onClick={() => handleFilterChange('all')}
+            size="small"
+          >
+            Tous
+          </Button>
+          <Button 
+            variant={selectedType === 'document' ? 'primary' : 'default'} 
+            onClick={() => handleFilterChange('document')}
+            size="small"
+          >
+            Documents
+          </Button>
+          <Button 
+            variant={selectedType === 'presentation' ? 'primary' : 'default'} 
+            onClick={() => handleFilterChange('presentation')}
+            size="small"
+          >
+            Présentations
+          </Button>
+          <Button 
+            variant={selectedType === 'spreadsheet' ? 'primary' : 'default'} 
+            onClick={() => handleFilterChange('spreadsheet')}
+            size="small"
+          >
+            Tableurs
+          </Button>
         </div>
       </div>
 
-      <Card className="filter-card">
-        <div className="filter-container">
-          <div className="search-container">
-            <SearchBox 
-              placeholder="Rechercher des documents..." 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)}
-              icon="fas fa-search"
-            />
-          </div>
-          <div className="filter-actions">
-            <Dropdown 
-              options={[
-                { value: 'recent', label: 'Plus récents' },
-                { value: 'older', label: 'Plus anciens' },
-                { value: 'name', label: 'Nom (A-Z)' },
-                { value: 'name-desc', label: 'Nom (Z-A)' }
-              ]}
-              value={sortBy}
-              onChange={(value) => setSortBy(value)}
-              placeholder="Trier par"
-              icon="fas fa-sort"
-            />
-          </div>
+      {isLoading && userDocuments.length === 0 ? (
+        <div className="documents-loading">
+          <Loader text="Chargement des documents..." />
         </div>
-      </Card>
+      ) : error ? (
+        <div className="documents-error">
+          <p>Une erreur est survenue: {error}</p>
+          <Button variant="primary" onClick={() => window.location.reload()}>
+            Réessayer
+          </Button>
+        </div>
+      ) : filteredDocuments.length === 0 ? (
+        <div className="documents-empty">
+          <i className="bx bx-file-blank"></i>
+          <h2>Aucun document trouvé</h2>
+          <p>
+            {searchTerm || selectedType !== 'all'
+              ? 'Aucun document ne correspond à vos critères de recherche.'
+              : 'Vous n\'avez pas encore créé de document.'}
+          </p>
+          {searchTerm || selectedType !== 'all' ? (
+            <Button variant="primary" onClick={() => { setSearchTerm(''); setSelectedType('all'); }}>
+              Effacer les filtres
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={() => setShowNewDocumentModal(true)}>
+              Créer mon premier document
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="documents-grid">
+          {filteredDocuments.map((doc) => (
+            <Card key={doc.id} className="document-card">
+              <div className="document-icon">
+                {doc.type === 'document' && <i className="bx bxs-file-doc"></i>}
+                {doc.type === 'presentation' && <i className="bx bxs-slideshow"></i>}
+                {doc.type === 'spreadsheet' && <i className="bx bxs-spreadsheet"></i>}
+              </div>
+              <div className="document-info">
+                <h3>{doc.title}</h3>
+                <div className="document-meta">
+                  <span>Modifié il y a {doc.modified}</span>
+                  <span>{doc.views} vues</span>
+                </div>
+              </div>
+              <div className="document-actions">
+                <Button 
+                  variant="transparent" 
+                  icon="bx-pencil"
+                  title="Modifier"
+                  onClick={() => alert(`Éditer: ${doc.title}`)}
+                />
+                <Button 
+                  variant="transparent" 
+                  icon="bx-share-alt"
+                  title="Partager"
+                  onClick={() => alert(`Partager: ${doc.title}`)}
+                />
+                <Button 
+                  variant="transparent" 
+                  icon="bx-trash"
+                  title="Supprimer"
+                  onClick={() => handleDeleteDocument(doc.id)}
+                />
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      <Card>
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Nom</th>
-                <th>Modifié</th>
-                <th>Taille</th>
-                <th>Propriétaire</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDocuments.length > 0 ? (
-                filteredDocuments.map(doc => (
-                  <tr key={doc.id}>
-                    <td>
-                      <div className="document-cell">
-                        <i className={`${getDocumentIcon(doc.type)} document-icon ${doc.type}`}></i>
-                        <span>{doc.name}</span>
-                      </div>
-                    </td>
-                    <td>{formatDate(doc.date)}</td>
-                    <td>{doc.size}</td>
-                    <td>{doc.owner}</td>
-                    <td>
-                      <div className="actions-cell">
-                        <Button type="icon" icon="fas fa-edit" tooltip="Modifier" />
-                        <Button type="icon" icon="fas fa-share-alt" tooltip="Partager" />
-                        <Button type="icon" icon="fas fa-trash" tooltip="Supprimer" />
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5">
-                    <div className="no-results">
-                      <i className="fas fa-search"></i>
-                      <p>Aucun document trouvé</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {showNewDocumentModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>Nouveau document</h2>
+              <Button 
+                variant="transparent" 
+                icon="bx-x"
+                onClick={() => setShowNewDocumentModal(false)}
+              />
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Titre</label>
+                <Input
+                  type="text"
+                  placeholder="Saisissez un titre..."
+                  value={newDocumentTitle}
+                  onChange={(e) => setNewDocumentTitle(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Type</label>
+                <div className="document-type-selector">
+                  <div 
+                    className={`type-option ${newDocumentType === 'document' ? 'selected' : ''}`}
+                    onClick={() => setNewDocumentType('document')}
+                  >
+                    <i className="bx bxs-file-doc"></i>
+                    <span>Document</span>
+                  </div>
+                  <div 
+                    className={`type-option ${newDocumentType === 'presentation' ? 'selected' : ''}`}
+                    onClick={() => setNewDocumentType('presentation')}
+                  >
+                    <i className="bx bxs-slideshow"></i>
+                    <span>Présentation</span>
+                  </div>
+                  <div 
+                    className={`type-option ${newDocumentType === 'spreadsheet' ? 'selected' : ''}`}
+                    onClick={() => setNewDocumentType('spreadsheet')}
+                  >
+                    <i className="bx bxs-spreadsheet"></i>
+                    <span>Tableur</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button variant="text" onClick={() => setShowNewDocumentModal(false)}>
+                Annuler
+              </Button>
+              <Button variant="primary" onClick={handleCreateDocument}>
+                Créer
+              </Button>
+            </div>
+          </div>
         </div>
-      </Card>
+      )}
     </div>
   );
 };

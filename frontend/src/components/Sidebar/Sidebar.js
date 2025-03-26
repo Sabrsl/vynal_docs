@@ -38,6 +38,13 @@ const Sidebar = ({ onSectionClick, activeSection }) => {
           <span>Catégories</span>
         </div>
         <div 
+          className={`sidebar-item ${activeSection === 'users' ? 'active' : ''}`} 
+          onClick={() => onSectionClick('users')}
+        >
+          <i className='bx bx-user'></i>
+          <span>Utilisateurs</span>
+        </div>
+        <div 
           className={`sidebar-item ${activeSection === 'share' ? 'active' : ''}`} 
           onClick={() => onSectionClick('share')}
         >

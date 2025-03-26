@@ -12,9 +12,11 @@ import Loader from './components/Loader';
 import Navbar from './components/Navbar/Navbar';
 import Sidebar from './components/Sidebar/Sidebar';
 import SearchBar from './components/SearchBar/SearchBar';
+import PrivateRoute from './components/PrivateRoute';
 
 // Import du contexte
 import { useAppContext } from './context/AppContext';
+import { useAuth } from './context/AuthContext';
 
 // Import des pages
 import HomePage from './pages/HomePage';
@@ -25,8 +27,10 @@ import UsersPage from './pages/UsersPage';
 import SharePage from './pages/SharePage';
 import StatsPage from './pages/StatsPage';
 import TrashPage from './pages/TrashPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 
-const App = () => {
+const MainApp = () => {
   const { 
     activeSection, 
     setActiveSection, 
@@ -34,6 +38,8 @@ const App = () => {
     documents,
     activities
   } = useAppContext();
+  
+  const { user, logout } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -86,7 +92,8 @@ const App = () => {
   };
   
   const handleLogoutClick = () => {
-    alert('Déconnexion');
+    logout();
+    navigate('/login');
     setShowUserMenu(false);
   };
   
@@ -114,9 +121,18 @@ const App = () => {
             <i className='bx bx-bell'></i>
           </Button>
           <div className="user-profile" onClick={handleUserMenuClick}>
-            <img src={avatar} alt="User Avatar" className="user-avatar" />
+            <img src={user?.avatar || avatar} alt="User Avatar" className="user-avatar" />
+            <span className="user-name">{user?.name || 'Utilisateur'}</span>
             {showUserMenu && (
               <div className="user-dropdown">
+                <div className="user-dropdown-header">
+                  <img src={user?.avatar || avatar} alt="User Avatar" className="user-dropdown-avatar" />
+                  <div className="user-dropdown-info">
+                    <div className="user-dropdown-name">{user?.name || 'Utilisateur'}</div>
+                    <div className="user-dropdown-email">{user?.email || 'email@example.com'}</div>
+                  </div>
+                </div>
+                <div className="user-dropdown-divider"></div>
                 <div className="user-dropdown-item" onClick={handleProfileClick}>
                   <i className="bx bx-user"></i> Profil
                 </div>
@@ -146,11 +162,38 @@ const App = () => {
             <Route path="/share" element={<SharePage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/trash" element={<TrashPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </div>
     </div>
+  );
+};
+
+const App = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        <Loader text="Chargement..." />
+      </div>
+    );
+  }
+  
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      
+      <Route path="/*" element={
+        isAuthenticated ? <MainApp /> : <Navigate to="/login" />
+      } />
+    </Routes>
   );
 };
 

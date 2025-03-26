@@ -1,109 +1,227 @@
-import React, { useState } from 'react';
-import Card from '../components/Card';
+import React, { useState, useEffect } from 'react';
+import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
-import SearchBox from '../components/SearchBox';
-import '../styles/base.css';
-import '../styles/variables.css';
-import '../styles/modern.css';
-import '../styles/pages.css';
+import Card from '../components/Card';
+import Input from '../components/Input';
+import Loader from '../components/Loader';
+import './DocumentsPage.css'; // Réutiliser les mêmes styles
 
 const TemplatesPage = () => {
+  const { documents, createDocument, deleteDocument, isLoading, error } = useAppContext();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
+  const [showNewTemplateModal, setShowNewTemplateModal] = useState(false);
+  const [newTemplateTitle, setNewTemplateTitle] = useState('');
+  const [newTemplateType, setNewTemplateType] = useState('document');
+
+  // Filtrer les modèles qui appartiennent à l'utilisateur actuel
+  // Nous utilisons le type 'template' pour identifier les modèles
+  const userTemplates = documents.filter(doc => doc.userId === user?.id && doc.isTemplate === true);
   
-  // Données fictives pour les modèles
-  const templates = [
-    { id: 1, name: 'Facture standard', category: 'finance', usage: 58, thumbnail: '/path/to/thumbnail1.jpg' },
-    { id: 2, name: 'Rapport mensuel', category: 'reporting', usage: 42, thumbnail: '/path/to/thumbnail2.jpg' },
-    { id: 3, name: 'Contrat de travail', category: 'legal', usage: 36, thumbnail: '/path/to/thumbnail3.jpg' },
-    { id: 4, name: 'Devis commercial', category: 'finance', usage: 31, thumbnail: '/path/to/thumbnail4.jpg' },
-    { id: 5, name: 'Plan de projet', category: 'planning', usage: 27, thumbnail: '/path/to/thumbnail5.jpg' },
-    { id: 6, name: 'Procès-verbal', category: 'legal', usage: 24, thumbnail: '/path/to/thumbnail6.jpg' },
-    { id: 7, name: 'Brief créatif', category: 'creative', usage: 19, thumbnail: '/path/to/thumbnail7.jpg' },
-    { id: 8, name: 'Présentation client', category: 'marketing', usage: 16, thumbnail: '/path/to/thumbnail8.jpg' },
-  ];
-  
-  // Filtrer les modèles
-  const filteredTemplates = templates.filter(template => {
-    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          template.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTab = activeTab === 'all' || template.category === activeTab;
-    return matchesSearch && matchesTab;
+  // Filtrer en fonction de la recherche
+  const filteredTemplates = userTemplates.filter(template => {
+    return template.title.toLowerCase().includes(searchTerm.toLowerCase());
   });
-  
-  // Obtenir les catégories uniques
-  const categories = ['all', ...new Set(templates.map(template => template.category))];
-  
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleCreateTemplate = async () => {
+    if (!newTemplateTitle.trim()) {
+      alert('Veuillez saisir un titre pour le modèle');
+      return;
+    }
+
+    try {
+      await createDocument({
+        title: newTemplateTitle,
+        type: newTemplateType,
+        isTemplate: true,
+        content: ''
+      });
+      
+      setNewTemplateTitle('');
+      setNewTemplateType('document');
+      setShowNewTemplateModal(false);
+    } catch (err) {
+      console.error('Erreur lors de la création du modèle:', err);
+      alert(`Erreur: ${err.message}`);
+    }
+  };
+
+  const handleDeleteTemplate = async (id) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce modèle ?')) {
+      try {
+        await deleteDocument(id);
+      } catch (err) {
+        console.error('Erreur lors de la suppression du modèle:', err);
+        alert(`Erreur: ${err.message}`);
+      }
+    }
+  };
+
   return (
-    <div className="page-container">
+    <div className="documents-page">
       <div className="page-header">
-        <div>
-          <h1>Modèles</h1>
-          <p className="page-description">Utilisez nos modèles pour gagner du temps</p>
-        </div>
-        <div className="page-actions">
-          <Button type="primary" icon="fas fa-plus">Nouveau modèle</Button>
+        <h1>Mes Modèles</h1>
+        <Button 
+          variant="primary" 
+          onClick={() => setShowNewTemplateModal(true)}
+          icon="bx-plus"
+        >
+          Nouveau modèle
+        </Button>
+      </div>
+
+      <div className="documents-filters">
+        <div className="search-container">
+          <Input
+            type="text"
+            placeholder="Rechercher un modèle..."
+            value={searchTerm}
+            onChange={handleSearch}
+            prefixIcon="bx-search"
+          />
         </div>
       </div>
-      
-      <Card className="filter-card">
-        <div className="filter-container">
-          <div className="search-container">
-            <SearchBox 
-              placeholder="Rechercher un modèle..." 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)}
-              icon="fas fa-search"
-            />
-          </div>
+
+      {isLoading && userTemplates.length === 0 ? (
+        <div className="documents-loading">
+          <Loader text="Chargement des modèles..." />
         </div>
-      </Card>
-      
-      <div className="tabs">
-        {categories.map(category => (
-          <div 
-            key={category} 
-            className={`tab ${activeTab === category ? 'active' : ''}`}
-            onClick={() => setActiveTab(category)}
-          >
-            {category === 'all' ? 'Tous' : category.charAt(0).toUpperCase() + category.slice(1)}
-          </div>
-        ))}
-      </div>
-      
-      {filteredTemplates.length > 0 ? (
-        <div className="templates-grid">
-          {filteredTemplates.map(template => (
-            <Card key={template.id} className="template-card">
-              <div className="template-thumbnail">
-                <div className="template-image" style={{ backgroundColor: '#e9e9e9' }}>
-                  <i className="fas fa-file-alt template-icon"></i>
-                </div>
-                <div className="template-hover">
-                  <Button type="primary" size="small">Utiliser</Button>
+      ) : error ? (
+        <div className="documents-error">
+          <p>Une erreur est survenue: {error}</p>
+          <Button variant="primary" onClick={() => window.location.reload()}>
+            Réessayer
+          </Button>
+        </div>
+      ) : filteredTemplates.length === 0 ? (
+        <div className="documents-empty">
+          <i className="bx bx-file-blank"></i>
+          <h2>Aucun modèle trouvé</h2>
+          <p>
+            {searchTerm
+              ? 'Aucun modèle ne correspond à votre recherche.'
+              : 'Vous n\'avez pas encore créé de modèle.'}
+          </p>
+          {searchTerm ? (
+            <Button variant="primary" onClick={() => setSearchTerm('')}>
+              Effacer la recherche
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={() => setShowNewTemplateModal(true)}>
+              Créer mon premier modèle
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="documents-grid">
+          {filteredTemplates.map((template) => (
+            <Card key={template.id} className="document-card">
+              <div className="document-icon">
+                {template.type === 'document' && <i className="bx bxs-file-doc"></i>}
+                {template.type === 'presentation' && <i className="bx bxs-slideshow"></i>}
+                {template.type === 'spreadsheet' && <i className="bx bxs-spreadsheet"></i>}
+              </div>
+              <div className="document-info">
+                <h3>{template.title}</h3>
+                <div className="document-meta">
+                  <span>Modifié il y a {template.modified}</span>
+                  <span>{template.views} vues</span>
                 </div>
               </div>
-              <div className="template-info">
-                <h3 className="template-name">{template.name}</h3>
-                <div className="template-meta">
-                  <span className="template-category">{template.category}</span>
-                  <span className="template-usage">
-                    <i className="fas fa-users"></i> {template.usage}
-                  </span>
-                </div>
-                <div className="template-actions">
-                  <Button type="icon" icon="fas fa-edit" tooltip="Modifier" />
-                  <Button type="icon" icon="fas fa-share-alt" tooltip="Partager" />
-                  <Button type="icon" icon="fas fa-trash" tooltip="Supprimer" />
-                </div>
+              <div className="document-actions">
+                <Button 
+                  variant="transparent" 
+                  icon="bx-pencil"
+                  title="Modifier"
+                  onClick={() => alert(`Éditer: ${template.title}`)}
+                />
+                <Button 
+                  variant="transparent" 
+                  icon="bx-copy"
+                  title="Utiliser comme modèle"
+                  onClick={() => alert(`Créer à partir de: ${template.title}`)}
+                />
+                <Button 
+                  variant="transparent" 
+                  icon="bx-trash"
+                  title="Supprimer"
+                  onClick={() => handleDeleteTemplate(template.id)}
+                />
               </div>
             </Card>
           ))}
         </div>
-      ) : (
-        <div className="no-results">
-          <i className="fas fa-search"></i>
-          <p>Aucun modèle trouvé</p>
+      )}
+
+      {showNewTemplateModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>Nouveau modèle</h2>
+              <Button 
+                variant="transparent" 
+                icon="bx-x"
+                onClick={() => setShowNewTemplateModal(false)}
+              />
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Titre</label>
+                <Input
+                  type="text"
+                  placeholder="Saisissez un titre..."
+                  value={newTemplateTitle}
+                  onChange={(e) => setNewTemplateTitle(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Type</label>
+                <div className="document-type-selector">
+                  <div 
+                    className={`type-option ${newTemplateType === 'document' ? 'selected' : ''}`}
+                    onClick={() => setNewTemplateType('document')}
+                  >
+                    <i className="bx bxs-file-doc"></i>
+                    <span>Document</span>
+                  </div>
+                  <div 
+                    className={`type-option ${newTemplateType === 'presentation' ? 'selected' : ''}`}
+                    onClick={() => setNewTemplateType('presentation')}
+                  >
+                    <i className="bx bxs-slideshow"></i>
+                    <span>Présentation</span>
+                  </div>
+                  <div 
+                    className={`type-option ${newTemplateType === 'spreadsheet' ? 'selected' : ''}`}
+                    onClick={() => setNewTemplateType('spreadsheet')}
+                  >
+                    <i className="bx bxs-spreadsheet"></i>
+                    <span>Tableur</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button 
+                variant="default" 
+                onClick={() => setShowNewTemplateModal(false)}
+              >
+                Annuler
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={handleCreateTemplate}
+                disabled={!newTemplateTitle.trim()}
+              >
+                Créer
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -1,16 +1,15 @@
 import React from 'react';
-import '../styles/components/Loader.css';
+import './Loader.css';
 
-const Loader = ({ size = 'medium', fullPage = false, text = 'Chargement...' }) => {
-  const sizeClass = `loader--${size}`;
-  const containerClass = fullPage ? 'loader-container fullpage' : 'loader-container';
+const Loader = ({ size = 'medium', text = 'Chargement...' }) => {
+  const sizeClass = `loader-${size}`;
   
   return (
-    <div className={containerClass}>
+    <div className="loader-container">
       <div className={`loader ${sizeClass}`}>
-        <i className="bx bx-loader-alt bx-spin"></i>
-        {text && <span className="loader-text">{text}</span>}
+        <div className="loader-spinner"></div>
       </div>
+      {text && <div className="loader-text">{text}</div>}
     </div>
   );
 };
