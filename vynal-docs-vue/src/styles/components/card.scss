@@ -1,0 +1,133 @@
+@import '../variables.scss';
+
+.n-card {
+  background-color: white;
+  border-radius: $--border-radius-base;
+  box-shadow: $--box-shadow-base;
+  overflow: hidden;
+  transition: $--transition-base;
+  border: 1px solid $--border-color-lighter;
+  
+  &:hover {
+    box-shadow: $--box-shadow-dark;
+  }
+  
+  // Sections de la carte
+  &__header {
+    padding: $--spacing-md $--spacing-lg;
+    border-bottom: 1px solid $--border-color-lighter;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    
+    h1, h2, h3, h4, h5, h6 {
+      margin-bottom: 0;
+      font-size: $--font-size-lg;
+      font-weight: $--font-weight-semi-bold;
+    }
+  }
+  
+  &__body {
+    padding: $--spacing-lg;
+  }
+  
+  &__footer {
+    padding: $--spacing-md $--spacing-lg;
+    border-top: 1px solid $--border-color-lighter;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $--spacing-sm;
+  }
+  
+  // Variantes
+  &--compact {
+    .n-card__header {
+      padding: $--spacing-sm $--spacing-md;
+    }
+    
+    .n-card__body {
+      padding: $--spacing-md;
+    }
+    
+    .n-card__footer {
+      padding: $--spacing-sm $--spacing-md;
+    }
+  }
+  
+  &--no-shadow {
+    box-shadow: none;
+    
+    &:hover {
+      box-shadow: none;
+    }
+  }
+  
+  &--border {
+    border: 1px solid $--border-color-base;
+  }
+  
+  &--hoverable {
+    cursor: pointer;
+    
+    &:hover {
+      transform: translateY(-2px);
+    }
+  }
+  
+  // Contenus spécifiques
+  &__title {
+    margin: 0;
+    font-size: $--font-size-lg;
+    font-weight: $--font-weight-semi-bold;
+    color: $--color-text-dark;
+  }
+  
+  &__subtitle {
+    margin: $--spacing-xs 0 0;
+    font-size: $--font-size-base;
+    color: $--color-text-light;
+  }
+  
+  &__divider {
+    height: 1px;
+    background-color: $--border-color-lighter;
+    margin: $--spacing-md 0;
+  }
+  
+  // États
+  &--disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  
+  &--loading {
+    position: relative;
+    overflow: hidden;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0),
+        rgba(255, 255, 255, 0.5),
+        rgba(255, 255, 255, 0)
+      );
+      animation: card-loading 1.5s infinite;
+    }
+  }
+  
+  @keyframes card-loading {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+} 

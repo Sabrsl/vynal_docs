@@ -1,0 +1,200 @@
+@import '../variables.scss';
+
+.n-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $--spacing-xs;
+  font-weight: $--font-weight-medium;
+  font-size: $--font-size-base;
+  padding: $--spacing-xs $--spacing-md;
+  border-radius: $--border-radius-base;
+  transition: $--transition-base;
+  cursor: pointer;
+  border: 1px solid transparent;
+  outline: none;
+  line-height: 1.5;
+  white-space: nowrap;
+  
+  &:focus {
+    box-shadow: 0 0 0 2px rgba($--color-primary, 0.2);
+  }
+  
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+  
+  // Variantes principales
+  &--primary {
+    background-color: $--color-primary;
+    color: white;
+    
+    &:hover:not(:disabled) {
+      background-color: $--color-primary-shade;
+    }
+    
+    &:active:not(:disabled) {
+      background-color: darken($--color-primary-shade, 5%);
+    }
+  }
+  
+  &--secondary {
+    background-color: $--color-secondary;
+    color: white;
+    
+    &:hover:not(:disabled) {
+      background-color: darken($--color-secondary, 5%);
+    }
+    
+    &:active:not(:disabled) {
+      background-color: darken($--color-secondary, 10%);
+    }
+  }
+  
+  &--tertiary {
+    background-color: $--color-tertiary;
+    color: $--color-text-dark;
+    
+    &:hover:not(:disabled) {
+      background-color: darken($--color-tertiary, 5%);
+    }
+    
+    &:active:not(:disabled) {
+      background-color: darken($--color-tertiary, 10%);
+    }
+  }
+  
+  // Boutons texte et outlined
+  &--text {
+    background-color: transparent;
+    color: $--color-text-base;
+    
+    &:hover:not(:disabled) {
+      background-color: $--color-background-medium;
+    }
+    
+    &:active:not(:disabled) {
+      background-color: darken($--color-background-medium, 5%);
+    }
+  }
+  
+  &--outlined {
+    background-color: transparent;
+    border: 1px solid $--border-color-base;
+    color: $--color-text-base;
+    
+    &:hover:not(:disabled) {
+      border-color: $--color-primary;
+      color: $--color-primary;
+    }
+    
+    &:active:not(:disabled) {
+      background-color: rgba($--color-primary, 0.05);
+    }
+    
+    &.n-button--primary {
+      border-color: $--color-primary;
+      color: $--color-primary;
+      
+      &:hover:not(:disabled) {
+        background-color: rgba($--color-primary, 0.05);
+      }
+      
+      &:active:not(:disabled) {
+        background-color: rgba($--color-primary, 0.1);
+      }
+    }
+    
+    &.n-button--danger {
+      border-color: $--color-danger;
+      color: $--color-danger;
+      
+      &:hover:not(:disabled) {
+        background-color: rgba($--color-danger, 0.05);
+      }
+      
+      &:active:not(:disabled) {
+        background-color: rgba($--color-danger, 0.1);
+      }
+    }
+  }
+  
+  // Variantes sémantiques
+  &--success {
+    background-color: $--color-success;
+    color: white;
+    
+    &:hover:not(:disabled) {
+      background-color: darken($--color-success, 5%);
+    }
+    
+    &:active:not(:disabled) {
+      background-color: darken($--color-success, 10%);
+    }
+  }
+  
+  &--danger {
+    background-color: $--color-danger;
+    color: white;
+    
+    &:hover:not(:disabled) {
+      background-color: darken($--color-danger, 5%);
+    }
+    
+    &:active:not(:disabled) {
+      background-color: darken($--color-danger, 10%);
+    }
+  }
+  
+  &--warning {
+    background-color: $--color-warning;
+    color: $--color-text-dark;
+    
+    &:hover:not(:disabled) {
+      background-color: darken($--color-warning, 5%);
+    }
+    
+    &:active:not(:disabled) {
+      background-color: darken($--color-warning, 10%);
+    }
+  }
+  
+  // Variantes de taille
+  &--small {
+    font-size: $--font-size-sm;
+    padding: calc($--spacing-xs * 0.75) $--spacing-sm;
+  }
+  
+  &--large {
+    font-size: $--font-size-lg;
+    padding: $--spacing-sm $--spacing-lg;
+  }
+  
+  // Avec icône
+  .n-icon {
+    font-size: 1.1em;
+    
+    &:first-child:not(:last-child) {
+      margin-right: calc($--spacing-xs * 0.5);
+    }
+    
+    &:last-child:not(:first-child) {
+      margin-left: calc($--spacing-xs * 0.5);
+    }
+  }
+  
+  &--square {
+    padding: $--spacing-xs;
+    aspect-ratio: 1/1;
+  }
+  
+  &--round {
+    border-radius: $--border-radius-pill;
+  }
+  
+  &--block {
+    width: 100%;
+    display: flex;
+  }
+} 

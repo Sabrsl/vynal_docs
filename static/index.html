@@ -3,38 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vynal Docs Automator</title>
+    <title>Vynal Docs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="#">
-                <i class="bi bi-file-earmark-text"></i> Vynal Docs Automator
+                <i class="bi bi-file-earmark-text"></i> Vynal Docs
             </a>
+            <div class="d-flex align-items-center">
+                <a href="#" class="nav-link me-3">
+                    <i class="bi bi-search"></i>
+                </a>
+                <a href="#" class="nav-link me-3">
+                    <i class="bi bi-gear"></i>
+                </a>
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item" href="#">Profil</a></li>
+                        <li><a class="dropdown-item" href="#">Paramètres</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">Déconnexion</a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </nav>
 
     <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="m-0">Gestionnaire de documents</h4>
+            <div>
+                <button class="btn btn-outline-primary me-2">
+                    <i class="bi bi-folder-plus"></i> Nouveau dossier
+                </button>
+                <button class="btn btn-primary">
+                    <i class="bi bi-upload"></i> Importer des documents
+                </button>
+            </div>
+        </div>
+        
         <div class="row">
             <!-- Zone d'upload -->
             <div class="col-md-6">
-                <div class="card">
+                <div class="card fade-in">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="bi bi-upload"></i> Upload de fichier
+                        <h5 class="card-title">
+                            <i class="bi bi-upload"></i> Upload de documents
                         </h5>
                     </div>
                     <div class="card-body">
                         <div class="upload-zone" id="dropZone">
                             <div class="text-center">
-                                <i class="bi bi-cloud-upload display-4"></i>
-                                <p class="mt-2">Glissez-déposez votre fichier CSV ici ou</p>
-                                <input type="file" id="fileInput" class="d-none" accept=".csv">
+                                <i class="bi bi-cloud-upload"></i>
+                                <p class="mt-2">Glissez-déposez votre fichier ici ou</p>
+                                <input type="file" id="fileInput" class="d-none" accept=".csv,.pdf,.docx,.xlsx">
                                 <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-                                    Sélectionner un fichier
+                                    <i class="bi bi-folder"></i> Sélectionner un fichier
                                 </button>
                             </div>
                         </div>
@@ -44,35 +78,146 @@
                         <div id="uploadStatus" class="alert mt-3 d-none"></div>
                     </div>
                 </div>
+                
+                <!-- Catégories -->
+                <div class="card fade-in mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="bi bi-folder2"></i> Catégories
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="category-list">
+                            <li class="category-item active">
+                                <i class="bi bi-files"></i> Tous les documents
+                                <span class="badge rounded-pill bg-light text-dark ms-auto">28</span>
+                            </li>
+                            <li class="category-item">
+                                <i class="bi bi-file-pdf"></i> Documents PDF
+                                <span class="badge rounded-pill bg-light text-dark ms-auto">12</span>
+                            </li>
+                            <li class="category-item">
+                                <i class="bi bi-file-spreadsheet"></i> Tableurs
+                                <span class="badge rounded-pill bg-light text-dark ms-auto">8</span>
+                            </li>
+                            <li class="category-item">
+                                <i class="bi bi-file-earmark-text"></i> Documents texte
+                                <span class="badge rounded-pill bg-light text-dark ms-auto">5</span>
+                            </li>
+                            <li class="category-item">
+                                <i class="bi bi-images"></i> Images
+                                <span class="badge rounded-pill bg-light text-dark ms-auto">3</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
 
             <!-- Liste des fichiers -->
             <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">
-                            <i class="bi bi-files"></i> Fichiers uploadés
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="bi bi-files"></i> Documents récents
                         </h5>
-                        <button class="btn btn-sm btn-outline-primary" onclick="refreshFileList()">
-                            <i class="bi bi-arrow-clockwise"></i> Actualiser
-                        </button>
+                        <div>
+                            <div class="dropdown d-inline-block me-2">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-sort-down"></i> Trier
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="sortDropdown">
+                                    <li><a class="dropdown-item" href="#">Date (récent d'abord)</a></li>
+                                    <li><a class="dropdown-item" href="#">Date (ancien d'abord)</a></li>
+                                    <li><a class="dropdown-item" href="#">Nom (A-Z)</a></li>
+                                    <li><a class="dropdown-item" href="#">Nom (Z-A)</a></li>
+                                    <li><a class="dropdown-item" href="#">Taille (croissant)</a></li>
+                                    <li><a class="dropdown-item" href="#">Taille (décroissant)</a></li>
+                                </ul>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshFileList()">
+                                <i class="bi bi-arrow-clockwise"></i> Actualiser
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
+                        <div class="search-box mb-3">
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" placeholder="Rechercher un document...">
+                            </div>
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table">
                                 <thead>
                                     <tr>
-                                        <th>Nom du fichier</th>
+                                        <th>Nom du document</th>
                                         <th>Taille</th>
                                         <th>Date</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="fileList">
-                                    <!-- La liste des fichiers sera injectée ici -->
+                                    <!-- La liste des fichiers sera injectée ici par JS -->
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-file-pdf text-danger me-2"></i>
+                                                <span>rapport_mensuel.pdf</span>
+                                            </div>
+                                        </td>
+                                        <td>2.4 MB</td>
+                                        <td>Aujourd'hui</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary btn-action" data-bs-toggle="tooltip" title="Visualiser">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary btn-action" data-bs-toggle="tooltip" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger btn-action" data-bs-toggle="tooltip" title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-file-spreadsheet text-success me-2"></i>
+                                                <span>statistiques_ventes.xlsx</span>
+                                            </div>
+                                        </td>
+                                        <td>1.8 MB</td>
+                                        <td>Hier</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary btn-action" data-bs-toggle="tooltip" title="Visualiser">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary btn-action" data-bs-toggle="tooltip" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger btn-action" data-bs-toggle="tooltip" title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
+                        <nav aria-label="Pagination des documents" class="mt-3">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Précédent</a>
+                                </li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">Suivant</a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -84,13 +229,19 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Détails du fichier</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title">Détails du document</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="bi bi-x"></i>
+                    </button>
                 </div>
                 <div class="modal-body">
                     <div id="fileDetails">
                         <!-- Les détails du fichier seront injectés ici -->
                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary">Télécharger</button>
                 </div>
             </div>
         </div>

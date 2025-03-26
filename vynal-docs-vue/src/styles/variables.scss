@@ -1,0 +1,88 @@
+// Palette de couleurs principale
+$--color-primary: #6933ff;
+$--color-primary-tint: #8c66ff;
+$--color-primary-shade: #5929e3;
+
+// Couleurs neutres
+$--color-text-dark: #101214;
+$--color-text-base: #303336;
+$--color-text-light: #909399;
+$--color-text-lighter: #c0c4cc;
+
+// Couleurs de fond
+$--color-background-xlight: #fcfdff;
+$--color-background-light: #f7f7f9;
+$--color-background-medium: #eef1f6;
+$--color-background-dark: #dcdfe6;
+
+// Couleurs sémantiques
+$--color-success: #13ce66;
+$--color-warning: #ffcb33;
+$--color-danger: #e64649;
+$--color-info: #909399;
+
+// Couleurs d'accentuation
+$--color-secondary: #ff6d5a;
+$--color-tertiary: #35e8e5;
+
+// Bordures
+$--border-color-base: #dcdfe6;
+$--border-color-light: #e4e7ed;
+$--border-color-lighter: #ebeef5;
+$--border-color-extra-light: #f2f6fc;
+
+// Ombres
+$--box-shadow-base: 0 2px 12px 0 rgba(0, 0, 0, 0.06);
+$--box-shadow-light: 0 2px 8px 0 rgba(0, 0, 0, 0.04);
+$--box-shadow-dropdown: 0 2px 12px 0 rgba(0, 0, 0, 0.12);
+$--box-shadow-dark: 0 4px 16px 0 rgba(0, 0, 0, 0.12);
+
+// Espacement
+$--spacing-2xs: 4px;
+$--spacing-xs: 8px;
+$--spacing-sm: 12px;
+$--spacing-md: 16px;
+$--spacing-lg: 24px;
+$--spacing-xl: 32px;
+$--spacing-2xl: 40px;
+$--spacing-3xl: 48px;
+
+// Typographie
+$--font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+$--font-size-base: 14px;
+$--font-size-sm: 12px;
+$--font-size-md: 14px;
+$--font-size-lg: 16px;
+$--font-size-xl: 18px;
+$--font-size-2xl: 20px;
+$--font-size-3xl: 24px;
+$--font-size-4xl: 30px;
+
+$--font-weight-regular: 400;
+$--font-weight-medium: 500;
+$--font-weight-semi-bold: 600;
+$--font-weight-bold: 700;
+
+$--line-height-base: 1.5;
+$--line-height-tight: 1.25;
+
+// Border radius
+$--border-radius-base: 4px;
+$--border-radius-lg: 8px;
+$--border-radius-xl: 12px;
+$--border-radius-pill: 999px;
+
+// Transitions
+$--transition-base: all 0.2s ease-in-out;
+$--transition-fast: all 0.1s ease-in-out;
+$--transition-slow: all 0.3s ease-in-out;
+
+// Z-index
+$--z-index-normal: 1;
+$--z-index-dropdown: 1000;
+$--z-index-sticky: 1020;
+$--z-index-fixed: 1030;
+$--z-index-modal-backdrop: 1040;
+$--z-index-modal: 1050;
+$--z-index-popover: 1060;
+$--z-index-tooltip: 1070; 

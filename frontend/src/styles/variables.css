@@ -1,0 +1,154 @@
+:root {
+  /* Couleurs principales */
+  --color-primary: #6933FF;
+  --color-primary-light: #E6E3FF;
+  --color-primary-lighter: #F5F4FF;
+  --color-primary-dark: #5728D5;
+  --color-primary-darker: #4A1FB8;
+  
+  --color-secondary: #FF6633;
+  --color-secondary-light: #FFE8E0;
+  --color-secondary-dark: #D5551F;
+  --color-secondary-darker: #B84A1F;
+  
+  --color-tertiary: #33C5FF;
+  --color-tertiary-light: #E0F5FF;
+  --color-tertiary-dark: #1FB3E6;
+  --color-tertiary-darker: #1A99C2;
+  
+  /* Couleurs de fond */
+  --color-bg-base: #f8f9fa;
+  --color-bg-hover: #f1f3f5;
+  --color-card-bg: #ffffff;
+  
+  /* Couleurs de texte */
+  --color-text-dark: #344767;
+  --color-text-base: #495057;
+  --color-text-light: #6c757d;
+  --color-text-lighter: #adb5bd;
+  
+  /* Couleurs de bordure */
+  --color-border-base: #e9ecef;
+  --color-border-light: #f1f3f5;
+  
+  /* Couleurs de sidebar */
+  --color-sidebar-bg: #272727;
+  --color-sidebar-text: #f1f3f5;
+  --color-sidebar-text-light: #adb5bd;
+  --color-sidebar-border: #343434;
+  --color-sidebar-hover: #343434;
+  
+  /* Couleurs d'état */
+  --color-success: #13CE66;
+  --color-success-light: #E0FFEF;
+  --color-success-dark: #0FAF56;
+  --color-success-darker: #0C9247;
+  
+  --color-warning: #FFCD33;
+  --color-warning-light: #FFF8E0;
+  --color-warning-dark: #E6B800;
+  --color-warning-darker: #C29600;
+  
+  --color-info: #3388FF;
+  --color-info-light: #E0EEFF;
+  --color-info-dark: #0055CC;
+  --color-info-darker: #004299;
+  
+  --color-danger: #FF4D4D;
+  --color-danger-light: #FFEDED;
+  --color-danger-dark: #D42626;
+  --color-danger-darker: #B01C1C;
+  
+  /* Ombres */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+  
+  /* Autres */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  
+  /* Transitions */
+  --transition-base: all 0.2s ease;
+  
+  /* Couleurs de base */
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  
+  --color-grey: #999999;
+  --color-grey-light: #EEEEEE;
+  --color-grey-lighter: #F5F5F5;
+  --color-grey-dark: #777777;
+  --color-grey-darker: #555555;
+  
+  /* Couleurs de fond */
+  --background-color: #F8F8FA;
+  --color-background-light: #F5F5F7;
+  --color-background-hover: #EEEEF0;
+  --color-background-pressed: #E7E7EB;
+  --color-background-dark: #444444;
+  
+  /* Couleurs de texte */
+  --text-color: #555555;
+  --text-color-dark: #333333;
+  --text-color-light: #777777;
+  --text-color-lighter: #999999;
+  
+  /* Bordures */
+  --border-color: #DDDDDD;
+  --border-color-light: #EEEEEE;
+  --border-color-dark: #CCCCCC;
+  
+  /* Typographie */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  
+  --font-size-xs: 12px;
+  --font-size-s: 14px;
+  --font-size-m: 16px;
+  --font-size-l: 18px;
+  --font-size-xl: 20px;
+  --font-size-xxl: 24px;
+  
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semi-bold: 600;
+  --font-weight-bold: 700;
+  
+  /* Espacements */
+  --spacing-xs: 4px;
+  --spacing-s: 8px;
+  --spacing-m: 12px;
+  --spacing-l: 16px;
+  --spacing-xl: 24px;
+  --spacing-xxl: 32px;
+  
+  /* Rayons des bordures */
+  --border-radius-xs: 2px;
+  --border-radius-s: 4px;
+  --border-radius-m: 8px;
+  --border-radius-l: 12px;
+  --border-radius-xl: 16px;
+  --border-radius-circle: 50%;
+  
+  /* Ombres */
+  --box-shadow-xs: 0px 1px 3px rgba(0, 0, 0, 0.05);
+  --box-shadow-s: 0px 2px 6px rgba(0, 0, 0, 0.08);
+  --box-shadow-m: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  --box-shadow-l: 0px 8px 24px rgba(0, 0, 0, 0.12);
+  --box-shadow-xl: 0px 16px 48px rgba(0, 0, 0, 0.15);
+  
+  /* Animations */
+  --transition-fast: 0.15s ease-in-out;
+  --transition-normal: 0.25s ease-in-out;
+  --transition-slow: 0.35s ease-in-out;
+  
+  /* Z-index */
+  --z-index-dropdown: 100;
+  --z-index-sticky: 200;
+  --z-index-fixed: 300;
+  --z-index-modal-backdrop: 400;
+  --z-index-modal: 500;
+  --z-index-popover: 600;
+  --z-index-tooltip: 700;
+} 

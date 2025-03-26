@@ -1,0 +1,188 @@
+@import '../variables.css';
+
+.n-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 500;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0 16px;
+  height: 36px;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+  outline: none;
+}
+
+/* Types de boutons */
+.n-button--default {
+  background-color: var(--color-background-light);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+.n-button--default:hover {
+  background-color: var(--color-background-hover);
+  border-color: var(--border-color-dark);
+}
+.n-button--default:active {
+  background-color: var(--color-background-pressed);
+}
+
+.n-button--primary {
+  background-color: #6933FF;
+  color: white;
+}
+.n-button--primary:hover:not(:disabled) {
+  background-color: #5728d5;
+}
+.n-button--primary:active:not(:disabled) {
+  background-color: #4b22b3;
+}
+
+.n-button--secondary {
+  background-color: #E6E3FF;
+  color: #6933FF;
+}
+.n-button--secondary:hover:not(:disabled) {
+  background-color: #d9d4ff;
+}
+.n-button--secondary:active:not(:disabled) {
+  background-color: #c7c0ff;
+}
+
+.n-button--tertiary {
+  background-color: #f5f5f7;
+  color: #555;
+}
+.n-button--tertiary:hover:not(:disabled) {
+  background-color: #eaeaec;
+}
+.n-button--tertiary:active:not(:disabled) {
+  background-color: #dedee0;
+}
+
+.n-button--text {
+  background-color: transparent;
+  color: #6933FF;
+  padding: 0 8px;
+}
+.n-button--text:hover:not(:disabled) {
+  background-color: rgba(105, 51, 255, 0.05);
+}
+.n-button--text:active:not(:disabled) {
+  background-color: rgba(105, 51, 255, 0.1);
+}
+
+.n-button--danger {
+  background-color: #ff4d4d;
+  color: white;
+}
+.n-button--danger:hover:not(:disabled) {
+  background-color: #e63939;
+}
+.n-button--danger:active:not(:disabled) {
+  background-color: #cc3333;
+}
+
+.n-button--outlined {
+  background-color: transparent;
+  border: 1px solid #ddd;
+  color: #555;
+}
+.n-button--outlined:hover:not(:disabled) {
+  border-color: #6933FF;
+  color: #6933FF;
+  background-color: rgba(105, 51, 255, 0.05);
+}
+.n-button--outlined:active:not(:disabled) {
+  background-color: rgba(105, 51, 255, 0.1);
+}
+
+/* Tailles de boutons */
+.n-button--small {
+  height: 28px;
+  font-size: 13px;
+  padding: 0 12px;
+}
+
+.n-button--small.n-button--icon-only {
+  width: 28px;
+}
+
+.n-button--medium {
+  height: 36px;
+}
+
+.n-button--large {
+  height: 44px;
+  font-size: 15px;
+  padding: 0 24px;
+}
+
+.n-button--large.n-button--icon-only {
+  width: 44px;
+}
+
+/* Boutons avec icônes */
+.n-button i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1em;
+}
+
+.button-icon-left {
+  margin-right: 8px;
+}
+
+.button-icon-right {
+  margin-left: 8px;
+}
+
+.n-button--icon-only {
+  width: 36px;
+  padding: 0;
+}
+
+/* États des boutons */
+.n-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.n-button--loading {
+  cursor: progress;
+}
+
+.n-button.active {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.n-button.danger {
+  color: var(--color-danger);
+}
+.n-button.danger:hover {
+  color: var(--color-danger-dark);
+}
+.n-button--text.danger:hover {
+  background-color: var(--color-danger-light);
+}
+
+/* Animations */
+.bx-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+} 

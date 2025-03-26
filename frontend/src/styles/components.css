@@ -1,0 +1,142 @@
+/* Dropdown component */
+.dropdown {
+  position: relative;
+  width: 100%;
+  max-width: 250px;
+  font-size: 14px;
+}
+
+.dropdown.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dropdown-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border-base);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdown-header:hover {
+  border-color: var(--color-primary-light);
+}
+
+.dropdown-header i:first-child {
+  margin-right: 10px;
+  color: var(--color-text-light);
+}
+
+.dropdown-selected {
+  flex: 1;
+}
+
+.dropdown-arrow {
+  transition: transform 0.2s ease;
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--color-text-light);
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.dropdown-options {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border-base);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.dropdown-option {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-option:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.dropdown-option.selected {
+  color: var(--color-primary);
+  background-color: rgba(105, 51, 255, 0.05);
+}
+
+.dropdown-option i {
+  margin-right: 10px;
+}
+
+/* SearchBox component */
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.search-box.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.search-box-icon {
+  position: absolute;
+  left: 16px;
+  color: var(--color-text-light);
+  font-size: 16px;
+}
+
+.search-box-input {
+  width: 100%;
+  padding: 10px 40px;
+  border: 1px solid var(--color-border-base);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  background-color: var(--color-card-bg);
+}
+
+.search-box-input:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 2px rgba(105, 51, 255, 0.1);
+}
+
+.search-box-input::placeholder {
+  color: var(--color-text-lighter);
+}
+
+.search-box-clear {
+  position: absolute;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--color-text-light);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.search-box-clear:hover {
+  color: var(--color-text-dark);
+}
+
+.search-box-clear:focus {
+  outline: none;
+} 

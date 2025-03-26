@@ -1,0 +1,155 @@
+@import '../variables.css';
+
+.n-input {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin-bottom: var(--spacing-m);
+  box-sizing: border-box;
+}
+
+.n-input__label {
+  display: inline-block;
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-color-dark);
+}
+
+.n-input__required {
+  color: var(--color-danger);
+  margin-left: var(--spacing-xs);
+}
+
+.n-input__wrapper {
+  position: relative;
+  display: flex;
+  width: 100%;
+  border-radius: var(--border-radius-s);
+  border: 1px solid var(--border-color);
+  background-color: var(--color-white);
+  transition: all 0.2s;
+}
+
+.n-input__wrapper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.n-input__inner {
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--spacing-m);
+  border: none;
+  background: none;
+  outline: none;
+  font-family: var(--font-family);
+  font-size: var(--font-size-s);
+  color: var(--text-color);
+}
+
+.n-input__inner::placeholder {
+  color: var(--text-color-lighter);
+}
+
+/* Tailles */
+.n-input--small .n-input__inner {
+  height: 30px;
+  font-size: var(--font-size-xs);
+}
+
+.n-input--large .n-input__inner {
+  height: 44px;
+  font-size: var(--font-size-m);
+}
+
+/* Prefixes et suffixes */
+.n-input__prefix,
+.n-input__suffix,
+.n-input__prefix-icon,
+.n-input__suffix-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-light);
+  padding: 0 var(--spacing-s);
+}
+
+.n-input__prefix-icon,
+.n-input__suffix-icon {
+  font-size: var(--font-size-m);
+}
+
+.n-input--prefix-icon .n-input__inner {
+  padding-left: 0;
+}
+
+.n-input--suffix-icon .n-input__inner {
+  padding-right: 0;
+}
+
+/* Texte d'aide et d'erreur */
+.n-input__help,
+.n-input__error {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+.n-input__help {
+  color: var(--text-color-light);
+}
+
+.n-input__error {
+  color: var(--color-danger);
+}
+
+/* États */
+.n-input--invalid .n-input__wrapper {
+  border-color: var(--color-danger);
+}
+
+.n-input--invalid .n-input__wrapper:focus-within {
+  box-shadow: 0 0 0 2px var(--color-danger-light);
+}
+
+.n-input--disabled .n-input__wrapper {
+  background-color: var(--color-background-light);
+  border-color: var(--border-color-light);
+  cursor: not-allowed;
+}
+
+.n-input--disabled .n-input__inner {
+  color: var(--text-color-light);
+  cursor: not-allowed;
+}
+
+.n-input--readonly .n-input__wrapper {
+  background-color: var(--color-background-light);
+}
+
+/* Champs de type spécifique */
+input[type="number"].n-input__inner {
+  -moz-appearance: textfield;
+}
+
+input[type="number"].n-input__inner::-webkit-outer-spin-button,
+input[type="number"].n-input__inner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Support pour les formulaires en grille */
+.form-grid .n-input {
+  margin-bottom: 0;
+}
+
+/* Style n8n spécifique pour les sélecteurs */
+select.n-input__inner {
+  padding-right: var(--spacing-xl);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6l-6-6l1.41-1.41z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-xs) center;
+  background-size: 20px;
+} 

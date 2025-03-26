@@ -1,0 +1,194 @@
+@import '../variables.scss';
+
+.n-input {
+  --input-height: 36px;
+  --input-height-sm: 28px;
+  --input-height-lg: 44px;
+  
+  position: relative;
+  width: 100%;
+  
+  &__wrapper {
+    position: relative;
+    display: flex;
+    width: 100%;
+  }
+  
+  &__inner {
+    display: inline-flex;
+    width: 100%;
+    height: var(--input-height);
+    line-height: var(--input-height);
+    padding: 0 $--spacing-md;
+    background-color: white;
+    border: 1px solid $--border-color-base;
+    border-radius: $--border-radius-base;
+    font-size: $--font-size-base;
+    color: $--color-text-base;
+    transition: $--transition-base;
+    outline: none;
+    box-sizing: border-box;
+    
+    &::placeholder {
+      color: $--color-text-lighter;
+    }
+    
+    &:hover {
+      border-color: $--color-primary;
+    }
+    
+    &:focus {
+      border-color: $--color-primary;
+      box-shadow: 0 0 0 2px rgba($--color-primary, 0.2);
+    }
+    
+    &:disabled {
+      background-color: $--color-background-medium;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    
+    &.is-invalid {
+      border-color: $--color-danger;
+      
+      &:focus {
+        box-shadow: 0 0 0 2px rgba($--color-danger, 0.2);
+      }
+    }
+  }
+  
+  // Ajout des icônes prefix et suffix
+  &__prefix, &__suffix {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--input-height);
+    color: $--color-text-light;
+    position: absolute;
+    top: 0;
+    z-index: 1;
+  }
+  
+  &__prefix {
+    left: $--spacing-md;
+  }
+  
+  &__suffix {
+    right: $--spacing-md;
+  }
+  
+  &--prefix &__inner {
+    padding-left: calc($--spacing-md * 2 + 1em);
+  }
+  
+  &--suffix &__inner {
+    padding-right: calc($--spacing-md * 2 + 1em);
+  }
+  
+  // Tailles
+  &--small {
+    --input-height: var(--input-height-sm);
+    
+    .n-input__inner {
+      font-size: $--font-size-sm;
+      padding: 0 $--spacing-sm;
+    }
+    
+    .n-input__prefix {
+      left: $--spacing-sm;
+    }
+    
+    .n-input__suffix {
+      right: $--spacing-sm;
+    }
+    
+    &.n-input--prefix .n-input__inner {
+      padding-left: calc($--spacing-sm * 2 + 1em);
+    }
+    
+    &.n-input--suffix .n-input__inner {
+      padding-right: calc($--spacing-sm * 2 + 1em);
+    }
+  }
+  
+  &--large {
+    --input-height: var(--input-height-lg);
+    
+    .n-input__inner {
+      font-size: $--font-size-lg;
+      padding: 0 $--spacing-lg;
+    }
+    
+    .n-input__prefix {
+      left: $--spacing-lg;
+    }
+    
+    .n-input__suffix {
+      right: $--spacing-lg;
+    }
+    
+    &.n-input--prefix .n-input__inner {
+      padding-left: calc($--spacing-lg * 2 + 1em);
+    }
+    
+    &.n-input--suffix .n-input__inner {
+      padding-right: calc($--spacing-lg * 2 + 1em);
+    }
+  }
+  
+  // Label et erreur
+  &__label {
+    display: block;
+    margin-bottom: $--spacing-xs;
+    font-size: $--font-size-base;
+    font-weight: $--font-weight-medium;
+    color: $--color-text-base;
+  }
+  
+  &__error {
+    display: block;
+    margin-top: $--spacing-xs;
+    font-size: $--font-size-sm;
+    color: $--color-danger;
+  }
+  
+  // Type de champs
+  &--textarea &__inner {
+    height: auto;
+    min-height: calc(var(--input-height) * 2);
+    line-height: 1.5;
+    padding: $--spacing-sm $--spacing-md;
+    resize: vertical;
+  }
+  
+  // États
+  &--readonly &__inner {
+    background-color: $--color-background-light;
+    cursor: default;
+    
+    &:hover, &:focus {
+      border-color: $--border-color-base;
+      box-shadow: none;
+    }
+  }
+  
+  &--transparent &__inner {
+    background-color: transparent;
+    border-color: transparent;
+    
+    &:hover, &:focus {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-color: $--color-primary;
+    }
+  }
+  
+  // Styles spécifiques pour select, date, etc
+  select.n-input__inner {
+    appearance: none;
+    padding-right: calc($--spacing-xl + $--spacing-md);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23606266'%3E%3Cpath d='M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right $--spacing-md center;
+    background-size: $--spacing-xl;
+  }
+} 
