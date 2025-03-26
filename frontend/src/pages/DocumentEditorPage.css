@@ -1,0 +1,60 @@
+.document-editor-page {
+  height: 100%;
+  width: 100%;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+}
+
+.editor-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+.editor-error h2 {
+  color: #e53935;
+  margin-bottom: 1rem;
+}
+
+.editor-error p {
+  margin-bottom: 2rem;
+  color: #616161;
+}
+
+.editor-error button {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.editor-error button:hover {
+  background-color: var(--color-primary-dark);
+}
+
+/* S'assurer que l'éditeur remplit l'espace disponible */
+.document-editor-page .document-editor {
+  flex: 1;
+  height: calc(100vh - 70px); /* 70px est la hauteur de la navbar */
+}
+
+/* Responsivité */
+@media (max-width: 768px) {
+  .document-editor-page {
+    padding: 0;
+  }
+  
+  .document-editor-page .document-editor {
+    height: calc(100vh - 60px); /* 60px est la hauteur de la navbar mobile */
+  }
+} 

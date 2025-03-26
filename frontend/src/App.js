@@ -21,9 +21,11 @@ import { useAuth } from './context/AuthContext';
 // Import des pages
 import HomePage from './pages/HomePage';
 import DocumentsPage from './pages/DocumentsPage';
+import DocumentEditorPage from './pages/DocumentEditorPage';
 import TemplatesPage from './pages/TemplatesPage';
 import CategoriesPage from './pages/CategoriesPage';
 import UsersPage from './pages/UsersPage';
+import ContactsPage from './pages/ContactsPage';
 import SharePage from './pages/SharePage';
 import StatsPage from './pages/StatsPage';
 import TrashPage from './pages/TrashPage';
@@ -166,9 +168,12 @@ const MainApp = () => {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/documents" element={<DocumentsPage />} />
+            <Route path="/documents/edit/:documentId" element={<DocumentEditorPage />} />
+            <Route path="/documents/new" element={<DocumentEditorPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/users" element={<UsersPage />} />
+            <Route path="/contacts" element={<ContactsPage />} />
             <Route path="/share" element={<SharePage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/trash" element={<TrashPage />} />

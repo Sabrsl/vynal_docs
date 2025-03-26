@@ -133,6 +133,11 @@
   border-top: 1px solid var(--color-border);
 }
 
+.document-actions-header {
+  display: flex;
+  align-items: center;
+}
+
 /* Modal styles */
 .modal-overlay {
   position: fixed;
@@ -236,5 +241,14 @@
   
   .document-type-selector {
     flex-direction: column;
+  }
+  
+  .document-actions-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .document-actions-header button {
+    width: 100%;
   }
 } 

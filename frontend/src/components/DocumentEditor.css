@@ -1,0 +1,440 @@
+/* Styles pour l'éditeur de documents */
+.document-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.document-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.document-title-input {
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  padding: 5px 0;
+  width: 300px;
+}
+
+.document-editor-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.document-editor-content {
+  flex: 1;
+  padding: 0;
+  overflow-y: auto;
+}
+
+/* Styles spécifiques pour l'éditeur WYSIWYG */
+.document-editor-wrapper {
+  height: calc(100vh - 150px);
+  display: flex;
+  flex-direction: column;
+  border: none !important;
+}
+
+.document-editor-toolbar {
+  border: none !important;
+  background-color: #f9f9f9 !important;
+  padding: 5px 10px !important;
+  border-bottom: 1px solid #eaeaea !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+
+.document-editor-main {
+  flex: 1;
+  padding: 30px !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  min-height: calc(100vh - 300px) !important;
+  overflow-y: auto !important;
+}
+
+/* Styles pour la sélection de modèles */
+.template-selector {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 20px;
+}
+
+.template-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 150px;
+  text-align: center;
+}
+
+.template-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.template-card i {
+  font-size: 36px;
+  color: #4361ee;
+  margin-bottom: 10px;
+}
+
+.template-card.empty i {
+  color: #64748b;
+}
+
+.template-card span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Fix pour les boutons d'action dans la barre d'outils */
+.rdw-option-wrapper {
+  border: 1px solid #F1F1F1 !important;
+  padding: 5px !important;
+  min-width: 25px !important;
+  height: 25px !important;
+  margin: 0 4px !important;
+  border-radius: 2px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  background: white !important;
+  box-shadow: 1px 1px 0px #BFBDBD !important;
+}
+
+.rdw-option-wrapper:hover {
+  box-shadow: 1px 1px 0px #BFBDBD inset !important;
+}
+
+.rdw-option-wrapper:active {
+  box-shadow: 1px 1px 0px #BFBDBD inset !important;
+  background-color: #f1f1f1 !important;
+}
+
+.rdw-option-active {
+  box-shadow: 1px 1px 0px #BFBDBD inset !important;
+  background-color: #f1f1f1 !important;
+}
+
+/* Assurer que les icônes sont visibles */
+.rdw-option-wrapper img {
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Style pour le menu déroulant */
+.rdw-dropdown-wrapper {
+  height: 30px !important;
+  cursor: pointer !important;
+  border: 1px solid #F1F1F1 !important;
+  border-radius: 2px !important;
+  margin: 0 3px !important;
+  background: white !important;
+  box-shadow: 1px 1px 0px #BFBDBD !important;
+}
+
+.rdw-dropdown-wrapper:hover {
+  box-shadow: 1px 1px 0px #BFBDBD inset !important;
+  background-color: #f1f1f1 !important;
+}
+
+.rdw-dropdown-carettoopen {
+  height: 0px !important;
+  width: 0px !important;
+  border-top: 6px solid black !important;
+  border-left: 5px solid transparent !important;
+  border-right: 5px solid transparent !important;
+  position: absolute !important;
+  right: 10px !important;
+  top: 12px !important;
+}
+
+.rdw-dropdown-carettoclose {
+  height: 0px !important;
+  width: 0px !important;
+  border-bottom: 6px solid black !important;
+  border-left: 5px solid transparent !important;
+  border-right: 5px solid transparent !important;
+  position: absolute !important;
+  right: 10px !important;
+  top: 12px !important;
+}
+
+.rdw-dropdown-optionwrapper {
+  z-index: 100 !important;
+  position: relative !important;
+  border: 1px solid #F1F1F1 !important;
+  width: 100% !important;
+  background: white !important;
+  border-radius: 2px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  max-height: 250px !important;
+  overflow-y: scroll !important;
+}
+
+.rdw-dropdownoption-default {
+  min-height: 25px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 5px !important;
+  cursor: pointer !important;
+}
+
+.rdw-dropdownoption-highlighted {
+  background: #F1F1F1 !important;
+}
+
+.rdw-dropdownoption-active {
+  background: #f1f1f1 !important;
+}
+
+/* Style pour le color picker */
+.rdw-colorpicker-modal {
+  position: absolute !important;
+  top: 35px !important;
+  left: 5px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 215px !important;
+  height: auto !important;
+  border: 1px solid #F1F1F1 !important;
+  padding: 15px !important;
+  border-radius: 2px !important;
+  z-index: 100 !important;
+  background: white !important;
+  box-shadow: 3px 3px 5px #BFBDBD !important;
+}
+
+/* Style pour le upload d'image */
+.rdw-image-modal {
+  position: absolute !important;
+  top: 35px !important;
+  left: 5px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 235px !important;
+  border: 1px solid #F1F1F1 !important;
+  padding: 15px !important;
+  border-radius: 2px !important;
+  z-index: 100 !important;
+  background: white !important;
+  box-shadow: 3px 3px 5px #BFBDBD !important;
+}
+
+/* Mode sombre */
+.dark-mode .document-editor {
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+}
+
+.dark-mode .document-editor-header {
+  background-color: #222;
+  border-bottom: 1px solid #444;
+}
+
+.dark-mode .document-title-input {
+  color: #f8f9fa;
+}
+
+.dark-mode .document-editor-content,
+.dark-mode .document-editor-main {
+  background-color: #2d2d2d !important;
+  color: #f8f9fa !important;
+}
+
+.dark-mode .document-editor-toolbar {
+  background-color: #333 !important;
+  border-bottom: 1px solid #444 !important;
+}
+
+.dark-mode .template-card {
+  background-color: #2d2d2d;
+  border-color: #444;
+}
+
+.dark-mode .template-card span {
+  color: #f8f9fa;
+}
+
+.dark-mode .rdw-editor-main h1,
+.dark-mode .rdw-editor-main h2,
+.dark-mode .rdw-editor-main p,
+.dark-mode .document-editor-main h1,
+.dark-mode .document-editor-main h2,
+.dark-mode .document-editor-main p {
+  color: #f8f9fa;
+}
+
+/* Styles WYSIWYG - Corrections spécifiques pour les outils */
+.rdw-editor-toolbar .rdw-option-wrapper {
+  padding: 6px !important;
+  min-width: 30px !important;
+  height: 30px !important;
+  border: 1px solid #e0e0e0 !important;
+  background: white !important;
+  border-radius: 4px !important;
+  margin: 2px !important;
+  box-shadow: none !important;
+}
+
+.rdw-editor-toolbar .rdw-option-wrapper img {
+  width: 18px !important;
+  height: 18px !important;
+  filter: opacity(0.7) !important;
+}
+
+.rdw-editor-toolbar .rdw-option-wrapper:hover {
+  background-color: #f1f1f1 !important;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.rdw-editor-toolbar .rdw-option-active {
+  background-color: #e6f7ff !important;
+  border-color: #4361ee !important;
+}
+
+.rdw-editor-toolbar .rdw-dropdown-wrapper {
+  min-width: 100px !important;
+  height: 30px !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 4px !important;
+  margin: 2px !important;
+  padding: 0 8px !important;
+  background: white !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.rdw-editor-toolbar .rdw-dropdown-selectedtext {
+  padding: 0 !important;
+  margin-right: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  font-size: 14px !important;
+}
+
+.rdw-colorpicker-wrapper .rdw-colorpicker-modal {
+  top: 40px !important;
+  width: 240px !important;
+  z-index: 1000 !important;
+}
+
+.rdw-link-wrapper .rdw-link-modal {
+  top: 40px !important;
+  z-index: 1000 !important;
+}
+
+.rdw-image-wrapper .rdw-image-modal {
+  top: 40px !important;
+  z-index: 1000 !important;
+}
+
+.rdw-embedded-wrapper .rdw-embedded-modal {
+  top: 40px !important;
+  z-index: 1000 !important;
+}
+
+.rdw-emoji-wrapper .rdw-emoji-modal {
+  top: 40px !important;
+  z-index: 1000 !important;
+}
+
+/* Assurez-vous que les modales sont visibles */
+.rdw-link-modal, .rdw-embedded-modal, .rdw-image-modal, .rdw-emoji-modal, .rdw-colorpicker-modal {
+  position: absolute !important;
+  box-shadow: rgba(0, 0, 0, 0.15) 0px 3px 12px !important;
+  border-radius: 4px !important;
+  border: 1px solid #e0e0e0 !important;
+  background: white !important;
+  display: flex !important;
+  padding: 15px !important;
+  flex-direction: column !important;
+}
+
+.rdw-image-modal-btn, .rdw-embedded-modal-btn, .rdw-link-modal-btn {
+  cursor: pointer !important;
+  padding: 8px 16px !important;
+  border-radius: 4px !important;
+  border: none !important;
+  background: #4361ee !important;
+  color: white !important;
+  font-size: 14px !important;
+  margin-top: 8px !important;
+}
+
+/* S'assurer que la ligne de boutons tient dans l'espace disponible */
+.rdw-editor-toolbar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  padding: 8px !important;
+  gap: 2px !important;
+}
+
+/* S'assurer que les z-index sont corrects */
+.rdw-editor-toolbar {
+  z-index: 10 !important;
+}
+
+.rdw-editor-toolbar > div {
+  position: relative !important;
+}
+
+/* Correction emoji */
+.rdw-emoji-modal {
+  width: 280px !important;
+  height: 250px !important;
+}
+
+.rdw-emoji-icon {
+  padding: 5px !important;
+  font-size: 20px !important;
+}
+
+.rdw-image-alignment {
+  display: flex !important;
+  gap: 5px !important;
+  margin-top: 10px !important;
+}
+
+/* Garantir la visibilité des boutons d'action */
+.rdw-image-modal-upload-option-label,
+.rdw-image-modal-url-label {
+  display: block !important;
+  font-size: 14px !important;
+  margin-bottom: 5px !important;
+}
+
+.rdw-image-modal-upload-option-label span,
+.rdw-image-modal-url-label span {
+  display: block !important;
+  margin-bottom: 5px !important;
+} 

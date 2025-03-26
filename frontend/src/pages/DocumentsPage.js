@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
@@ -10,6 +10,7 @@ import './DocumentsPage.css';
 
 const DocumentsPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { documents, createDocument, deleteDocument, isLoading, error } = useAppContext();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,20 +53,11 @@ const DocumentsPage = () => {
       return;
     }
 
-    try {
-      await createDocument({
-        title: newDocumentTitle,
-        type: newDocumentType,
-        content: ''
-      });
-      
-      setNewDocumentTitle('');
-      setNewDocumentType('document');
-      setShowNewDocumentModal(false);
-    } catch (err) {
-      console.error('Erreur lors de la création du document:', err);
-      alert(`Erreur: ${err.message}`);
-    }
+    // Fermer la modal
+    setShowNewDocumentModal(false);
+    
+    // Rediriger vers la page d'édition avec le type comme paramètre d'URL
+    navigate(`/documents/new?type=${newDocumentType}&title=${encodeURIComponent(newDocumentTitle)}`);
   };
 
   const handleDeleteDocument = async (id) => {
@@ -83,13 +75,23 @@ const DocumentsPage = () => {
     <div className="documents-page">
       <div className="page-header">
         <h1>Mes Documents</h1>
-        <Button 
-          variant="primary" 
-          onClick={() => setShowNewDocumentModal(true)}
-          icon="bx-plus"
-        >
-          Nouveau document
-        </Button>
+        <div className="document-actions-header">
+          <Button 
+            variant="primary" 
+            onClick={() => navigate('/documents/new?type=document')}
+            icon="bx-file-blank"
+            style={{ marginRight: '10px' }}
+          >
+            Document vide
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={() => setShowNewDocumentModal(true)}
+            icon="bx-plus"
+          >
+            Avec modèle
+          </Button>
+        </div>
       </div>
 
       <div className="documents-filters">
@@ -185,7 +187,7 @@ const DocumentsPage = () => {
                   variant="transparent" 
                   icon="bx-pencil"
                   title="Modifier"
-                  onClick={() => alert(`Éditer: ${doc.title}`)}
+                  onClick={() => navigate(`/documents/edit/${doc.id}`)}
                 />
                 <Button 
                   variant="transparent" 

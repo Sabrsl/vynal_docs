@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -18,7 +18,8 @@ const HomePage = () => {
     createDocument, 
     isLoading, 
     error,
-    setActiveSection
+    setActiveSection,
+    refreshData
   } = useAppContext();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -30,6 +31,28 @@ const HomePage = () => {
     type: 'document',
     content: ''
   });
+  
+  // État local pour contrôler le rafraîchissement des données
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Effet pour simuler le temps de rafraîchissement
+  useEffect(() => {
+    if (refreshing) {
+      const timer = setTimeout(() => {
+        setRefreshing(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [refreshing]);
+
+  // Fonction pour rafraîchir manuellement les données
+  const handleRefresh = () => {
+    setRefreshing(true);
+    // Utiliser la fonction refreshData du contexte
+    refreshData();
+    // Réinitialiser l'indicateur de rafraîchissement après 1 seconde
+    setTimeout(() => setRefreshing(false), 1000);
+  };
   
   // Statistiques calculées
   const stats = [
@@ -233,42 +256,59 @@ const HomePage = () => {
         <div className="dashboard-main">
           <Card
             title="Documents récents"
-            actionButton={<Button variant="text" icon="bx-dots-horizontal-rounded" />}
+            actionButton={
+              <Button 
+                variant="text" 
+                icon={refreshing ? "bx-loader-alt bx-spin" : "bx-refresh"} 
+                onClick={handleRefresh} 
+                disabled={refreshing || isLoading}
+              />
+            }
           >
             {isLoading ? (
               <Loader text="Chargement des documents..." />
             ) : (
               <div className="recent-documents">
-                {recentDocuments.map(doc => (
-                  <div 
-                    key={doc.id} 
-                    className="document-item"
-                    onClick={() => handleDocumentClick(doc.id)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="document-icon">
-                      <i className={getDocumentIcon(doc.type)}></i>
+                {recentDocuments.length > 0 ? (
+                  recentDocuments.map(doc => (
+                    <div 
+                      key={doc.id} 
+                      className="document-item"
+                      onClick={() => handleDocumentClick(doc.id)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className="document-icon">
+                        <i className={getDocumentIcon(doc.type)}></i>
+                      </div>
+                      <div className="document-info">
+                        <h3 className="document-title">{doc.title}</h3>
+                        <p className="document-meta">Modifié il y a {doc.modified} • {doc.views} vues</p>
+                      </div>
+                      <div className="document-actions" onClick={e => e.stopPropagation()}>
+                        <Button variant="text" icon="bx-edit" onClick={(e) => {
+                          e.stopPropagation();
+                          handleDocumentClick(doc.id);
+                        }} />
+                        <Button variant="text" icon="bx-share-alt" onClick={(e) => {
+                          e.stopPropagation();
+                          alert(`Partage du document ${doc.id}`);
+                        }} />
+                        <Button variant="text" icon="bx-dots-vertical-rounded" onClick={(e) => {
+                          e.stopPropagation();
+                          alert(`Options pour le document ${doc.id}`);
+                        }} />
+                      </div>
                     </div>
-                    <div className="document-info">
-                      <h3 className="document-title">{doc.title}</h3>
-                      <p className="document-meta">Modifié il y a {doc.modified} • {doc.views} vues</p>
-                    </div>
-                    <div className="document-actions" onClick={e => e.stopPropagation()}>
-                      <Button variant="text" icon="bx-edit" onClick={(e) => {
-                        e.stopPropagation();
-                        handleDocumentClick(doc.id);
-                      }} />
-                      <Button variant="text" icon="bx-share-alt" onClick={(e) => {
-                        e.stopPropagation();
-                        alert(`Partage du document ${doc.id}`);
-                      }} />
-                      <Button variant="text" icon="bx-dots-vertical-rounded" onClick={(e) => {
-                        e.stopPropagation();
-                        alert(`Options pour le document ${doc.id}`);
-                      }} />
-                    </div>
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <i className="bx bx-file-blank"></i>
+                    <p>Aucun document récent</p>
+                    <Button variant="primary" onClick={handleNewDocument}>
+                      Créer un document
+                    </Button>
                   </div>
-                ))}
+                )}
               </div>
             )}
             <div className="view-all-link">
@@ -280,39 +320,53 @@ const HomePage = () => {
         <div className="dashboard-sidebar">
           <Card
             title="Activité récente"
-            actionButton={<Button variant="text" icon="bx-refresh" onClick={() => alert('Actualisation des activités')} />}
+            actionButton={
+              <Button 
+                variant="text" 
+                icon={refreshing ? "bx-loader-alt bx-spin" : "bx-refresh"} 
+                onClick={handleRefresh} 
+                disabled={refreshing || isLoading}
+              />
+            }
           >
             {isLoading ? (
               <Loader text="Chargement des activités..." />
             ) : (
               <div className="activity-list">
-                {recentActivities.map(activity => (
-                  <div key={activity.id} className="activity-item">
-                    <div className="activity-user">
-                      <div className="user-avatar-initials role-user">
-                        {activity.user.substring(0, 2)}
+                {recentActivities.length > 0 ? (
+                  recentActivities.map(activity => (
+                    <div key={activity.id} className="activity-item">
+                      <div className="activity-user">
+                        <div className="user-avatar-initials role-user">
+                          {activity.user ? activity.user.substring(0, 2) : "?"}
+                        </div>
+                      </div>
+                      <div className="activity-content">
+                        <p>
+                          <span className="activity-user-name">{activity.user || "Utilisateur inconnu"}</span>
+                          <span className="activity-action"> {activity.action} </span>
+                          {activity.documentId ? (
+                            <span 
+                              className="activity-document"
+                              style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                              onClick={() => handleDocumentClick(activity.documentId)}
+                            >
+                              {activity.document}
+                            </span>
+                          ) : (
+                            <span className="activity-document">{activity.document}</span>
+                          )}
+                        </p>
+                        <span className="activity-time">{activity.time}</span>
                       </div>
                     </div>
-                    <div className="activity-content">
-                      <p>
-                        <span className="activity-user-name">{activity.user}</span>
-                        <span className="activity-action"> {activity.action} </span>
-                        {activity.documentId ? (
-                          <span 
-                            className="activity-document"
-                            style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                            onClick={() => handleDocumentClick(activity.documentId)}
-                          >
-                            {activity.document}
-                          </span>
-                        ) : (
-                          <span className="activity-document">{activity.document}</span>
-                        )}
-                      </p>
-                      <span className="activity-time">{activity.time}</span>
-                    </div>
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <i className="bx bx-time"></i>
+                    <p>Aucune activité récente</p>
                   </div>
-                ))}
+                )}
               </div>
             )}
             <div className="view-all-link">

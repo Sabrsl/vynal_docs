@@ -52,6 +52,13 @@ const Sidebar = ({ onSectionClick, activeSection }) => {
           <span>Utilisateurs</span>
         </div>
         <div 
+          className={`sidebar-item ${activeSection === 'contacts' ? 'active' : ''}`} 
+          onClick={() => onSectionClick('contacts')}
+        >
+          <i className='bx bx-id-card'></i>
+          <span>Contacts</span>
+        </div>
+        <div 
           className={`sidebar-item ${activeSection === 'share' ? 'active' : ''}`} 
           onClick={() => onSectionClick('share')}
         >
@@ -73,6 +80,8 @@ const Sidebar = ({ onSectionClick, activeSection }) => {
           <i className='bx bx-trash'></i>
           <span>Corbeille</span>
         </div>
+        
+        <div className="sidebar-separator"></div>
       </div>
     </nav>
   );
