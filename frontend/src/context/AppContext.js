@@ -151,6 +151,7 @@ const appReducer = (state, action) => {
 export const AppProvider = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const { user, isAuthenticated } = useAuth();
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   
   // Fonction pour charger les données utilisateur
   const fetchUserData = async () => {
@@ -546,15 +547,17 @@ export const AppProvider = ({ children }) => {
   // Valeur exposée par le contexte
   const value = {
     ...state,
+    setActiveSection,
     createDocument,
     updateDocument,
     deleteDocument,
-    setActiveSection,
     openDocument,
     shareDocument,
     updateUserSettings,
     toggleDarkMode,
-    refreshData
+    refreshData,
+    sidebarVisible,
+    setSidebarVisible
   };
   
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

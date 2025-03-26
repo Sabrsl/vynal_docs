@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { EditorState, convertToRaw, ContentState } from 'draft-js';
 import { Editor } from 'react-draft-wysiwyg';
 import draftToHtml from 'draftjs-to-html';
@@ -11,48 +11,69 @@ import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
+/**
+ * Composant d'édition de document amélioré
+ * Permet l'édition, la sauvegarde et l'export de documents textuels riches
+ */
 const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) => {
+  // État pour les données du document
   const [docData, setDocData] = useState(initialDocument || {
     title: 'Nouveau document',
     content: '',
     type: 'document'
   });
   
+  // État pour l'éditeur WYSIWYG
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const { updateDocument, createDocument } = useAppContext();
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(!initialDocument);
+  
+  // Récupération des méthodes de contexte
+  const { updateDocument, createDocument } = useAppContext();
 
   // Initialiser l'éditeur avec le contenu du document si disponible
   useEffect(() => {
     if (docData.content) {
-      const blocksFromHtml = htmlToDraft(docData.content);
-      if (blocksFromHtml) {
-        const { contentBlocks, entityMap } = blocksFromHtml;
-        const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
-        setEditorState(EditorState.createWithContent(contentState));
+      try {
+        const blocksFromHtml = htmlToDraft(docData.content);
+        if (blocksFromHtml) {
+          const { contentBlocks, entityMap } = blocksFromHtml;
+          const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
+          setEditorState(EditorState.createWithContent(contentState));
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement du contenu:', error);
       }
     }
   }, [docData.content]);
 
-  const handleEditorChange = (state) => {
+  // Gestion des changements dans l'éditeur
+  const handleEditorChange = useCallback((state) => {
     setEditorState(state);
-    const htmlContent = draftToHtml(convertToRaw(state.getCurrentContent()));
-    setDocData(prev => ({ ...prev, content: htmlContent }));
-  };
+    try {
+      const htmlContent = draftToHtml(convertToRaw(state.getCurrentContent()));
+      setDocData(prev => ({ ...prev, content: htmlContent }));
+    } catch (error) {
+      console.error('Erreur lors de la conversion en HTML:', error);
+    }
+  }, []);
 
-  const handleTitleChange = (e) => {
+  // Gestion du changement de titre
+  const handleTitleChange = useCallback((e) => {
     setDocData(prev => ({ ...prev, title: e.target.value }));
-  };
+  }, []);
 
+  // Sauvegarde du document
   const handleSave = async () => {
     setIsSaving(true);
     try {
       const htmlContent = draftToHtml(convertToRaw(editorState.getCurrentContent()));
       const updatedDocument = {
         ...docData,
-        content: htmlContent
+        content: htmlContent,
+        lastModified: new Date().toISOString()
       };
       
       let result;
@@ -69,41 +90,47 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
       }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du document:', error);
-      alert(`Erreur: ${error.message}`);
+      alert(`Erreur: ${error.message || 'Impossible de sauvegarder le document.'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleApplyTemplate = (template) => {
+  // Application d'un modèle de document
+  const handleApplyTemplate = useCallback((template) => {
     if (!template) return;
     
     setSelectedTemplate(template);
     
-    // Utiliser le contenu du modèle
-    const blocksFromHtml = htmlToDraft(template.content || '');
-    if (blocksFromHtml) {
-      const { contentBlocks, entityMap } = blocksFromHtml;
-      const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
-      setEditorState(EditorState.createWithContent(contentState));
-      setDocData(prev => ({ 
-        ...prev, 
-        content: template.content,
-        type: template.type || prev.type,
-        templateId: template.id
-      }));
+    try {
+      // Utiliser le contenu du modèle
+      const blocksFromHtml = htmlToDraft(template.content || '');
+      if (blocksFromHtml) {
+        const { contentBlocks, entityMap } = blocksFromHtml;
+        const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
+        setEditorState(EditorState.createWithContent(contentState));
+        setDocData(prev => ({ 
+          ...prev, 
+          content: template.content,
+          type: template.type || prev.type,
+          templateId: template.id,
+          title: template.title || prev.title
+        }));
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'application du modèle:', error);
     }
     
     setShowTemplateSelector(false);
-  };
+  }, []);
 
+  // Export au format PDF
   const handleExportPDF = async () => {
+    setIsExporting(true);
     try {
-      const element = window.document.getElementById('document-editor-content');
+      const element = document.getElementById('document-editor-content');
       if (!element) {
-        console.error("Élément 'document-editor-content' non trouvé");
-        alert("Impossible d'exporter en PDF: élément non trouvé");
-        return;
+        throw new Error("Élément 'document-editor-content' non trouvé");
       }
       
       // Options pour une meilleure qualité
@@ -120,6 +147,7 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
             editorElement.style.padding = '20px';
             editorElement.style.backgroundColor = '#FFFFFF';
             editorElement.style.minHeight = 'auto';
+            editorElement.style.color = '#000000';
           }
           return clonedDoc;
         }
@@ -128,9 +156,7 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
       // Cibler spécifiquement la partie éditable (pas la toolbar)
       const editorContent = element.querySelector('.rdw-editor-main');
       if (!editorContent) {
-        console.error("Contenu de l'éditeur non trouvé");
-        alert("Impossible d'exporter en PDF: contenu non trouvé");
-        return;
+        throw new Error("Contenu de l'éditeur non trouvé");
       }
       
       const canvas = await html2canvas(editorContent, options);
@@ -179,19 +205,15 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
     } catch (error) {
       console.error('Erreur lors de l\'export PDF:', error);
       alert('Impossible d\'exporter en PDF. Veuillez réessayer.');
+    } finally {
+      setIsExporting(false);
     }
   };
 
+  // Export au format Word
   const handleExportWord = () => {
+    setIsExporting(true);
     try {
-      // Capture uniquement le contenu de l'éditeur pour l'export
-      const editorContent = window.document.getElementById('document-editor-content').querySelector('.rdw-editor-main');
-      if (!editorContent) {
-        console.error("Contenu de l'éditeur non trouvé");
-        alert("Impossible d'exporter en Word: contenu non trouvé");
-        return;
-      }
-      
       // Styles améliorés pour une meilleure compatibilité Word
       const styles = `
         @page {
@@ -289,10 +311,12 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
     } catch (error) {
       console.error('Erreur lors de l\'export Word:', error);
       alert('Impossible d\'exporter en Word. Veuillez réessayer.');
+    } finally {
+      setIsExporting(false);
     }
   };
 
-  // Ajouter cette fonction pour débloquer le chargement des images
+  // Custom image upload callback pour permettre l'intégration d'images
   const customImageUploadCallback = (file) => {
     return new Promise((resolve, reject) => {
       if (file) {
@@ -306,6 +330,137 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
         reader.readAsDataURL(file);
       }
     });
+  };
+
+  // Configuration optimisée de la toolbar de l'éditeur pour un style Word professionnel
+  const editorToolbar = {
+    options: ['inline', 'blockType', 'fontSize', 'fontFamily', 'list', 'textAlign', 'colorPicker', 'link', 'embedded', 'emoji', 'image', 'remove', 'history'],
+    inline: {
+      inDropdown: false,
+      options: ['bold', 'italic', 'underline', 'strikethrough', 'monospace', 'superscript', 'subscript'],
+    },
+    blockType: {
+      inDropdown: true,
+      options: ['Normal', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'Blockquote'],
+      className: 'blockType-dropdown',
+      dropdownClassName: 'blockType-dropdown-popup',
+    },
+    fontSize: {
+      options: [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 30, 36, 48],
+      className: 'fontSize-dropdown',
+      dropdownClassName: 'fontSize-dropdown-popup',
+    },
+    fontFamily: {
+      options: ['Arial', 'Georgia', 'Impact', 'Tahoma', 'Times New Roman', 'Verdana', 'Courier New'],
+      className: 'fontFamily-dropdown',
+      dropdownClassName: 'fontFamily-dropdown-popup',
+    },
+    list: {
+      inDropdown: false,
+      options: ['unordered', 'ordered', 'indent', 'outdent'],
+      className: 'list-dropdown',
+      dropdownClassName: 'list-dropdown-popup',
+    },
+    textAlign: {
+      inDropdown: false,
+      options: ['left', 'center', 'right', 'justify'],
+    },
+    colorPicker: {
+      colors: ['rgb(97,189,109)', 'rgb(26,188,156)', 'rgb(84,172,210)', 'rgb(44,130,201)',
+        'rgb(147,101,184)', 'rgb(71,85,119)', '#6933FF', '#5728d5', '#000000',
+        'rgb(38,38,38)', 'rgb(89,89,89)', 'rgb(140,140,140)', 'rgb(191,191,191)', 
+        'rgb(242,242,242)', 'rgb(255,255,255)', '#0078D7', '#C2410C', '#15803D', 
+        '#8552c2', '#c2410c', '#BB2124'],
+      className: 'colorPicker-dropdown',
+      popupClassName: 'colorPicker-popup',
+    },
+    link: {
+      inDropdown: false,
+      showOpenOptionOnHover: true,
+      defaultTargetOption: '_self',
+      options: ['link', 'unlink'],
+      className: 'link-dropdown',
+      popupClassName: 'link-popup',
+    },
+    emoji: {
+      className: 'emoji-dropdown',
+      popupClassName: 'emoji-popup',
+      emojis: [
+        '😀', '😁', '😂', '😃', '😉', '😋', '😎', '😍', '👍', '👎', '👌', '👏', '🙌',
+        '👨‍💻', '👩‍💻', '📊', '📈', '📉', '📋', '📌', '📎', '📝', '📁', '📂', '🗂️',
+        '📅', '🔍', '🔎', '🔒', '🔓', '📱', '💻', '🖥️', '📄', '📃', '📑', '🔖',
+        '✅', '❌', '⚠️', '❗'
+      ]
+    },
+    embedded: {
+      className: 'embedded-dropdown',
+      popupClassName: 'embedded-popup',
+    },
+    image: {
+      className: 'image-dropdown',
+      popupClassName: 'image-popup',
+      urlEnabled: true,
+      uploadEnabled: true,
+      alignmentEnabled: true,
+      uploadCallback: customImageUploadCallback,
+      previewImage: true,
+      inputAccept: 'image/gif,image/jpeg,image/jpg,image/png,image/svg',
+      alt: { present: true, mandatory: false },
+      defaultSize: {
+        height: 'auto',
+        width: 'auto',
+      }
+    },
+    history: {
+      inDropdown: false,
+      options: ['undo', 'redo'],
+      className: 'history-dropdown',
+      undo: { title: 'Annuler' },
+      redo: { title: 'Rétablir' },
+    }
+  };
+
+  // Traductions pour l'interface de l'éditeur
+  const editorLocalization = {
+    locale: 'fr',
+    translations: {
+      'components.controls.blocktype.normal': 'Normal',
+      'components.controls.blocktype.h1': 'Titre 1',
+      'components.controls.blocktype.h2': 'Titre 2',
+      'components.controls.blocktype.h3': 'Titre 3',
+      'components.controls.blocktype.h4': 'Titre 4',
+      'components.controls.blocktype.h5': 'Titre 5',
+      'components.controls.blocktype.h6': 'Titre 6',
+      'components.controls.blocktype.blockquote': 'Citation',
+      'components.controls.blocktype.code': 'Code',
+      'components.controls.blocktype.blocktype': 'Style',
+      'components.controls.fontfamily.fontfamily': 'Police',
+      'components.controls.fontsize.fontsize': 'Taille',
+      'components.controls.image.image': 'Image',
+      'components.controls.image.fileUpload': 'Téléverser',
+      'components.controls.image.byURL': 'URL',
+      'components.controls.image.dropFileText': 'Déposer un fichier ou cliquer pour téléverser',
+      'components.controls.inline.bold': 'Gras',
+      'components.controls.inline.italic': 'Italique',
+      'components.controls.inline.underline': 'Souligné',
+      'components.controls.inline.strikethrough': 'Barré',
+      'components.controls.link.linkTitle': 'Titre du lien',
+      'components.controls.link.linkTarget': 'Cible du lien',
+      'components.controls.link.linkTargetOption': 'Ouvrir dans une nouvelle fenêtre',
+      'components.controls.link.link': 'Lien',
+      'components.controls.link.unlink': 'Supprimer le lien',
+      'components.controls.list.list': 'Liste',
+      'components.controls.list.unordered': 'Liste à puces',
+      'components.controls.list.ordered': 'Liste numérotée',
+      'components.controls.list.indent': 'Augmenter le retrait',
+      'components.controls.list.outdent': 'Diminuer le retrait',
+      'components.controls.textalign.textalign': 'Alignement du texte',
+      'components.controls.textalign.left': 'Gauche',
+      'components.controls.textalign.center': 'Centre',
+      'components.controls.textalign.right': 'Droite',
+      'components.controls.textalign.justify': 'Justifié',
+      'components.controls.colorpicker.colorpicker': 'Couleur du texte'
+    }
   };
 
   return (
@@ -347,12 +502,14 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
               value={docData.title} 
               onChange={handleTitleChange} 
               placeholder="Titre du document" 
+              aria-label="Titre du document"
             />
             <div className="document-editor-actions">
               <Button 
                 variant="transparent" 
                 icon="bx-template" 
                 onClick={() => setShowTemplateSelector(true)}
+                title="Choisir un modèle"
               >
                 Modèles
               </Button>
@@ -360,6 +517,8 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
                 variant="transparent" 
                 icon="bx-export" 
                 onClick={handleExportWord}
+                disabled={isExporting}
+                title="Exporter en Word"
               >
                 Word
               </Button>
@@ -367,6 +526,8 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
                 variant="transparent" 
                 icon="bx-file-pdf" 
                 onClick={handleExportPDF}
+                disabled={isExporting}
+                title="Exporter en PDF"
               >
                 PDF
               </Button>
@@ -374,7 +535,8 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
                 variant="primary" 
                 icon="bx-save" 
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={isSaving || isExporting}
+                title="Enregistrer le document"
               >
                 {isSaving ? 'Enregistrement...' : 'Enregistrer'}
               </Button>
@@ -382,6 +544,7 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
                 variant="text" 
                 icon="bx-x" 
                 onClick={onClose}
+                title="Fermer l'éditeur"
               >
                 Fermer
               </Button>
@@ -395,102 +558,26 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
               wrapperClassName="document-editor-wrapper"
               editorClassName="document-editor-main"
               toolbarClassName="document-editor-toolbar"
-              toolbar={{
-                options: ['inline', 'blockType', 'fontSize', 'fontFamily', 'list', 'textAlign', 'colorPicker', 'link', 'image', 'history'],
-                inline: { 
-                  inDropdown: false,
-                  options: ['bold', 'italic', 'underline', 'strikethrough', 'monospace', 'superscript', 'subscript']
-                },
-                blockType: {
-                  inDropdown: true,
-                  options: ['Normal', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'Blockquote', 'Code']
-                },
-                fontSize: {
-                  options: [8, 9, 10, 11, 12, 14, 16, 18, 24, 30, 36, 48]
-                },
-                fontFamily: {
-                  options: ['Arial', 'Georgia', 'Impact', 'Tahoma', 'Times New Roman', 'Verdana']
-                },
-                list: { 
-                  inDropdown: true,
-                  options: ['unordered', 'ordered', 'indent', 'outdent']
-                },
-                textAlign: { 
-                  inDropdown: true,
-                  options: ['left', 'center', 'right', 'justify']
-                },
-                colorPicker: {
-                  colors: ['rgb(97,189,109)', 'rgb(26,188,156)', 'rgb(84,172,210)', 'rgb(44,130,201)',
-                    'rgb(147,101,184)', 'rgb(71,85,119)', 'rgb(204,204,204)', 'rgb(65,168,95)', 'rgb(0,168,133)',
-                    'rgb(61,142,185)', 'rgb(41,105,176)', 'rgb(85,57,130)', 'rgb(40,50,78)', 'rgb(0,0,0)',
-                    'rgb(247,218,100)', 'rgb(251,160,38)', 'rgb(235,107,86)', 'rgb(226,80,65)', 'rgb(163,143,132)',
-                    'rgb(239,239,239)', 'rgb(255,255,255)', 'rgb(250,197,28)', 'rgb(243,121,52)', 'rgb(209,72,65)',
-                    'rgb(184,49,47)', 'rgb(124,112,107)', 'rgb(209,213,216)']
-                },
-                link: { 
-                  inDropdown: false,
-                  showOpenOptionOnHover: true,
-                  defaultTargetOption: '_self',
-                  options: ['link', 'unlink']
-                },
-                image: {
-                  urlEnabled: true,
-                  uploadEnabled: true,
-                  alignmentEnabled: true,
-                  uploadCallback: customImageUploadCallback,
-                  previewImage: true,
-                  inputAccept: 'image/gif,image/jpeg,image/jpg,image/png,image/svg',
-                  alt: { present: true, mandatory: false },
-                  defaultSize: {
-                    height: 'auto',
-                    width: 'auto'
-                  }
-                },
-                history: { 
-                  inDropdown: false,
-                  options: ['undo', 'redo']
-                }
-              }}
-              localization={{
-                locale: 'fr',
-                translations: {
-                  'components.controls.blocktype.normal': 'Normal',
-                  'components.controls.blocktype.h1': 'Titre 1',
-                  'components.controls.blocktype.h2': 'Titre 2',
-                  'components.controls.blocktype.h3': 'Titre 3',
-                  'components.controls.blocktype.h4': 'Titre 4',
-                  'components.controls.blocktype.h5': 'Titre 5',
-                  'components.controls.blocktype.h6': 'Titre 6',
-                  'components.controls.blocktype.blockquote': 'Citation',
-                  'components.controls.blocktype.code': 'Code',
-                  'components.controls.blocktype.blocktype': 'Style',
-                  'components.controls.fontfamily.fontfamily': 'Police',
-                  'components.controls.fontsize.fontsize': 'Taille',
-                  'components.controls.image.image': 'Image',
-                  'components.controls.image.fileUpload': 'Téléverser',
-                  'components.controls.image.byURL': 'URL',
-                  'components.controls.image.dropFileText': 'Déposer un fichier ou cliquer pour téléverser',
-                  'components.controls.inline.bold': 'Gras',
-                  'components.controls.inline.italic': 'Italique',
-                  'components.controls.inline.underline': 'Souligné',
-                  'components.controls.inline.strikethrough': 'Barré',
-                  'components.controls.link.linkTitle': 'Titre du lien',
-                  'components.controls.link.linkTarget': 'Cible du lien',
-                  'components.controls.link.linkTargetOption': 'Ouvrir dans une nouvelle fenêtre',
-                  'components.controls.link.link': 'Lien',
-                  'components.controls.link.unlink': 'Supprimer le lien',
-                  'components.controls.list.list': 'Liste',
-                  'components.controls.list.unordered': 'Liste à puces',
-                  'components.controls.list.ordered': 'Liste numérotée',
-                  'components.controls.list.indent': 'Augmenter le retrait',
-                  'components.controls.list.outdent': 'Diminuer le retrait',
-                  'components.controls.textalign.textalign': 'Alignement du texte',
-                  'components.controls.textalign.left': 'Gauche',
-                  'components.controls.textalign.center': 'Centre',
-                  'components.controls.textalign.right': 'Droite',
-                  'components.controls.textalign.justify': 'Justifié',
-                  'components.controls.colorpicker.colorpicker': 'Couleur du texte'
-                }
+              toolbar={editorToolbar}
+              localization={editorLocalization}
+              stripPastedStyles={false}
+              spellCheck={true}
+              placeholder="Commencez à rédiger votre document..."
+              ariaLabel="Éditeur de texte riche"
+              toolbarOnFocus={false}
+              toolbarCustomButtons={[]}
+              handleBeforeInput={() => false}
+              handleReturn={() => false}
+              handlePastedText={() => false}
+              onBlur={() => {}}
+              onFocus={() => {}}
+              customStyleMap={{
+                'BOLD': { fontWeight: 'bold' },
+                'ITALIC': { fontStyle: 'italic' },
+                'UNDERLINE': { textDecoration: 'underline' },
+                'STRIKETHROUGH': { textDecoration: 'line-through' },
+                'SUPERSCRIPT': { verticalAlign: 'super', fontSize: 'smaller' },
+                'SUBSCRIPT': { verticalAlign: 'sub', fontSize: 'smaller' },
               }}
             />
           </div>
@@ -500,4 +587,4 @@ const DocumentEditor = ({ initialDocument, onSave, onClose, templates = [] }) =>
   );
 };
 
-export default DocumentEditor; 
+export default DocumentEditor;

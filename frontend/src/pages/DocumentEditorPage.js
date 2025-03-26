@@ -9,9 +9,20 @@ const DocumentEditorPage = () => {
   const { documentId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { documents, templates, isLoading, error } = useAppContext();
+  const { documents, templates, isLoading, error, setSidebarVisible } = useAppContext();
   const [document, setDocument] = useState(null);
   const [documentTemplates, setDocumentTemplates] = useState([]);
+
+  // Masquer la sidebar à l'ouverture de l'éditeur
+  useEffect(() => {
+    // Cacher la sidebar quand l'éditeur est ouvert
+    setSidebarVisible(false);
+    
+    // Restaurer la sidebar quand le composant est démonté
+    return () => {
+      setSidebarVisible(true);
+    };
+  }, [setSidebarVisible]);
 
   // Récupérer le document à éditer s'il existe
   useEffect(() => {
@@ -51,12 +62,14 @@ const DocumentEditorPage = () => {
 
   const handleSave = (savedDocument) => {
     // Rediriger vers la page des documents après la sauvegarde
+    setSidebarVisible(true);
     navigate('/documents');
   };
 
   const handleClose = () => {
     // Confirmer si l'utilisateur veut quitter sans sauvegarder
     if (window.confirm('Voulez-vous quitter sans enregistrer ?')) {
+      setSidebarVisible(true);
       navigate('/documents');
     }
   };

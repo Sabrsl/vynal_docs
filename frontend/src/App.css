@@ -79,16 +79,24 @@ a {
 .main-content {
   display: flex;
   flex: 1;
-  overflow: hidden;
-  height: calc(100vh - var(--navbar-height));
+  transition: all 0.3s ease;
 }
 
 .content-area {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
-  background-color: var(--background-color);
-  transition: background-color 0.3s ease;
+  transition: margin-left 0.3s ease;
+}
+
+/* Ajuster le contenu lorsque la sidebar est masquée */
+.sidebar-hidden .content-area {
+  margin-left: 0 !important;
+  width: 100%;
+}
+
+.main-content .sidebar {
+  transition: transform 0.3s ease, width 0.3s ease;
 }
 
 /* Titres de pages */
@@ -858,22 +866,6 @@ body {
 
 .user-dropdown-item:hover {
   background-color: var(--hover-background);
-}
-
-/* Contenu principal */
-.main-content {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  height: calc(100vh - var(--navbar-height));
-}
-
-/* Zone de contenu */
-.content-area {
-  flex: 1;
-  overflow-y: auto;
-  background-color: var(--background-color);
-  transition: background-color 0.3s ease;
 }
 
 /* Dark mode toggle button */

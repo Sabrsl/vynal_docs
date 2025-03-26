@@ -42,7 +42,8 @@ const MainApp = () => {
     documents,
     activities,
     darkMode,
-    toggleDarkMode
+    toggleDarkMode,
+    sidebarVisible
   } = useAppContext();
   
   const { user, logout } = useAuth();
@@ -115,8 +116,12 @@ const MainApp = () => {
   };
   
   return (
-    <div className="app-container">
-      <Navbar>
+    <div className={`app ${darkMode ? 'dark-mode' : ''}`}>
+      <Navbar 
+        onDarkModeToggle={toggleDarkMode} 
+        darkMode={darkMode} 
+        user={user}
+      >
         <div className="logo" onClick={() => handleSectionClick('dashboard')}>
           <img src={logo} alt="Vynal Docs" className="logo-image" />
           <h1 className="logo-text">Vynal Docs</h1>
@@ -161,7 +166,7 @@ const MainApp = () => {
         </div>
       </Navbar>
       
-      <div className="main-content">
+      <div className={`main-content ${!sidebarVisible ? 'sidebar-hidden' : ''}`}>
         <Sidebar onSectionClick={handleSectionClick} activeSection={activeSection} />
         
         <div className="content-area">

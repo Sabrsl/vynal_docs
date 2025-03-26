@@ -3,7 +3,11 @@ import './Sidebar.css';
 import { useAppContext } from '../../context/AppContext';
 
 const Sidebar = ({ onSectionClick, activeSection }) => {
-  const { documents, activities } = useAppContext();
+  const { documents, activities, sidebarVisible } = useAppContext();
+
+  if (!sidebarVisible) {
+    return null;
+  }
 
   return (
     <nav className="sidebar">
