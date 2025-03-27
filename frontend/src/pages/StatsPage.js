@@ -1,9 +1,35 @@
 import React, { useState } from 'react';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import '../styles/base.css';
 import '../styles/variables.css';
 import '../styles/modern.css';
+
+// Enregistrement des composants Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const StatsPage = () => {
   const [timeRange, setTimeRange] = useState('month');
@@ -73,6 +99,62 @@ const StatsPage = () => {
   const handleTimeRangeChange = (range) => {
     setTimeRange(range);
     // Dans une application réelle, vous récupéreriez des données différentes en fonction de la plage
+  };
+
+  // Configuration des graphiques
+  const activityChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: false
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          stepSize: 1
+        }
+      }
+    }
+  };
+
+  const documentTypeChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+      },
+      title: {
+        display: false
+      }
+    }
+  };
+
+  const userActivityChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: false
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          stepSize: 1
+        }
+      }
+    }
   };
 
   return (
@@ -195,40 +277,65 @@ const StatsPage = () => {
                 </div>
               </div>
               <div className="chart-body">
-                {/* Dans une implémentation réelle, vous intégreriez ici une bibliothèque de graphiques comme Chart.js, ApexCharts ou Recharts */}
-                <div className="chart-placeholder" style={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: 'var(--color-text-lighter)', 
-                  fontSize: '0.875rem'
-                }}>
-                  Graphique d'activité
-                </div>
+                <Line
+                  data={{
+                    labels: stats.activityByDay.map(day => day.date),
+                    datasets: [
+                      {
+                        label: 'Téléversements',
+                        data: stats.activityByDay.map(day => day.uploads),
+                        borderColor: 'rgb(105, 51, 255)',
+                        backgroundColor: 'rgba(105, 51, 255, 0.5)',
+                        tension: 0.4
+                      },
+                      {
+                        label: 'Téléchargements',
+                        data: stats.activityByDay.map(day => day.downloads),
+                        borderColor: 'rgb(52, 152, 219)',
+                        backgroundColor: 'rgba(52, 152, 219, 0.5)',
+                        tension: 0.4
+                      },
+                      {
+                        label: 'Vues',
+                        data: stats.activityByDay.map(day => day.views),
+                        borderColor: 'rgb(46, 204, 113)',
+                        backgroundColor: 'rgba(46, 204, 113, 0.5)',
+                        tension: 0.4
+                      }
+                    ]
+                  }}
+                  options={activityChartOptions}
+                />
               </div>
             </div>
 
             <div className="chart-card">
               <div className="chart-header">
-                <h2 className="chart-title">Répartition des documents</h2>
+                <h2 className="chart-title">Documents par type</h2>
                 <div className="chart-options">
-                  <div className="chart-option active">Type</div>
+                  <div className="chart-option active">Nombre</div>
                   <div className="chart-option">Taille</div>
                 </div>
               </div>
               <div className="chart-body">
-                {/* Dans une implémentation réelle, vous intégreriez ici un graphique circulaire */}
-                <div className="chart-placeholder" style={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: 'var(--color-text-lighter)', 
-                  fontSize: '0.875rem'
-                }}>
-                  Graphique de répartition
-                </div>
+                <Doughnut
+                  data={{
+                    labels: stats.documentsByType.map(doc => doc.type),
+                    datasets: [
+                      {
+                        data: stats.documentsByType.map(doc => doc.count),
+                        backgroundColor: [
+                          'rgba(105, 51, 255, 0.8)',
+                          'rgba(52, 152, 219, 0.8)',
+                          'rgba(46, 204, 113, 0.8)',
+                          'rgba(241, 196, 15, 0.8)',
+                          'rgba(231, 76, 60, 0.8)'
+                        ]
+                      }
+                    ]
+                  }}
+                  options={documentTypeChartOptions}
+                />
               </div>
             </div>
           </div>
@@ -437,16 +544,19 @@ const StatsPage = () => {
                 </div>
               </div>
               <div className="chart-body">
-                <div className="chart-placeholder" style={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: 'var(--color-text-lighter)', 
-                  fontSize: '0.875rem'
-                }}>
-                  Graphique de répartition par type
-                </div>
+                <Bar
+                  data={{
+                    labels: stats.documentsByType.map(doc => doc.type),
+                    datasets: [
+                      {
+                        label: 'Nombre de documents',
+                        data: stats.documentsByType.map(doc => doc.count),
+                        backgroundColor: 'rgba(105, 51, 255, 0.8)'
+                      }
+                    ]
+                  }}
+                  options={documentTypeChartOptions}
+                />
               </div>
             </div>
 
@@ -460,16 +570,21 @@ const StatsPage = () => {
                 </div>
               </div>
               <div className="chart-body">
-                <div className="chart-placeholder" style={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: 'var(--color-text-lighter)', 
-                  fontSize: '0.875rem'
-                }}>
-                  Graphique d'évolution
-                </div>
+                <Line
+                  data={{
+                    labels: stats.activityByDay.map(day => day.date),
+                    datasets: [
+                      {
+                        label: 'Nouveaux documents',
+                        data: stats.activityByDay.map(day => day.uploads),
+                        borderColor: 'rgb(105, 51, 255)',
+                        backgroundColor: 'rgba(105, 51, 255, 0.5)',
+                        tension: 0.4
+                      }
+                    ]
+                  }}
+                  options={activityChartOptions}
+                />
               </div>
             </div>
           </div>
@@ -600,16 +715,26 @@ const StatsPage = () => {
                 </div>
               </div>
               <div className="chart-body">
-                <div className="chart-placeholder" style={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: 'var(--color-text-lighter)', 
-                  fontSize: '0.875rem'
-                }}>
-                  Graphique de répartition par rôle
-                </div>
+                <Doughnut
+                  data={{
+                    labels: ['Admin', 'Éditeur', 'Utilisateur'],
+                    datasets: [
+                      {
+                        data: [
+                          stats.mostActiveUsers.filter(user => user.role === 'Admin').length,
+                          stats.mostActiveUsers.filter(user => user.role === 'Éditeur').length,
+                          stats.mostActiveUsers.filter(user => user.role === 'Utilisateur').length
+                        ],
+                        backgroundColor: [
+                          'rgba(105, 51, 255, 0.8)',
+                          'rgba(52, 152, 219, 0.8)',
+                          'rgba(46, 204, 113, 0.8)'
+                        ]
+                      }
+                    ]
+                  }}
+                  options={documentTypeChartOptions}
+                />
               </div>
             </div>
 
@@ -623,16 +748,29 @@ const StatsPage = () => {
                 </div>
               </div>
               <div className="chart-body">
-                <div className="chart-placeholder" style={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: 'var(--color-text-lighter)', 
-                  fontSize: '0.875rem'
-                }}>
-                  Graphique d'activité des utilisateurs
-                </div>
+                <Bar
+                  data={{
+                    labels: stats.mostActiveUsers.map(user => user.name),
+                    datasets: [
+                      {
+                        label: 'Téléversements',
+                        data: stats.mostActiveUsers.map(user => user.uploads),
+                        backgroundColor: 'rgba(105, 51, 255, 0.8)'
+                      },
+                      {
+                        label: 'Téléchargements',
+                        data: stats.mostActiveUsers.map(user => user.downloads),
+                        backgroundColor: 'rgba(52, 152, 219, 0.8)'
+                      },
+                      {
+                        label: 'Vues',
+                        data: stats.mostActiveUsers.map(user => user.views),
+                        backgroundColor: 'rgba(46, 204, 113, 0.8)'
+                      }
+                    ]
+                  }}
+                  options={userActivityChartOptions}
+                />
               </div>
             </div>
           </div>
@@ -771,16 +909,35 @@ const StatsPage = () => {
                 </div>
               </div>
               <div className="chart-body">
-                <div className="chart-placeholder" style={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: 'var(--color-text-lighter)', 
-                  fontSize: '0.875rem'
-                }}>
-                  Graphique d'activité quotidienne
-                </div>
+                <Line
+                  data={{
+                    labels: stats.activityByDay.map(day => day.date),
+                    datasets: [
+                      {
+                        label: 'Téléversements',
+                        data: stats.activityByDay.map(day => day.uploads),
+                        borderColor: 'rgb(105, 51, 255)',
+                        backgroundColor: 'rgba(105, 51, 255, 0.5)',
+                        tension: 0.4
+                      },
+                      {
+                        label: 'Téléchargements',
+                        data: stats.activityByDay.map(day => day.downloads),
+                        borderColor: 'rgb(52, 152, 219)',
+                        backgroundColor: 'rgba(52, 152, 219, 0.5)',
+                        tension: 0.4
+                      },
+                      {
+                        label: 'Vues',
+                        data: stats.activityByDay.map(day => day.views),
+                        borderColor: 'rgb(46, 204, 113)',
+                        backgroundColor: 'rgba(46, 204, 113, 0.5)',
+                        tension: 0.4
+                      }
+                    ]
+                  }}
+                  options={activityChartOptions}
+                />
               </div>
             </div>
 
@@ -793,16 +950,26 @@ const StatsPage = () => {
                 </div>
               </div>
               <div className="chart-body">
-                <div className="chart-placeholder" style={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: 'var(--color-text-lighter)', 
-                  fontSize: '0.875rem'
-                }}>
-                  Graphique de répartition des activités
-                </div>
+                <Doughnut
+                  data={{
+                    labels: ['Téléversements', 'Téléchargements', 'Vues'],
+                    datasets: [
+                      {
+                        data: [
+                          stats.activityByDay.reduce((sum, day) => sum + day.uploads, 0),
+                          stats.activityByDay.reduce((sum, day) => sum + day.downloads, 0),
+                          stats.activityByDay.reduce((sum, day) => sum + day.views, 0)
+                        ],
+                        backgroundColor: [
+                          'rgba(105, 51, 255, 0.8)',
+                          'rgba(52, 152, 219, 0.8)',
+                          'rgba(46, 204, 113, 0.8)'
+                        ]
+                      }
+                    ]
+                  }}
+                  options={documentTypeChartOptions}
+                />
               </div>
             </div>
           </div>
