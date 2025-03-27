@@ -1393,29 +1393,66 @@ body {
   align-items: center;
 }
 
+/* Styles pour le filtre de date */
 .date-filter {
+  position: relative;
+  margin-right: 1rem;
+}
+
+.date-filter-button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: white;
-  border: 1px solid var(--color-border);
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   cursor: pointer;
-  transition: all var(--transition);
+  transition: all 0.2s ease;
 }
 
-.date-filter:hover {
-  border-color: var(--color-primary);
+.date-filter-button:hover {
+  background: var(--background-hover);
 }
 
-.date-filter i {
-  color: var(--color-primary);
+.date-filter-button i {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
 }
 
-.date-filter span {
-  font-size: 0.875rem;
-  font-weight: 500;
+.date-filter-button span {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.date-filter-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  z-index: 1000;
+  min-width: 200px;
+}
+
+.date-filter-option {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.date-filter-option:hover {
+  background: var(--background-hover);
+}
+
+.date-filter-option.active {
+  background: var(--primary-color-light);
+  color: var(--primary-color);
 }
 
 /* Stats Overview Cards */

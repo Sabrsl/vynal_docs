@@ -1,11 +1,15 @@
 .sidebar {
-  width: var(--sidebar-width, 250px);
+  width: 70px;
   background-color: var(--card-background, white);
   border-right: 1px solid var(--border-color, #e9ecef);
   height: 100%;
   padding: 16px 0;
-  transition: all 0.3s ease;
+  transition: width 0.3s ease;
   overflow-y: auto;
+}
+
+.sidebar:hover {
+  width: 250px;
 }
 
 .sidebar-menu {
@@ -21,6 +25,8 @@
   margin: 2px 8px;
   border-radius: 8px;
   color: var(--text-color, #6c757d);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .sidebar-item:hover {
@@ -35,13 +41,20 @@
 }
 
 .sidebar-item i {
-  font-size: 20px;
+  font-size: 24px;
   margin-right: 12px;
+  min-width: 24px;
 }
 
 .sidebar-item span {
   font-size: 14px;
   font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar:hover .sidebar-item span {
+  opacity: 1;
 }
 
 .sidebar-badge {
@@ -57,16 +70,36 @@
   justify-content: center;
   border-radius: 10px;
   padding: 0 6px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar:hover .sidebar-badge {
+  opacity: 1;
+}
+
+.sidebar-separator {
+  height: 1px;
+  background-color: var(--border-color, #e9ecef);
+  margin: 8px 0;
 }
 
 @media (max-width: 768px) {
   .sidebar {
+    width: 70px;
+  }
+  
+  .sidebar:hover {
     width: 220px;
   }
 }
 
 @media (max-width: 576px) {
   .sidebar {
+    width: 70px;
+  }
+  
+  .sidebar:hover {
     width: 70px;
   }
   
@@ -86,6 +119,7 @@
     height: 16px;
     min-width: 16px;
     font-size: 10px;
+    opacity: 1;
   }
 }
 
