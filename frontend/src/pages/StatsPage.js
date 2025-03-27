@@ -121,249 +121,741 @@ const StatsPage = () => {
         </div>
       </div>
 
-      <div className="stats-overview">
-        <div className="stat-overview-card primary">
-          <div className="stat-overview-value">{stats.summary.totalDocuments}</div>
-          <div className="stat-overview-label">Documents totaux</div>
-          <div className="stat-progress">
-            <div className="stat-progress-bar">
-              <div className="stat-progress-fill primary" style={{ width: '78%' }}></div>
-            </div>
-            <div className="stat-progress-text">
-              <span className="stat-trend-indicator up">
-                <i className='bx bx-up-arrow-alt'></i>
-                +{stats.summary.newDocuments}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-overview-card success">
-          <div className="stat-overview-value">{stats.summary.activeUsers}</div>
-          <div className="stat-overview-label">Utilisateurs actifs</div>
-          <div className="stat-progress">
-            <div className="stat-progress-bar">
-              <div className="stat-progress-fill success" style={{ width: '65%' }}></div>
-            </div>
-            <div className="stat-progress-text">
-              <span className="stat-trend-indicator up">
-                <i className='bx bx-up-arrow-alt'></i>
-                +3
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-overview-card info">
-          <div className="stat-overview-value">{totalActivity}</div>
-          <div className="stat-overview-label">Activités totales</div>
-          <div className="stat-progress">
-            <div className="stat-progress-bar">
-              <div className="stat-progress-fill info" style={{ width: '82%' }}></div>
-            </div>
-            <div className="stat-progress-text">
-              <span className="stat-trend-indicator up">
-                <i className='bx bx-up-arrow-alt'></i>
-                +12%
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-overview-card warning">
-          <div className="stat-overview-value">{stats.summary.storageUsed}</div>
-          <div className="stat-overview-label">Stockage utilisé</div>
-          <div className="stat-progress">
-            <div className="stat-progress-bar">
-              <div className="stat-progress-fill warning" style={{ width: `${usedStoragePercentage}%` }}></div>
-            </div>
-            <div className="stat-progress-text">{usedStoragePercentage}% de 10 GB</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="charts-grid">
-        <div className="chart-card">
-          <div className="chart-header">
-            <h2 className="chart-title">Activité quotidienne</h2>
-            <div className="chart-options">
-              <div className="chart-option active">7 jours</div>
-              <div className="chart-option">30 jours</div>
-              <div className="chart-option">Année</div>
-            </div>
-          </div>
-          <div className="chart-body">
-            {/* Dans une implémentation réelle, vous intégreriez ici une bibliothèque de graphiques comme Chart.js, ApexCharts ou Recharts */}
-            <div className="chart-placeholder" style={{ 
-              height: '100%', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              color: 'var(--color-text-lighter)', 
-              fontSize: '0.875rem'
-            }}>
-              Graphique d'activité
-            </div>
-          </div>
-        </div>
-
-        <div className="chart-card">
-          <div className="chart-header">
-            <h2 className="chart-title">Répartition des documents</h2>
-            <div className="chart-options">
-              <div className="chart-option active">Type</div>
-              <div className="chart-option">Taille</div>
-            </div>
-          </div>
-          <div className="chart-body">
-            {/* Dans une implémentation réelle, vous intégreriez ici un graphique circulaire */}
-            <div className="chart-placeholder" style={{ 
-              height: '100%', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              color: 'var(--color-text-lighter)', 
-              fontSize: '0.875rem'
-            }}>
-              Graphique de répartition
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="detailed-stats-section">
-        <h2>Statistiques détaillées</h2>
-        <div className="activity-breakdown">
-          <div className="activity-stat-card">
-            <div className="activity-stat-header">
-              <div className="activity-stat-icon primary">
-                <i className='bx bx-file'></i>
-              </div>
-              <h3 className="activity-stat-title">Documents par type</h3>
-            </div>
-            <div className="activity-stat-items">
-              {stats.documentsByType.map((type, index) => (
-                <div key={index} className="activity-item-row">
-                  <div className="activity-item-label">{type.type}</div>
-                  <div className="activity-item-value">{type.count} ({getPercentage(type.count)}%)</div>
+      {activeTab === 'overview' && (
+        <>
+          <div className="stats-overview">
+            <div className="stat-overview-card primary">
+              <div className="stat-overview-value">{stats.summary.totalDocuments}</div>
+              <div className="stat-overview-label">Documents totaux</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill primary" style={{ width: '78%' }}></div>
                 </div>
-              ))}
+                <div className="stat-progress-text">
+                  <span className="stat-trend-indicator up">
+                    <i className='bx bx-up-arrow-alt'></i>
+                    +{stats.summary.newDocuments}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card success">
+              <div className="stat-overview-value">{stats.summary.activeUsers}</div>
+              <div className="stat-overview-label">Utilisateurs actifs</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill success" style={{ width: '65%' }}></div>
+                </div>
+                <div className="stat-progress-text">
+                  <span className="stat-trend-indicator up">
+                    <i className='bx bx-up-arrow-alt'></i>
+                    +3
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card info">
+              <div className="stat-overview-value">{totalActivity}</div>
+              <div className="stat-overview-label">Activités totales</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill info" style={{ width: '82%' }}></div>
+                </div>
+                <div className="stat-progress-text">
+                  <span className="stat-trend-indicator up">
+                    <i className='bx bx-up-arrow-alt'></i>
+                    +12%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card warning">
+              <div className="stat-overview-value">{stats.summary.storageUsed}</div>
+              <div className="stat-overview-label">Stockage utilisé</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill warning" style={{ width: `${usedStoragePercentage}%` }}></div>
+                </div>
+                <div className="stat-progress-text">{usedStoragePercentage}% de 10 GB</div>
+              </div>
             </div>
           </div>
 
-          <div className="activity-stat-card">
-            <div className="activity-stat-header">
-              <div className="activity-stat-icon secondary">
-                <i className='bx bx-bar-chart-alt-2'></i>
+          <div className="charts-grid">
+            <div className="chart-card">
+              <div className="chart-header">
+                <h2 className="chart-title">Activité quotidienne</h2>
+                <div className="chart-options">
+                  <div className="chart-option active">7 jours</div>
+                  <div className="chart-option">30 jours</div>
+                  <div className="chart-option">Année</div>
+                </div>
               </div>
-              <h3 className="activity-stat-title">Activités récentes</h3>
+              <div className="chart-body">
+                {/* Dans une implémentation réelle, vous intégreriez ici une bibliothèque de graphiques comme Chart.js, ApexCharts ou Recharts */}
+                <div className="chart-placeholder" style={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: 'var(--color-text-lighter)', 
+                  fontSize: '0.875rem'
+                }}>
+                  Graphique d'activité
+                </div>
+              </div>
             </div>
-            <div className="activity-stat-items">
-              <div className="activity-item-row">
-                <div className="activity-item-label">Téléversements</div>
-                <div className="activity-item-value">35</div>
+
+            <div className="chart-card">
+              <div className="chart-header">
+                <h2 className="chart-title">Répartition des documents</h2>
+                <div className="chart-options">
+                  <div className="chart-option active">Type</div>
+                  <div className="chart-option">Taille</div>
+                </div>
               </div>
-              <div className="activity-item-row">
-                <div className="activity-item-label">Téléchargements</div>
-                <div className="activity-item-value">86</div>
-              </div>
-              <div className="activity-item-row">
-                <div className="activity-item-label">Consultations</div>
-                <div className="activity-item-value">199</div>
-              </div>
-              <div className="activity-item-row">
-                <div className="activity-item-label">Partages</div>
-                <div className="activity-item-value">42</div>
-              </div>
-              <div className="activity-item-row">
-                <div className="activity-item-label">Modifications</div>
-                <div className="activity-item-value">28</div>
+              <div className="chart-body">
+                {/* Dans une implémentation réelle, vous intégreriez ici un graphique circulaire */}
+                <div className="chart-placeholder" style={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: 'var(--color-text-lighter)', 
+                  fontSize: '0.875rem'
+                }}>
+                  Graphique de répartition
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="activity-stat-card">
-            <div className="activity-stat-header">
-              <div className="activity-stat-icon tertiary">
-                <i className='bx bx-user'></i>
+          <div className="detailed-stats-section">
+            <h2>Statistiques détaillées</h2>
+            <div className="activity-breakdown">
+              <div className="activity-stat-card">
+                <div className="activity-stat-header">
+                  <div className="activity-stat-icon primary">
+                    <i className='bx bx-file'></i>
+                  </div>
+                  <h3 className="activity-stat-title">Documents par type</h3>
+                </div>
+                <div className="activity-stat-items">
+                  {stats.documentsByType.map((type, index) => (
+                    <div key={index} className="activity-item-row">
+                      <div className="activity-item-label">{type.type}</div>
+                      <div className="activity-item-value">{type.count} ({getPercentage(type.count)}%)</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <h3 className="activity-stat-title">Utilisateurs par rôle</h3>
-            </div>
-            <div className="activity-stat-items">
-              <div className="activity-item-row">
-                <div className="activity-item-label">Administrateurs</div>
-                <div className="activity-item-value">3</div>
-              </div>
-              <div className="activity-item-row">
-                <div className="activity-item-label">Éditeurs</div>
-                <div className="activity-item-value">7</div>
-              </div>
-              <div className="activity-item-row">
-                <div className="activity-item-label">Utilisateurs</div>
-                <div className="activity-item-value">25</div>
-              </div>
-              <div className="activity-item-row">
-                <div className="activity-item-label">Invités</div>
-                <div className="activity-item-value">14</div>
-              </div>
-              <div className="activity-item-row">
-                <div className="activity-item-label">Total</div>
-                <div className="activity-item-value">49</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="stats-table-section">
-        <div className="stats-table-header">
-          <h2 className="stats-table-title">Utilisateurs les plus actifs</h2>
-          <div className="stats-table-filters">
-            <Button type="text" icon="bx bx-filter-alt">Filtrer</Button>
-            <Button type="text" icon="bx bx-export">Exporter</Button>
+              <div className="activity-stat-card">
+                <div className="activity-stat-header">
+                  <div className="activity-stat-icon secondary">
+                    <i className='bx bx-bar-chart-alt-2'></i>
+                  </div>
+                  <h3 className="activity-stat-title">Activités récentes</h3>
+                </div>
+                <div className="activity-stat-items">
+                  <div className="activity-item-row">
+                    <div className="activity-item-label">Téléversements</div>
+                    <div className="activity-item-value">35</div>
+                  </div>
+                  <div className="activity-item-row">
+                    <div className="activity-item-label">Téléchargements</div>
+                    <div className="activity-item-value">86</div>
+                  </div>
+                  <div className="activity-item-row">
+                    <div className="activity-item-label">Consultations</div>
+                    <div className="activity-item-value">199</div>
+                  </div>
+                  <div className="activity-item-row">
+                    <div className="activity-item-label">Partages</div>
+                    <div className="activity-item-value">42</div>
+                  </div>
+                  <div className="activity-item-row">
+                    <div className="activity-item-label">Modifications</div>
+                    <div className="activity-item-value">28</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="activity-stat-card">
+                <div className="activity-stat-header">
+                  <div className="activity-stat-icon tertiary">
+                    <i className='bx bx-user'></i>
+                  </div>
+                  <h3 className="activity-stat-title">Utilisateurs par rôle</h3>
+                </div>
+                <div className="activity-stat-items">
+                  <div className="activity-item-row">
+                    <div className="activity-item-label">Administrateurs</div>
+                    <div className="activity-item-value">3</div>
+                  </div>
+                  <div className="activity-item-row">
+                    <div className="activity-item-label">Éditeurs</div>
+                    <div className="activity-item-value">7</div>
+                  </div>
+                  <div className="activity-item-row">
+                    <div className="activity-item-label">Utilisateurs</div>
+                    <div className="activity-item-value">25</div>
+                  </div>
+                  <div className="activity-item-row">
+                    <div className="activity-item-label">Invités</div>
+                    <div className="activity-item-value">14</div>
+                  </div>
+                  <div className="activity-item-row">
+                    <div className="activity-item-label">Total</div>
+                    <div className="activity-item-value">49</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="stats-table-container">
-          <table className="stats-table">
-            <thead>
-              <tr>
-                <th>Utilisateur</th>
-                <th>Rôle</th>
-                <th>Téléversements</th>
-                <th>Téléchargements</th>
-                <th>Consultations</th>
-                <th>Total</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.mostActiveUsers.map(user => (
-                <tr key={user.id}>
-                  <td>{user.name}</td>
-                  <td>{user.role}</td>
-                  <td>{user.uploads}</td>
-                  <td>{user.downloads}</td>
-                  <td>{user.views}</td>
-                  <td>{user.uploads + user.downloads + user.views}</td>
-                  <td>
-                    <span className="stats-badge primary">Actif</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="stats-pagination">
-          <div className="stats-page-info">Affichage de 1 à 5 sur 12 utilisateurs</div>
-          <div className="stats-page-controls">
-            <div className="stats-page-button" disabled><i className='bx bx-chevron-left'></i></div>
-            <div className="stats-page-button active">1</div>
-            <div className="stats-page-button">2</div>
-            <div className="stats-page-button">3</div>
-            <div className="stats-page-button"><i className='bx bx-chevron-right'></i></div>
+
+          <div className="stats-table-section">
+            <div className="stats-table-header">
+              <h2 className="stats-table-title">Utilisateurs les plus actifs</h2>
+              <div className="stats-table-filters">
+                <Button type="text" icon="bx bx-filter-alt">Filtrer</Button>
+                <Button type="text" icon="bx bx-export">Exporter</Button>
+              </div>
+            </div>
+            <div className="stats-table-container">
+              <table className="stats-table">
+                <thead>
+                  <tr>
+                    <th>Utilisateur</th>
+                    <th>Rôle</th>
+                    <th>Téléversements</th>
+                    <th>Téléchargements</th>
+                    <th>Consultations</th>
+                    <th>Total</th>
+                    <th>Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.mostActiveUsers.map(user => (
+                    <tr key={user.id}>
+                      <td>{user.name}</td>
+                      <td>{user.role}</td>
+                      <td>{user.uploads}</td>
+                      <td>{user.downloads}</td>
+                      <td>{user.views}</td>
+                      <td>{user.uploads + user.downloads + user.views}</td>
+                      <td>
+                        <span className="stats-badge primary">Actif</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="stats-pagination">
+              <div className="stats-page-info">Affichage de 1 à 5 sur 12 utilisateurs</div>
+              <div className="stats-page-controls">
+                <div className="stats-page-button" disabled><i className='bx bx-chevron-left'></i></div>
+                <div className="stats-page-button active">1</div>
+                <div className="stats-page-button">2</div>
+                <div className="stats-page-button">3</div>
+                <div className="stats-page-button"><i className='bx bx-chevron-right'></i></div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
+
+      {activeTab === 'documents' && (
+        <>
+          <div className="stats-overview">
+            <div className="stat-overview-card primary">
+              <div className="stat-overview-value">{stats.summary.totalDocuments}</div>
+              <div className="stat-overview-label">Documents totaux</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill primary" style={{ width: '78%' }}></div>
+                </div>
+                <div className="stat-progress-text">
+                  <span className="stat-trend-indicator up">
+                    <i className='bx bx-up-arrow-alt'></i>
+                    +{stats.summary.newDocuments}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card success">
+              <div className="stat-overview-value">{stats.summary.archivedDocuments}</div>
+              <div className="stat-overview-label">Documents archivés</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill success" style={{ width: '15%' }}></div>
+                </div>
+                <div className="stat-progress-text">
+                  <span className="stat-trend-indicator up">
+                    <i className='bx bx-up-arrow-alt'></i>
+                    +5
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card info">
+              <div className="stat-overview-value">{totalStorage} GB</div>
+              <div className="stat-overview-label">Stockage total</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill info" style={{ width: `${usedStoragePercentage}%` }}></div>
+                </div>
+                <div className="stat-progress-text">{usedStoragePercentage}% utilisé</div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card warning">
+              <div className="stat-overview-value">12</div>
+              <div className="stat-overview-label">Documents partagés</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill warning" style={{ width: '25%' }}></div>
+                </div>
+                <div className="stat-progress-text">3.4% des documents</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="charts-grid">
+            <div className="chart-card">
+              <div className="chart-header">
+                <h2 className="chart-title">Documents par type</h2>
+                <div className="chart-options">
+                  <div className="chart-option active">Nombre</div>
+                  <div className="chart-option">Taille</div>
+                </div>
+              </div>
+              <div className="chart-body">
+                <div className="chart-placeholder" style={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: 'var(--color-text-lighter)', 
+                  fontSize: '0.875rem'
+                }}>
+                  Graphique de répartition par type
+                </div>
+              </div>
+            </div>
+
+            <div className="chart-card">
+              <div className="chart-header">
+                <h2 className="chart-title">Évolution des documents</h2>
+                <div className="chart-options">
+                  <div className="chart-option active">7 jours</div>
+                  <div className="chart-option">30 jours</div>
+                  <div className="chart-option">Année</div>
+                </div>
+              </div>
+              <div className="chart-body">
+                <div className="chart-placeholder" style={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: 'var(--color-text-lighter)', 
+                  fontSize: '0.875rem'
+                }}>
+                  Graphique d'évolution
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="stats-table-section">
+            <div className="stats-table-header">
+              <h2 className="stats-table-title">Liste des documents</h2>
+              <div className="stats-table-filters">
+                <Button type="text" icon="bx bx-filter-alt">Filtrer</Button>
+                <Button type="text" icon="bx bx-export">Exporter</Button>
+              </div>
+            </div>
+            <div className="stats-table-container">
+              <table className="stats-table">
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Type</th>
+                    <th>Taille</th>
+                    <th>Date de création</th>
+                    <th>Dernière modification</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.documentsByType.map((doc, index) => (
+                    <tr key={index}>
+                      <td>Document {index + 1}</td>
+                      <td>{doc.type}</td>
+                      <td>{doc.size}</td>
+                      <td>01/03/2024</td>
+                      <td>07/03/2024</td>
+                      <td>
+                        <span className="stats-badge primary">Actif</span>
+                      </td>
+                      <td>
+                        <div className="actions-cell">
+                          <Button type="text" icon="bx bx-show"></Button>
+                          <Button type="text" icon="bx bx-download"></Button>
+                          <Button type="text" icon="bx bx-trash"></Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="stats-pagination">
+              <div className="stats-page-info">Affichage de 1 à 5 sur {stats.summary.totalDocuments} documents</div>
+              <div className="stats-page-controls">
+                <div className="stats-page-button" disabled><i className='bx bx-chevron-left'></i></div>
+                <div className="stats-page-button active">1</div>
+                <div className="stats-page-button">2</div>
+                <div className="stats-page-button">3</div>
+                <div className="stats-page-button"><i className='bx bx-chevron-right'></i></div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'users' && (
+        <>
+          <div className="stats-overview">
+            <div className="stat-overview-card primary">
+              <div className="stat-overview-value">49</div>
+              <div className="stat-overview-label">Utilisateurs totaux</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill primary" style={{ width: '75%' }}></div>
+                </div>
+                <div className="stat-progress-text">
+                  <span className="stat-trend-indicator up">
+                    <i className='bx bx-up-arrow-alt'></i>
+                    +5
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card success">
+              <div className="stat-overview-value">12</div>
+              <div className="stat-overview-label">Utilisateurs actifs</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill success" style={{ width: '65%' }}></div>
+                </div>
+                <div className="stat-progress-text">
+                  <span className="stat-trend-indicator up">
+                    <i className='bx bx-up-arrow-alt'></i>
+                    +3
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card info">
+              <div className="stat-overview-value">3</div>
+              <div className="stat-overview-label">Administrateurs</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill info" style={{ width: '25%' }}></div>
+                </div>
+                <div className="stat-progress-text">6% des utilisateurs</div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card warning">
+              <div className="stat-overview-value">7</div>
+              <div className="stat-overview-label">Éditeurs</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill warning" style={{ width: '35%' }}></div>
+                </div>
+                <div className="stat-progress-text">14% des utilisateurs</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="charts-grid">
+            <div className="chart-card">
+              <div className="chart-header">
+                <h2 className="chart-title">Utilisateurs par rôle</h2>
+                <div className="chart-options">
+                  <div className="chart-option active">Nombre</div>
+                  <div className="chart-option">Activité</div>
+                </div>
+              </div>
+              <div className="chart-body">
+                <div className="chart-placeholder" style={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: 'var(--color-text-lighter)', 
+                  fontSize: '0.875rem'
+                }}>
+                  Graphique de répartition par rôle
+                </div>
+              </div>
+            </div>
+
+            <div className="chart-card">
+              <div className="chart-header">
+                <h2 className="chart-title">Activité des utilisateurs</h2>
+                <div className="chart-options">
+                  <div className="chart-option active">7 jours</div>
+                  <div className="chart-option">30 jours</div>
+                  <div className="chart-option">Année</div>
+                </div>
+              </div>
+              <div className="chart-body">
+                <div className="chart-placeholder" style={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: 'var(--color-text-lighter)', 
+                  fontSize: '0.875rem'
+                }}>
+                  Graphique d'activité des utilisateurs
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="stats-table-section">
+            <div className="stats-table-header">
+              <h2 className="stats-table-title">Liste des utilisateurs</h2>
+              <div className="stats-table-filters">
+                <Button type="text" icon="bx bx-filter-alt">Filtrer</Button>
+                <Button type="text" icon="bx bx-export">Exporter</Button>
+              </div>
+            </div>
+            <div className="stats-table-container">
+              <table className="stats-table">
+                <thead>
+                  <tr>
+                    <th>Utilisateur</th>
+                    <th>Rôle</th>
+                    <th>Statut</th>
+                    <th>Dernière connexion</th>
+                    <th>Documents</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.mostActiveUsers.map(user => (
+                    <tr key={user.id}>
+                      <td>{user.name}</td>
+                      <td>{user.role}</td>
+                      <td>
+                        <span className="stats-badge primary">Actif</span>
+                      </td>
+                      <td>Il y a 2 heures</td>
+                      <td>{user.uploads + user.downloads + user.views}</td>
+                      <td>
+                        <div className="actions-cell">
+                          <Button type="text" icon="bx bx-edit"></Button>
+                          <Button type="text" icon="bx bx-trash"></Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="stats-pagination">
+              <div className="stats-page-info">Affichage de 1 à 5 sur 49 utilisateurs</div>
+              <div className="stats-page-controls">
+                <div className="stats-page-button" disabled><i className='bx bx-chevron-left'></i></div>
+                <div className="stats-page-button active">1</div>
+                <div className="stats-page-button">2</div>
+                <div className="stats-page-button">3</div>
+                <div className="stats-page-button"><i className='bx bx-chevron-right'></i></div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'activity' && (
+        <>
+          <div className="stats-overview">
+            <div className="stat-overview-card primary">
+              <div className="stat-overview-value">{totalActivity}</div>
+              <div className="stat-overview-label">Activités totales</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill primary" style={{ width: '82%' }}></div>
+                </div>
+                <div className="stat-progress-text">
+                  <span className="stat-trend-indicator up">
+                    <i className='bx bx-up-arrow-alt'></i>
+                    +12%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card success">
+              <div className="stat-overview-value">35</div>
+              <div className="stat-overview-label">Téléversements</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill success" style={{ width: '45%' }}></div>
+                </div>
+                <div className="stat-progress-text">
+                  <span className="stat-trend-indicator up">
+                    <i className='bx bx-up-arrow-alt'></i>
+                    +8
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card info">
+              <div className="stat-overview-value">86</div>
+              <div className="stat-overview-label">Téléchargements</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill info" style={{ width: '65%' }}></div>
+                </div>
+                <div className="stat-progress-text">
+                  <span className="stat-trend-indicator up">
+                    <i className='bx bx-up-arrow-alt'></i>
+                    +15
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-overview-card warning">
+              <div className="stat-overview-value">42</div>
+              <div className="stat-overview-label">Partages</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar">
+                  <div className="stat-progress-fill warning" style={{ width: '35%' }}></div>
+                </div>
+                <div className="stat-progress-text">
+                  <span className="stat-trend-indicator up">
+                    <i className='bx bx-up-arrow-alt'></i>
+                    +5
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="charts-grid">
+            <div className="chart-card">
+              <div className="chart-header">
+                <h2 className="chart-title">Activité quotidienne</h2>
+                <div className="chart-options">
+                  <div className="chart-option active">7 jours</div>
+                  <div className="chart-option">30 jours</div>
+                  <div className="chart-option">Année</div>
+                </div>
+              </div>
+              <div className="chart-body">
+                <div className="chart-placeholder" style={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: 'var(--color-text-lighter)', 
+                  fontSize: '0.875rem'
+                }}>
+                  Graphique d'activité quotidienne
+                </div>
+              </div>
+            </div>
+
+            <div className="chart-card">
+              <div className="chart-header">
+                <h2 className="chart-title">Types d'activité</h2>
+                <div className="chart-options">
+                  <div className="chart-option active">Nombre</div>
+                  <div className="chart-option">Pourcentage</div>
+                </div>
+              </div>
+              <div className="chart-body">
+                <div className="chart-placeholder" style={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: 'var(--color-text-lighter)', 
+                  fontSize: '0.875rem'
+                }}>
+                  Graphique de répartition des activités
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="stats-table-section">
+            <div className="stats-table-header">
+              <h2 className="stats-table-title">Journal d'activité</h2>
+              <div className="stats-table-filters">
+                <Button type="text" icon="bx bx-filter-alt">Filtrer</Button>
+                <Button type="text" icon="bx bx-export">Exporter</Button>
+              </div>
+            </div>
+            <div className="stats-table-container">
+              <table className="stats-table">
+                <thead>
+                  <tr>
+                    <th>Utilisateur</th>
+                    <th>Action</th>
+                    <th>Document</th>
+                    <th>Date</th>
+                    <th>Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.recentActivity.map(activity => (
+                    <tr key={activity.id}>
+                      <td>{activity.user}</td>
+                      <td>{activity.action}</td>
+                      <td>{activity.document}</td>
+                      <td>{activity.time}</td>
+                      <td>
+                        <span className="stats-badge primary">Complété</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="stats-pagination">
+              <div className="stats-page-info">Affichage de 1 à 5 sur 25 activités</div>
+              <div className="stats-page-controls">
+                <div className="stats-page-button" disabled><i className='bx bx-chevron-left'></i></div>
+                <div className="stats-page-button active">1</div>
+                <div className="stats-page-button">2</div>
+                <div className="stats-page-button">3</div>
+                <div className="stats-page-button">4</div>
+                <div className="stats-page-button">5</div>
+                <div className="stats-page-button"><i className='bx bx-chevron-right'></i></div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
