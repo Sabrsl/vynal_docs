@@ -147,6 +147,12 @@ const SharePage = () => {
     setShowLinkModal(true);
   };
 
+  const tabs = [
+    { id: 'shared', label: 'Partagés avec d\'autres' },
+    { id: 'sharedWithMe', label: 'Partagés avec moi' },
+    { id: 'publicLinks', label: 'Liens publics' }
+  ];
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -174,15 +180,11 @@ const SharePage = () => {
       </Card>
 
       <div className="tabs">
-        <div className={`tab ${activeTab === 'shared' ? 'active' : ''}`} onClick={() => setActiveTab('shared')}>
-          Partagés avec d'autres
-        </div>
-        <div className={`tab ${activeTab === 'with-me' ? 'active' : ''}`} onClick={() => setActiveTab('with-me')}>
-          Partagés avec moi
-        </div>
-        <div className={`tab ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>
-          Liens publics
-        </div>
+        {tabs.map(tab => (
+          <div key={tab.id} className={`tab ${activeTab === tab.id ? 'active' : ''}`} onClick={() => setActiveTab(tab.id)}>
+            {tab.label}
+          </div>
+        ))}
       </div>
 
       <Card className="share-card">

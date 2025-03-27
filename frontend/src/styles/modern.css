@@ -667,7 +667,7 @@ body {
   }
 }
 
-/* Scrollbar Styles */
+/* Global Scrollbar Styles */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -685,6 +685,42 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* Page Container Styles */
+.page-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+/* Share Card and Table Container */
+.share-card {
+  margin-top: 1.5rem;
+  overflow: visible;
+  background: var(--background-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.share-table-container {
+  overflow: visible;
+  border-radius: var(--border-radius-lg);
+}
+
+/* Supprimer les styles spécifiques de la page de partage */
+.page-container::-webkit-scrollbar,
+.page-container::-webkit-scrollbar-track,
+.page-container::-webkit-scrollbar-thumb,
+.page-container::-webkit-scrollbar-thumb:hover {
+  width: 6px;
+  height: 6px;
+  background: var(--background-secondary);
+  border-radius: 3px;
+  border: none;
+  margin: 0;
 }
 
 /* Contact Form Styles */
@@ -906,22 +942,76 @@ body {
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+.page-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.page-header h1 {
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--text-color);
-  margin: 0;
+.page-container::-webkit-scrollbar-track {
+  background: var(--background-color-light);
+  border-radius: 4px;
+  margin: 2px 0;
 }
 
+.page-container::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+  border: 1px solid var(--background-color-light);
+}
+
+.page-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color-dark);
+}
+
+/* Share Card and Table Container */
+.share-card {
+  margin-top: 1.5rem;
+  overflow: visible;
+  background: var(--background-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.share-table-container {
+  overflow: visible;
+  border-radius: var(--border-radius-lg);
+}
+
+/* Supprimer les anciens styles de barre de défilement */
+.share-table-container::-webkit-scrollbar,
+.share-table-container::-webkit-scrollbar-track,
+.share-table-container::-webkit-scrollbar-thumb,
+.share-table-container::-webkit-scrollbar-thumb:hover {
+  display: none;
+}
+
+.share-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Recent Documents */
+.recent-documents {
+  background: var(--background-primary);
+  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  overflow: visible;
+}
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.75rem;
+  overflow: visible;
+}
+
+/* Ajuster les éléments sticky */
 .filter-card {
   position: sticky;
   top: 0;
@@ -933,11 +1023,7 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-.search-container {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
+/* Tabs */
 .tabs {
   display: flex;
   gap: 1rem;
@@ -947,22 +1033,53 @@ body {
 }
 
 .tab {
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1rem;
   cursor: pointer;
-  font-weight: 500;
   color: var(--text-color-light);
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-sm);
   transition: all 0.2s ease;
+  font-weight: 500;
+  position: relative;
 }
 
 .tab:hover {
-  color: var(--text-color);
-  background: var(--background-hover);
+  color: var(--primary-color);
+  background: var(--background-color-light);
 }
 
 .tab.active {
   color: var(--primary-color);
-  background: var(--primary-color-light);
+  font-weight: 600;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1rem;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--primary-color);
+  border-radius: 2px;
+}
+
+/* Ajuster le conteneur de la page pour les onglets horizontaux */
+.page-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+/* Ajuster la carte de filtre pour les onglets horizontaux */
+.filter-card {
+  margin-bottom: 1rem;
+}
+
+/* Ajuster la carte de partage pour les onglets horizontaux */
+.share-card {
+  margin-top: 1rem;
 }
 
 .share-table {
@@ -1175,72 +1292,6 @@ body {
   font-size: 3rem;
   margin-bottom: 1rem;
   color: var(--text-color-light);
-}
-
-/* Share Card and Table Container */
-.share-card {
-  margin-top: 1.5rem;
-  overflow: hidden;
-}
-
-.share-table-container {
-  max-height: calc(100vh - 300px);
-  overflow-y: auto;
-  border-radius: var(--border-radius-lg);
-  padding-right: 1rem;
-}
-
-.share-table-container::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.share-table-container::-webkit-scrollbar-track {
-  background: var(--background-color-light);
-  border-radius: 5px;
-  margin: 5px 0;
-}
-
-.share-table-container::-webkit-scrollbar-thumb {
-  background: var(--primary-color);
-  border-radius: 5px;
-  border: 2px solid var(--background-color-light);
-}
-
-.share-table-container::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-color-dark);
-}
-
-.share-table {
-  width: calc(100% - 10px);
-  margin-right: 10px;
-}
-
-.filter-card {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: var(--background-primary);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.share-table th,
-.share-table td {
-  padding: 1rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.share-table th:last-child,
-.share-table td:last-child {
-  position: sticky;
-  right: 0;
-  background: var(--background-primary);
-  z-index: 1;
 }
 
 /* Link Modal Styles */
