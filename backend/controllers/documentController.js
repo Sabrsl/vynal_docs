@@ -2,6 +2,7 @@ const Document = require('../models/Document');
 const { asyncHandler } = require('../middlewares/errorMiddleware');
 const path = require('path');
 const fs = require('fs');
+const meilisearchService = require('../services/meilisearchService');
 
 /**
  * @desc    Créer un nouveau document
@@ -24,6 +25,9 @@ const createDocument = asyncHandler(async (req, res) => {
     category: category || null
   });
   
+  // Indexer le document dans Meilisearch
+  await meilisearchService.addDocument(document);
+  
   if (document) {
     res.status(201).json(document);
   } else {
@@ -38,61 +42,76 @@ const createDocument = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const getDocuments = asyncHandler(async (req, res) => {
-  // Filtres de base - documents non supprimés appartenant à l'utilisateur
-  const filter = { 
-    owner: req.user._id,
-    isDeleted: false 
-  };
-  
-  // Filtres supplémentaires basés sur les paramètres de requête
-  if (req.query.type) {
-    filter.type = req.query.type;
+  const {
+    search,
+    type,
+    category,
+    favorite,
+    sort,
+    page = 1,
+    limit = 10
+  } = req.query;
+
+  try {
+    // Construire les filtres pour Meilisearch
+    const filters = [`owner_id = ${req.user._id}`, 'isDeleted = false'];
+    
+    if (type) {
+      filters.push(`type = "${type}"`);
+    }
+    
+    if (category) {
+      filters.push(`category = "${category}"`);
+    }
+    
+    if (favorite === 'true') {
+      filters.push('isFavorite = true');
+    }
+
+    console.log('Recherche avec les paramètres:', {
+      search,
+      filters,
+      sort: sort ? [sort] : ['created_at:desc'],
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit)
+    });
+
+    // Effectuer la recherche avec Meilisearch
+    const results = await meilisearchService.search(search || '', {
+      filter: filters,
+      sort: sort ? [sort] : ['created_at:desc'],
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit)
+    });
+
+    console.log('Résultats de la recherche:', results);
+
+    // Récupérer les documents complets depuis MongoDB
+    const documentIds = results.hits.map(hit => hit.id);
+    const documents = await Document.find({
+      _id: { $in: documentIds },
+      owner: req.user._id,
+      isDeleted: false
+    }).populate('category', 'name color icon');
+
+    // Réorganiser les documents selon l'ordre des résultats de recherche
+    const orderedDocuments = documentIds.map(id => 
+      documents.find(doc => doc._id.toString() === id)
+    ).filter(Boolean);
+
+    res.json({
+      documents: orderedDocuments,
+      page: parseInt(page),
+      pages: Math.ceil(results.estimatedTotalHits / parseInt(limit)),
+      total: results.estimatedTotalHits
+    });
+  } catch (error) {
+    console.error('Erreur lors de la recherche:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la recherche des documents',
+      details: error.message
+    });
   }
-  
-  if (req.query.category) {
-    filter.category = req.query.category;
-  }
-  
-  if (req.query.favorite === 'true') {
-    filter.isFavorite = true;
-  }
-  
-  // Paramètres de tri
-  const sort = {};
-  if (req.query.sort) {
-    const [field, order] = req.query.sort.split(':');
-    sort[field] = order === 'desc' ? -1 : 1;
-  } else {
-    // Tri par défaut - du plus récent au plus ancien
-    sort.createdAt = -1;
-  }
-  
-  // Pagination
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
-  
-  // Recherche textuelle
-  if (req.query.search) {
-    filter.name = { $regex: req.query.search, $options: 'i' };
-  }
-  
-  // Exécution de la requête
-  const documents = await Document.find(filter)
-    .sort(sort)
-    .skip(skip)
-    .limit(limit)
-    .populate('category', 'name color icon');
-  
-  // Comptage total pour la pagination
-  const total = await Document.countDocuments(filter);
-  
-  res.json({
-    documents,
-    page,
-    pages: Math.ceil(total / limit),
-    total
-  });
 });
 
 /**
@@ -158,16 +177,10 @@ const updateDocument = asyncHandler(async (req, res) => {
     throw new Error('Document non trouvé');
   }
   
-  // Vérifier si l'utilisateur est autorisé à modifier ce document
-  const isOwner = document.owner.toString() === req.user._id.toString();
-  const isEditor = document.sharedWith.some(
-    share => share.user.toString() === req.user._id.toString() && 
-    (share.permission === 'edit' || share.permission === 'admin')
-  );
-  
-  if (!isOwner && !isEditor && req.user.role !== 'admin') {
+  // Vérifier que l'utilisateur est propriétaire du document
+  if (document.owner.toString() !== req.user._id.toString()) {
     res.status(403);
-    throw new Error('Non autorisé à modifier ce document');
+    throw new Error('Non autorisé');
   }
   
   // Mettre à jour les champs du document
@@ -177,6 +190,9 @@ const updateDocument = asyncHandler(async (req, res) => {
   document.isFavorite = req.body.isFavorite !== undefined ? req.body.isFavorite : document.isFavorite;
   
   const updatedDocument = await document.save();
+  
+  // Mettre à jour l'index Meilisearch
+  await meilisearchService.updateDocument(updatedDocument);
   
   res.json(updatedDocument);
 });
@@ -207,6 +223,9 @@ const trashDocument = asyncHandler(async (req, res) => {
   
   // Marquer comme supprimé (corbeille)
   await document.moveToTrash();
+  
+  // Supprimer le document de l'index Meilisearch
+  await meilisearchService.deleteDocument(req.params.id);
   
   res.json({ message: 'Document déplacé vers la corbeille' });
 });
@@ -268,6 +287,9 @@ const deleteDocumentPermanently = asyncHandler(async (req, res) => {
   
   // Supprimer le document de la base de données
   await document.deleteOne();
+  
+  // Supprimer le document de l'index Meilisearch
+  await meilisearchService.deleteDocument(req.params.id);
   
   res.json({ message: 'Document supprimé définitivement' });
 });
@@ -402,6 +424,11 @@ const emptyTrash = asyncHandler(async (req, res) => {
     owner: req.user._id,
     isDeleted: true
   });
+  
+  // Supprimer tous les documents de l'index Meilisearch
+  for (const doc of trashDocuments) {
+    await meilisearchService.deleteDocument(doc._id);
+  }
   
   res.json({ 
     message: 'Corbeille vidée avec succès', 

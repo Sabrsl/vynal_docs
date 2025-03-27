@@ -1,5 +1,5 @@
+require('dotenv').config();
 const express = require('express');
-const dotenv = require('dotenv');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
@@ -12,9 +12,9 @@ const documentRoutes = require('./routes/documentRoutes');
 const userRoutes = require('./routes/userRoutes');
 const templateRoutes = require('./routes/templateRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 // Configuration
-dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
@@ -22,7 +22,32 @@ const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+
+// Configuration CORS
+const corsOptions = {
+  origin: function(origin, callback) {
+    // En développement, accepter toutes les origines
+    if (process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      // En production, vérifier l'origine
+      const allowedOrigins = [process.env.CORS_ORIGIN];
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400
+};
+
+app.use(cors(corsOptions));
+
 app.use(morgan('dev'));
 
 // Servir les fichiers statiques
@@ -33,6 +58,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/auth', authRoutes);
 
 // Proxy pour Ollama
 app.get('/api/models', async (req, res) => {

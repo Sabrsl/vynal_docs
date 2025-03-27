@@ -1654,6 +1654,17 @@ class DocumentView:
         )
         download_btn.pack(side=ctk.RIGHT, padx=5)
         
+        # Bouton Signer (uniquement pour les PDF)
+        if document.get("type", "").lower().endswith(".pdf"):
+            sign_btn = ctk.CTkButton(
+                actions_frame,
+                text="Signer",
+                width=80,
+                height=25,
+                command=lambda doc_id=document.get("id"): self.sign_document(doc_id)
+            )
+            sign_btn.pack(side=ctk.RIGHT, padx=5)
+        
         return card
     
     def _get_client_name_cached(self, client_id):
