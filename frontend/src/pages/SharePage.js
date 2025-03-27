@@ -10,6 +10,10 @@ const SharePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
+  const [activeTab, setActiveTab] = useState('shared');
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [shareLink, setShareLink] = useState('');
   
   // Données fictives pour les documents partagés
   const sharedDocuments = [
@@ -108,10 +112,39 @@ const SharePage = () => {
     }).format(date);
   };
 
+  // Fonction pour générer un lien de partage
+  const generateShareLink = (document) => {
+    const baseUrl = window.location.origin;
+    const uniqueId = Math.random().toString(36).substring(2, 15);
+    const link = `${baseUrl}/share/${uniqueId}`;
+    setShareLink(link);
+    return link;
+  };
+
+  // Fonction pour copier le lien
+  const copyShareLink = async (e) => {
+    e.preventDefault(); // Empêcher le comportement par défaut
+    e.stopPropagation(); // Empêcher la propagation de l'événement
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (err) {
+      console.error('Erreur lors de la copie du lien:', err);
+    }
+  };
+
   // Ouvrir la modal de partage pour un document
   const openShareModal = (document) => {
     setSelectedDocument(document);
     setShowShareModal(true);
+  };
+
+  // Ouvrir la modal de lien pour un document
+  const openLinkModal = (document) => {
+    setSelectedDocument(document);
+    generateShareLink(document);
+    setShowLinkModal(true);
   };
 
   return (
@@ -141,56 +174,64 @@ const SharePage = () => {
       </Card>
 
       <div className="tabs">
-        <div className="tab active">Partagés avec d'autres</div>
-        <div className="tab">Partagés avec moi</div>
-        <div className="tab">Liens publics</div>
+        <div className={`tab ${activeTab === 'shared' ? 'active' : ''}`} onClick={() => setActiveTab('shared')}>
+          Partagés avec d'autres
+        </div>
+        <div className={`tab ${activeTab === 'with-me' ? 'active' : ''}`} onClick={() => setActiveTab('with-me')}>
+          Partagés avec moi
+        </div>
+        <div className={`tab ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>
+          Liens publics
+        </div>
       </div>
 
-      <Card>
-        <table className="share-table">
-          <thead>
-            <tr>
-              <th>Document</th>
-              <th>Partagé par</th>
-              <th>Partagé avec</th>
-              <th>Date de partage</th>
-              <th>Expiration</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredDocuments.map(doc => (
-              <tr key={doc.id}>
-                <td className="document-cell">
-                  <i className={`${getDocumentIcon(doc.type)} document-icon ${doc.type}`}></i>
-                  <span>{doc.name}</span>
-                </td>
-                <td>{doc.sharedBy}</td>
-                <td>
-                  <div className="shared-users">
-                    {doc.sharedWith.slice(0, 2).map(user => (
-                      <span key={user.id} className="user-chip" title={`${user.name} (${user.permission === 'edit' ? 'Peut modifier' : 'Peut voir'})`}>
-                        {user.name.split(' ').map(n => n[0]).join('')}
-                      </span>
-                    ))}
-                    {doc.sharedWith.length > 2 && (
-                      <span className="user-chip more-users">
-                        +{doc.sharedWith.length - 2}
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td>{formatDate(doc.sharedAt)}</td>
-                <td>{formatDate(doc.expiresAt)}</td>
-                <td className="actions-cell">
-                  <Button type="text" icon="bx bx-share-alt" onClick={() => openShareModal(doc)} />
-                  <Button type="text" icon="bx bx-link" />
-                  <Button type="text" icon="bx bx-dots-vertical-rounded" />
-                </td>
+      <Card className="share-card">
+        <div className="share-table-container">
+          <table className="share-table">
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Partagé par</th>
+                <th>Partagé avec</th>
+                <th>Date de partage</th>
+                <th>Expiration</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredDocuments.map(doc => (
+                <tr key={doc.id}>
+                  <td className="document-cell">
+                    <i className={`${getDocumentIcon(doc.type)} document-icon ${doc.type}`}></i>
+                    <span>{doc.name}</span>
+                  </td>
+                  <td>{doc.sharedBy}</td>
+                  <td>
+                    <div className="shared-users">
+                      {doc.sharedWith.slice(0, 2).map(user => (
+                        <span key={user.id} className="user-chip" title={`${user.name} (${user.permission === 'edit' ? 'Peut modifier' : 'Peut voir'})`}>
+                          {user.name.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      ))}
+                      {doc.sharedWith.length > 2 && (
+                        <span className="user-chip more-users">
+                          +{doc.sharedWith.length - 2}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td>{formatDate(doc.sharedAt)}</td>
+                  <td>{formatDate(doc.expiresAt)}</td>
+                  <td className="actions-cell">
+                    <Button type="text" icon="bx bx-share-alt" onClick={() => openShareModal(doc)} />
+                    <Button type="text" icon="bx bx-link" onClick={() => openLinkModal(doc)} />
+                    <Button type="text" icon="bx bx-dots-vertical-rounded" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {filteredDocuments.length === 0 && (
           <div className="no-results">
@@ -251,6 +292,60 @@ const SharePage = () => {
             <div className="modal-footer">
               <Button type="text" onClick={() => setShowShareModal(false)}>Annuler</Button>
               <Button type="primary">Enregistrer</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {showLinkModal && selectedDocument && (
+        <div className="modal-overlay">
+          <Card className="link-modal">
+            <div className="modal-header">
+              <h2>Lien de partage</h2>
+              <Button 
+                type="text" 
+                icon="bx bx-x" 
+                onClick={() => setShowLinkModal(false)} 
+              />
+            </div>
+            <div className="modal-content">
+              <div className="link-settings">
+                <div className="form-group">
+                  <label>Accès</label>
+                  <select defaultValue="anyone">
+                    <option value="anyone">Tout le monde avec le lien</option>
+                    <option value="organization">Personnes de l'organisation</option>
+                    <option value="specific">Personnes spécifiques</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Expiration</label>
+                  <Input type="date" />
+                </div>
+                <div className="form-group">
+                  <label>Mot de passe</label>
+                  <Input type="password" placeholder="Optionnel" />
+                </div>
+              </div>
+              <div className="link-preview">
+                <Input 
+                  type="text" 
+                  value={shareLink}
+                  readOnly 
+                />
+                <Button 
+                  type="text" 
+                  icon={linkCopied ? "bx bx-check" : "bx bx-copy"} 
+                  onClick={copyShareLink}
+                  className={linkCopied ? "copied" : ""}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button type="text" onClick={() => setShowLinkModal(false)}>Annuler</Button>
+              <Button type="primary" onClick={copyShareLink}>
+                {linkCopied ? "Lien copié !" : "Copier le lien"}
+              </Button>
             </div>
           </Card>
         </div>

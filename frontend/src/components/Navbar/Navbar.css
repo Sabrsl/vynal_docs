@@ -16,18 +16,27 @@
 .logo {
   display: flex;
   align-items: center;
+  gap: 12px;
   cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.logo:hover {
+  background-color: var(--hover-background);
 }
 
 .logo-image {
-  height: 32px;
-  margin-right: 12px;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .logo-text {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
-  color: var(--color-primary, #0d6efd);
+  color: var(--text-color);
   margin: 0;
 }
 
