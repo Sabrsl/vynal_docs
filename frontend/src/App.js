@@ -13,10 +13,12 @@ import Navbar from './components/Navbar/Navbar';
 import Sidebar from './components/Sidebar/Sidebar';
 import SearchBar from './components/SearchBar/SearchBar';
 import PrivateRoute from './components/PrivateRoute';
+import NotificationContainer from './components/Notification/NotificationContainer';
 
 // Import du contexte
 import { useAppContext } from './context/AppContext';
 import { useAuth } from './context/AuthContext';
+import { NotificationProvider, useNotification } from './context/NotificationContext';
 
 // Import des pages
 import HomePage from './pages/HomePage';
@@ -47,12 +49,39 @@ const MainApp = () => {
   } = useAppContext();
   
   const { user, logout } = useAuth();
+  const { 
+    notifications, 
+    unreadCount, 
+    success, 
+    error, 
+    warning, 
+    info, 
+    clearAllNotifications,
+    removeNotification,
+    markAsRead
+  } = useNotification();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
+  
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'success':
+        return 'bx-check-circle';
+      case 'error':
+        return 'bx-x-circle';
+      case 'warning':
+        return 'bx-error';
+      case 'info':
+        return 'bx-info-circle';
+      default:
+        return 'bx-bell';
+    }
+  };
   
   // Synchroniser la section active avec le chemin de l'URL
   useEffect(() => {
@@ -65,13 +94,14 @@ const MainApp = () => {
   // Gestionnaires d'événements explicites
   const handleSectionClick = (section) => {
     setActiveSection(section);
+    if (section === 'dashboard') {
+      clearAllNotifications();
+    }
     navigate(`/${section === 'dashboard' ? '' : section}`);
   };
   
   const handleBellClick = () => {
-    console.log('Notifications clicked');
-    alert('Notifications cliquées!');
-    // Implémenter l'ouverture du panneau de notifications
+    setShowNotifications(!showNotifications);
   };
   
   const handleSettingsClick = () => {
@@ -134,9 +164,58 @@ const MainApp = () => {
           <Button variant="transparent" onClick={handleSettingsClick}>
             <i className='bx bx-cog'></i>
           </Button>
-          <Button variant="transparent" onClick={handleBellClick}>
-            <i className='bx bx-bell'></i>
-          </Button>
+          <div className="notification-wrapper">
+            <Button variant="transparent" onClick={handleBellClick}>
+              <i className='bx bx-bell'></i>
+              {unreadCount > 0 && (
+                <span className="notification-badge">{unreadCount}</span>
+              )}
+            </Button>
+            {showNotifications && (
+              <div className="notification-dropdown">
+                <div className="notification-header">
+                  <h3>Notifications</h3>
+                  {notifications.length > 0 && (
+                    <button onClick={clearAllNotifications} className="clear-all">
+                      Tout effacer
+                    </button>
+                  )}
+                </div>
+                <div className="notification-list">
+                  {notifications.length === 0 ? (
+                    <div className="no-notifications">
+                      Aucune notification
+                    </div>
+                  ) : (
+                    notifications.map(notification => (
+                      <div 
+                        key={notification.id} 
+                        className={`notification-item ${notification.read ? 'read' : 'unread'}`}
+                        onClick={() => markAsRead(notification.id)}
+                      >
+                        <div className="notification-icon">
+                          <i className={`bx ${getNotificationIcon(notification.type)}`}></i>
+                        </div>
+                        <div className="notification-content">
+                          <div className="notification-title">{notification.title}</div>
+                          <div className="notification-message">{notification.message}</div>
+                        </div>
+                        <button 
+                          className="notification-close"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeNotification(notification.id);
+                          }}
+                        >
+                          <i className="bx bx-x"></i>
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="user-profile" onClick={handleUserMenuClick}>
             <img src={user?.avatar || avatar} alt="User Avatar" className="user-avatar" />
             <span className="user-name">{user?.name || 'Utilisateur'}</span>
@@ -208,14 +287,16 @@ const App = () => {
   }
   
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      
-      <Route path="/*" element={
-        isAuthenticated ? <MainApp /> : <Navigate to="/login" />
-      } />
-    </Routes>
+    <NotificationProvider>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        
+        <Route path="/*" element={
+          isAuthenticated ? <MainApp /> : <Navigate to="/login" />
+        } />
+      </Routes>
+    </NotificationProvider>
   );
 };
 
