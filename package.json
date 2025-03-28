@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@tiptap/extension-placeholder": "^2.11.5",
     "bcryptjs": "^3.0.2",
     "html2pdf.js": "^0.10.3",
     "jsonwebtoken": "^9.0.2"

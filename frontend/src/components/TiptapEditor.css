@@ -108,7 +108,8 @@
 .tiptap-content {
   flex: 1;
   padding: 2rem;
-  padding-top: 4rem; /* Ajouter de l'espace pour la barre d'outils fixe */
+  padding-top: 4rem;
+  padding-bottom: 8rem;
   overflow-y: auto;
   background: white;
   position: relative;
@@ -390,7 +391,40 @@
 .tiptap-content [style*="font-size: 48"] { font-size: 48px; }
 
 .ProseMirror {
+  padding: 1rem;
+  min-height: 500px;
+  outline: none;
+  caret-color: #3b82f6;
+  cursor: text;
   position: relative;
+  font-size: 14px;
+  margin-bottom: 6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px #e2e8f0;
+}
+
+.ProseMirror:focus {
+  border-color: #4a90e2;
+  border-style: solid;
+}
+
+.ProseMirror p:empty:first-child {
+  min-height: 1.5em;
+  position: relative;
+  display: block;
+  font-size: 14px;
+}
+
+.ProseMirror p:empty:first-child::before {
+  content: 'Écrivez ici...';
+  color: #adb5bd;
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  display: block;
+  font-size: 14px;
 }
 
 .ProseMirror img {
@@ -444,4 +478,94 @@
 .ProseMirror img.ProseMirror-selectednode {
   outline-color: #3b82f6;
   position: relative;
+}
+
+.resizable-image {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  position: relative;
+  margin: 1em 0;
+  cursor: default;
+}
+
+.resizable-image:hover {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.resizable-image.ProseMirror-selectednode {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Poignées de redimensionnement */
+.resizable-image .resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #3b82f6;
+  border: 2px solid white;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 100;
+}
+
+.resizable-image:hover .resize-handle {
+  opacity: 1;
+}
+
+.resizable-image .resize-handle.top-left {
+  top: -6px;
+  left: -6px;
+  cursor: nw-resize;
+}
+
+.resizable-image .resize-handle.top-right {
+  top: -6px;
+  right: -6px;
+  cursor: ne-resize;
+}
+
+.resizable-image .resize-handle.bottom-left {
+  bottom: -6px;
+  left: -6px;
+  cursor: sw-resize;
+}
+
+.resizable-image .resize-handle.bottom-right {
+  bottom: -6px;
+  right: -6px;
+  cursor: se-resize;
+}
+
+/* Empêcher le déplacement de l'image pendant le redimensionnement */
+.resizable-image.resizing {
+  pointer-events: none;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.ProseMirror p:empty:first-child::before {
+  content: 'Écrivez ici...';
+  color: #adb5bd;
+  float: left;
+  pointer-events: none;
+  height: 0;
+}
+
+@media print {
+  .ProseMirror {
+    border: none;
+    box-shadow: none;
+    margin-bottom: 0;
+    padding: 0;
+  }
 } 

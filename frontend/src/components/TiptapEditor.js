@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Table from '@tiptap/extension-table';
@@ -260,20 +260,82 @@ const TiptapEditor = ({ content, onChange }) => {
       TableCell,
       TableHeader,
       Image.configure({
-        resizable: true,
+        inline: true,
         allowBase64: true,
         HTMLAttributes: {
-          class: 'tiptap-image',
+          class: 'resizable-image',
         },
-        resizeOptions: {
-          handleClass: 'resize-handle',
-          handleStyles: {
-            backgroundColor: '#3b82f6',
-            border: '2px solid white',
-            borderRadius: '50%',
-            width: '12px',
-            height: '12px',
-            boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.5)',
+        handleDOMEvents: {
+          mousedown: (view, event) => {
+            if (event.target.tagName === 'IMG') {
+              const img = event.target;
+              const rect = img.getBoundingClientRect();
+              const isResizeHandle = event.target.closest('.resize-handle');
+              
+              // Vérifier si le clic est sur une poignée de redimensionnement
+              if (isResizeHandle) {
+                const startX = event.pageX;
+                const startY = event.pageY;
+                const startWidth = img.width;
+                const startHeight = img.height;
+                const aspectRatio = startWidth / startHeight;
+
+                // Créer l'élément d'information de taille
+                const resizeInfo = document.createElement('div');
+                resizeInfo.className = 'resize-info';
+                img.parentNode.appendChild(resizeInfo);
+
+                // Ajouter la classe de redimensionnement
+                img.classList.add('resizing');
+
+                const onMouseMove = (e) => {
+                  const dx = e.pageX - startX;
+                  const dy = e.pageY - startY;
+
+                  // Déterminer la direction du redimensionnement
+                  const handle = isResizeHandle.className.split(' ')[1];
+                  let newWidth, newHeight;
+
+                  switch (handle) {
+                    case 'bottom-right':
+                      newWidth = Math.max(50, startWidth + dx);
+                      newHeight = newWidth / aspectRatio;
+                      break;
+                    case 'bottom-left':
+                      newWidth = Math.max(50, startWidth - dx);
+                      newHeight = newWidth / aspectRatio;
+                      break;
+                    case 'top-right':
+                      newWidth = Math.max(50, startWidth + dx);
+                      newHeight = newWidth / aspectRatio;
+                      break;
+                    case 'top-left':
+                      newWidth = Math.max(50, startWidth - dx);
+                      newHeight = newWidth / aspectRatio;
+                      break;
+                  }
+
+                  // Mettre à jour la taille de l'image
+                  img.style.width = `${newWidth}px`;
+                  img.style.height = `${newHeight}px`;
+
+                  // Mettre à jour l'information de taille
+                  resizeInfo.textContent = `${Math.round(newWidth)} × ${Math.round(newHeight)}`;
+                };
+
+                const onMouseUp = () => {
+                  document.removeEventListener('mousemove', onMouseMove);
+                  document.removeEventListener('mouseup', onMouseUp);
+                  img.classList.remove('resizing');
+                  resizeInfo.remove();
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+                return true;
+              }
+            }
+            return false;
           },
         },
       }),
@@ -298,7 +360,7 @@ const TiptapEditor = ({ content, onChange }) => {
       Underline,
       Highlight,
     ],
-    content,
+    content: content || '<p></p>',
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
@@ -351,11 +413,17 @@ const TiptapEditor = ({ content, onChange }) => {
           color: #000000 !important;
           text-shadow: none !important;
           -webkit-text-fill-color: #000000 !important;
+          page-break-inside: avoid;
+          break-inside: avoid;
+          max-width: 100%;
+          margin-right: 0;
         }
         table {
           border-collapse: collapse;
           width: 100%;
           margin: 1em 0;
+          page-break-inside: avoid;
+          break-inside: avoid;
         }
         table td, table th {
           border: 1px solid #000000;
@@ -368,6 +436,8 @@ const TiptapEditor = ({ content, onChange }) => {
           height: auto;
           display: block;
           margin: 1em auto;
+          page-break-inside: avoid;
+          break-inside: avoid;
         }
         a {
           color: #0000EE !important;
@@ -386,12 +456,18 @@ const TiptapEditor = ({ content, onChange }) => {
         [style*="font-size: 30"] { font-size: 30px !important; }
         [style*="font-size: 36"] { font-size: 36px !important; }
         [style*="font-size: 48"] { font-size: 48px !important; }
+        .ProseMirror {
+          border: none !important;
+          box-shadow: none !important;
+          margin-bottom: 0 !important;
+          padding: 0 !important;
+        }
       `;
       container.appendChild(style);
 
       // Options pour html2pdf
       const opt = {
-        margin: 0,
+        margin: [10, 10, 10, 10], // [top, right, bottom, left] en mm - marges plus petites
         filename: 'document.pdf',
         image: { type: 'jpeg', quality: 1 },
         html2canvas: { 
@@ -400,14 +476,16 @@ const TiptapEditor = ({ content, onChange }) => {
           logging: false,
           letterRendering: true,
           allowTaint: true,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          width: 794 // Largeur A4 en pixels
         },
         jsPDF: { 
           unit: 'mm', 
           format: 'a4', 
           orientation: 'portrait',
           compress: true
-        }
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
       // Générer le PDF
