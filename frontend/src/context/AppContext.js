@@ -153,6 +153,119 @@ export const AppProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const [sidebarVisible, setSidebarVisible] = useState(true);
   
+  // Mock data pour les modèles de document
+  const initialTemplates = [
+    {
+      id: 1,
+      title: "Contrat de prestation",
+      description: "Modèle standard pour contrat de service",
+      category: "Juridique",
+      file: "https://example.com/templates/contrat-prestation.docx",
+      thumbnailUrl: "/images/templates/contract.png",
+      createdAt: "2023-05-15",
+      updatedAt: "2023-06-20",
+    },
+    {
+      id: 2,
+      title: "Facture professionnelle",
+      description: "Modèle de facture avec calcul automatique de TVA",
+      category: "Finance",
+      file: "https://example.com/templates/facture-pro.docx",
+      thumbnailUrl: "/images/templates/invoice.png",
+      createdAt: "2023-04-10",
+      updatedAt: "2023-05-22",
+    },
+    {
+      id: 3,
+      title: "Devis détaillé",
+      description: "Modèle de devis avec prestations détaillées",
+      category: "Finance",
+      file: "https://example.com/templates/devis.docx",
+      thumbnailUrl: "/images/templates/quote.png",
+      createdAt: "2023-03-25",
+      updatedAt: "2023-05-18",
+    },
+    {
+      id: 4,
+      title: "Présentation commerciale",
+      description: "Modèle pour présenter vos services",
+      category: "Marketing",
+      file: "https://example.com/templates/presentation.docx",
+      thumbnailUrl: "/images/templates/presentation.png",
+      createdAt: "2023-02-14",
+      updatedAt: "2023-04-19",
+    },
+    {
+      id: 5,
+      title: "Conditions générales de vente",
+      description: "Modèle standard pour CGV conforme RGPD",
+      category: "Juridique",
+      file: "https://example.com/templates/cgv.docx",
+      thumbnailUrl: "/images/templates/legal.png",
+      createdAt: "2023-01-05",
+      updatedAt: "2023-03-12",
+    }
+  ];
+
+  // Mock data pour les contacts
+  const initialContacts = [
+    {
+      id: 1,
+      name: "Jean Dupont",
+      email: "jean.dupont@example.com",
+      phone: "06 12 34 56 78",
+      company: "Tech Solutions SAS",
+      position: "Directeur Technique",
+      address: "15 rue de l'Innovation, 75001 Paris",
+      createdAt: "2023-02-15",
+      updatedAt: "2023-05-20",
+    },
+    {
+      id: 2,
+      name: "Marie Martin",
+      email: "marie.martin@example.com",
+      phone: "07 23 45 67 89",
+      company: "Design Studio",
+      position: "Directrice Artistique",
+      address: "8 avenue des Arts, 69002 Lyon",
+      createdAt: "2023-03-10",
+      updatedAt: "2023-06-15",
+    },
+    {
+      id: 3,
+      name: "Pierre Lefebvre",
+      email: "pierre.lefebvre@example.com",
+      phone: "06 34 56 78 90",
+      company: "Marketing Expert",
+      position: "Consultant Senior",
+      address: "22 boulevard du Commerce, 33000 Bordeaux",
+      createdAt: "2023-01-20",
+      updatedAt: "2023-04-22",
+    },
+    {
+      id: 4,
+      name: "Sophie Bernard",
+      email: "sophie.bernard@example.com",
+      phone: "07 45 67 89 01",
+      company: "Juridique Conseils",
+      position: "Avocate d'affaires",
+      address: "5 rue du Droit, 44000 Nantes",
+      createdAt: "2023-04-05",
+      updatedAt: "2023-05-30",
+    },
+    {
+      id: 5,
+      name: "Thomas Petit",
+      email: "thomas.petit@example.com",
+      phone: "06 56 78 90 12",
+      company: "Finance Plus",
+      position: "Directeur Financier",
+      address: "18 rue de la Bourse, 67000 Strasbourg",
+      createdAt: "2023-03-25",
+      updatedAt: "2023-06-10",
+    }
+  ];
+
   // Fonction pour charger les données utilisateur
   const fetchUserData = async () => {
     if (!isAuthenticated || !user) return;
@@ -175,17 +288,7 @@ export const AppProvider = ({ children }) => {
       ];
       
       // Données fictives pour les templates
-      const templatesData = [
-        { id: 110, userId: userId, title: 'Contrat de prestation', modified: '2j', type: 'document', views: 18, content: 'Template de contrat...' },
-        { id: 111, userId: userId, title: 'Facture standard', modified: '5j', type: 'document', views: 27, content: 'Template de facture...' },
-        { id: 112, userId: userId, title: 'Rapport technique', modified: '1s', type: 'document', views: 12, content: 'Template de rapport technique...' },
-        { id: 113, userId: userId, title: 'Cahier des charges', modified: '2s', type: 'document', views: 8, content: 'Template de cahier des charges...' },
-        // Inclure les templates actuellement présents dans l'état
-        ...state.templates.filter(tmpl => {
-          // Filtrer pour éviter les doublons
-          return !([110, 111, 112, 113].includes(tmpl.id));
-        })
-      ];
+      const templatesData = initialTemplates;
       
       // Activités existantes et nouvelles
       const activitiesData = [

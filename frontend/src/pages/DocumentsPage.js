@@ -6,18 +6,21 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Input from '../components/Input';
 import Loader from '../components/Loader';
+import DocumentGenerator from '../components/DocumentGenerator';
 import './DocumentsPage.css';
 
 const DocumentsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { documents, createDocument, deleteDocument, isLoading, error } = useAppContext();
+  const { documents, templates, contacts, createDocument, deleteDocument, isLoading, error } = useAppContext();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [showNewDocumentModal, setShowNewDocumentModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [newDocumentTitle, setNewDocumentTitle] = useState('');
   const [newDocumentType, setNewDocumentType] = useState('document');
+  const [generatedDocuments, setGeneratedDocuments] = useState([]);
 
   // Vérifier si l'URL contient ?new=true pour ouvrir le modal
   useEffect(() => {
@@ -26,6 +29,16 @@ const DocumentsPage = () => {
       setShowNewDocumentModal(true);
       // Nettoyer le paramètre de l'URL sans recharger la page
       window.history.replaceState({}, '', '/documents');
+    }
+    
+    // Récupérer les documents générés du localStorage
+    const storedDocs = localStorage.getItem('generatedDocuments');
+    if (storedDocs) {
+      try {
+        setGeneratedDocuments(JSON.parse(storedDocs));
+      } catch (e) {
+        console.error('Erreur lors de la récupération des documents générés:', e);
+      }
     }
   }, [location]);
 
@@ -70,6 +83,29 @@ const DocumentsPage = () => {
       }
     }
   };
+  
+  // Gérer le succès de la génération de document
+  const handleGenerateSuccess = (documentInfo) => {
+    // Enregistrer le document généré dans la liste
+    const newGeneratedDoc = {
+      id: Date.now(),
+      template: documentInfo.template,
+      contact: documentInfo.contact,
+      documentUrl: documentInfo.documentUrl,
+      filename: documentInfo.filename,
+      format: documentInfo.format,
+      date: new Date().toLocaleString()
+    };
+    
+    const updatedDocs = [newGeneratedDoc, ...generatedDocuments];
+    setGeneratedDocuments(updatedDocs);
+    
+    // Stocker dans localStorage pour persistance
+    localStorage.setItem('generatedDocuments', JSON.stringify(updatedDocs));
+    
+    // Fermer le modal
+    setShowTemplateModal(false);
+  };
 
   return (
     <div className="documents-page">
@@ -86,10 +122,18 @@ const DocumentsPage = () => {
           </Button>
           <Button 
             variant="primary" 
+            onClick={() => setShowTemplateModal(true)}
+            icon="bx-file-plus"
+            style={{ marginRight: '10px' }}
+          >
+            Avec modèle
+          </Button>
+          <Button 
+            variant="primary" 
             onClick={() => setShowNewDocumentModal(true)}
             icon="bx-plus"
           >
-            Avec modèle
+            Personnalisé
           </Button>
         </div>
       </div>
@@ -161,7 +205,7 @@ const DocumentsPage = () => {
               Effacer les filtres
             </Button>
           ) : (
-            <Button variant="primary" onClick={() => setShowNewDocumentModal(true)}>
+            <Button variant="primary" onClick={() => setShowTemplateModal(true)}>
               Créer mon premier document
             </Button>
           )}
@@ -207,6 +251,7 @@ const DocumentsPage = () => {
         </div>
       )}
 
+      {/* Modal pour créer un document personnalisé */}
       {showNewDocumentModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -262,6 +307,29 @@ const DocumentsPage = () => {
               <Button variant="primary" onClick={handleCreateDocument}>
                 Créer
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal pour utiliser le générateur de documents */}
+      {showTemplateModal && (
+        <div className="modal-overlay document-generator-modal-overlay">
+          <div className="modal document-generator-modal">
+            <div className="modal-header">
+              <h2><i className="bx bx-file-find"></i> Créer un document avec modèle</h2>
+              <Button 
+                variant="transparent" 
+                icon="bx-x"
+                onClick={() => setShowTemplateModal(false)}
+              />
+            </div>
+            <div className="modal-body document-generator-modal-body">
+              <DocumentGenerator 
+                templates={templates} 
+                contacts={contacts}
+                onGenerateSuccess={handleGenerateSuccess}
+              />
             </div>
           </div>
         </div>

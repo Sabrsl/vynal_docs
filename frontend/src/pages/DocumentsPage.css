@@ -238,6 +238,121 @@
   border-top: 1px solid var(--color-border);
 }
 
+/* Styles pour le modal de générateur de documents */
+.document-generator-modal-overlay {
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1100;
+}
+
+.document-generator-modal {
+  width: 900px;
+  max-width: 95%;
+  height: 90vh;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: none;
+}
+
+.document-generator-modal .modal-header {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 18px 24px;
+  border-bottom: none;
+}
+
+.document-generator-modal .modal-header h2 {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.document-generator-modal .modal-header button {
+  color: white;
+}
+
+.document-generator-modal-body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  background-color: #f8f9fa;
+}
+
+/* Adaptations pour les étapes du générateur */
+.document-generator-modal .document-generator-steps {
+  background-color: white;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.document-generator-modal .document-generator-content {
+  background-color: white;
+  border-radius: 8px;
+  margin: 16px;
+  flex: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow-y: auto;
+}
+
+.document-generator-modal .document-generator-actions {
+  background-color: white;
+  border-top: 1px solid #e9ecef;
+  padding: 16px 24px;
+}
+
+/* Animation d'entrée du modal */
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.document-generator-modal {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+/* Adaptation mobile */
+@media (max-width: 768px) {
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .document-type-selector {
+    flex-direction: column;
+  }
+  
+  .document-actions-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .document-actions-header button {
+    width: 100%;
+  }
+  
+  .document-generator-modal {
+    height: 100vh;
+    max-height: none;
+    width: 100%;
+    max-width: none;
+    border-radius: 0;
+    animation: none;
+  }
+  
+  .document-generator-modal-body {
+    margin: 0;
+  }
+  
+  .document-generator-modal .document-generator-content {
+    margin: 0;
+    border-radius: 0;
+  }
+}
+
 /* Dark mode styles */
 body.dark-mode .documents-filters {
   background-color: var(--card-background);
@@ -323,23 +438,4 @@ body.dark-mode .type-option.selected {
 
 body.dark-mode .modal-footer {
   border-top-color: var(--border-color);
-}
-
-@media (max-width: 768px) {
-  .documents-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .document-type-selector {
-    flex-direction: column;
-  }
-  
-  .document-actions-header {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .document-actions-header button {
-    width: 100%;
-  }
 } 
