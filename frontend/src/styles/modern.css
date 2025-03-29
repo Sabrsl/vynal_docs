@@ -1637,6 +1637,37 @@ body {
   position: relative;
 }
 
+/* Dark mode styles for charts */
+body.dark-mode .chart-card {
+  background: var(--card-background);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .chart-card:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+body.dark-mode .chart-header {
+  border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .chart-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .chart-option {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .chart-option:hover {
+  background: var(--hover-background);
+}
+
+body.dark-mode .chart-option.active {
+  background: rgba(91, 123, 240, 0.2);
+  color: var(--primary-color);
+}
+
 /* Activity breakdown section */
 .detailed-stats-section {
   margin-bottom: 2rem;
@@ -1764,36 +1795,92 @@ body {
 
 .stats-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
 }
 
 .stats-table th,
 .stats-table td {
   padding: 1rem 1.5rem;
   text-align: left;
-  border-bottom: 1px solid var(--color-border-light);
 }
 
 .stats-table th {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  color: var(--color-text-light);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--color-text-dark);
+  border-bottom: 1px solid var(--color-border-light);
+  background-color: var(--color-bg-base);
 }
 
 .stats-table tbody tr {
-  transition: background var(--transition);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .stats-table tbody tr:hover {
-  background: var(--color-background-light);
+  background-color: var(--color-bg-hover);
 }
 
 .stats-table td {
   font-size: 0.875rem;
   color: var(--color-text);
+}
+
+/* Dark mode styles for stats tables */
+body.dark-mode .stats-table-section {
+  background: var(--card-background);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .stats-table-header {
+  border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .stats-table-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .stats-table th {
+  color: var(--text-color);
+  border-bottom-color: var(--border-color);
+  background-color: var(--header-background);
+}
+
+body.dark-mode .stats-table tbody tr {
+  border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .stats-table tbody tr:hover {
+  background-color: var(--hover-background);
+}
+
+body.dark-mode .stats-table td {
+  color: var(--text-color-light);
+}
+
+/* Styles for stats cards */
+body.dark-mode .activity-stat-card {
+  background: var(--card-background);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .activity-stat-card:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+body.dark-mode .activity-stat-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .activity-item-row {
+  border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .activity-item-label {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .activity-item-value {
+  color: var(--text-color);
 }
 
 .stats-badge {
@@ -1899,4 +1986,239 @@ body {
     flex-direction: column;
     gap: 1rem;
   }
+}
+
+/* Dark mode styles for stat cards */
+body.dark-mode .stat-card {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .stat-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .stat-icon {
+  background-color: var(--hover-background);
+}
+
+body.dark-mode .stat-value {
+  color: var(--text-color);
+}
+
+body.dark-mode .stat-label {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .stat-trend {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .stat-trend-indicator.up {
+  color: var(--success-color);
+}
+
+body.dark-mode .stat-trend-indicator.down {
+  color: var(--error-color);
+}
+
+body.dark-mode .stats-cards .card {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+}
+
+/* Dark mode styles for stat overview cards */
+body.dark-mode .stat-overview-card {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+}
+
+body.dark-mode .stat-overview-value {
+  color: var(--text-color);
+}
+
+body.dark-mode .stat-overview-label {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .stat-progress-bar {
+  background-color: var(--hover-background);
+}
+
+body.dark-mode .stat-progress-text {
+  color: var(--text-color);
+}
+
+body.dark-mode .activity-item-label {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .document-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .document-meta {
+  color: var(--text-color-light);
+}
+
+/* Dark mode pour les document card */
+body.dark-mode .document-card {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+}
+
+body.dark-mode .document-card:hover {
+  background-color: var(--hover-background);
+}
+
+body.dark-mode .document-info h3 {
+  color: var(--text-color);
+}
+
+body.dark-mode .document-info p {
+  color: var(--text-color-light);
+}
+
+/* Dark mode pour les activités */
+body.dark-mode .activity-item {
+  border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .activity-content p {
+  color: var(--text-color);
+}
+
+body.dark-mode .activity-time {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .activity-user-name {
+  color: var(--text-color);
+}
+
+/* Ajustements supplémentaires pour le mode sombre */
+body.dark-mode .card-header h2 {
+  color: var(--text-color);
+}
+
+body.dark-mode .welcome-section h1 {
+  color: var(--text-color);
+}
+
+body.dark-mode .welcome-subtitle {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .quick-action-button span {
+  color: var(--text-color);
+}
+
+body.dark-mode .share-table th {
+  color: var(--text-color);
+  background-color: var(--header-background);
+}
+
+body.dark-mode .share-table td {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .share-table th:last-child,
+body.dark-mode .share-table td:last-child {
+  background-color: var(--card-background);
+}
+
+body.dark-mode .user-chip {
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+}
+
+body.dark-mode .more-users {
+  background-color: var(--hover-background);
+  color: var(--text-color-light);
+}
+
+body.dark-mode .modal-header h2 {
+  color: var(--text-color);
+}
+
+body.dark-mode .user-name {
+  color: var(--text-color);
+}
+
+body.dark-mode .user-email {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .user-permission select {
+  background-color: var(--card-background);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .link-preview input {
+  background-color: var(--header-background);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .no-results {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .no-results i {
+  color: var(--text-color-light);
+}
+
+/* Ajustements pour les éléments d'en-tête de page */
+body.dark-mode .page-header h1 {
+  color: var(--text-color);
+}
+
+body.dark-mode .section-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .detailed-stats-section h2 {
+  color: var(--text-color);
+}
+
+/* Ajustements pour les formulaires et menus */
+body.dark-mode .date-filter-button {
+  background-color: var(--header-background);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .date-filter-button span {
+  color: var(--text-color);
+}
+
+body.dark-mode .date-filter-button i {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .date-filter-menu {
+  background-color: var(--card-background);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .date-filter-option {
+  color: var(--text-color);
+}
+
+body.dark-mode .date-filter-option:hover {
+  background-color: var(--hover-background);
+}
+
+/* Ajustements pour les onglets */
+body.dark-mode .tab {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .tab:hover {
+  color: var(--primary-color);
+  background-color: var(--hover-background);
+}
+
+body.dark-mode .tab.active {
+  color: var(--primary-color);
 } 

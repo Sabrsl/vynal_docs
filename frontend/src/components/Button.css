@@ -146,12 +146,48 @@
 }
 
 body.dark-mode .button-default {
+  background-color: var(--card-background);
+  color: var(--text-color);
   border-color: var(--border-color);
 }
 
+body.dark-mode .button-default:hover {
+  background-color: var(--hover-background);
+}
+
+body.dark-mode .button-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+body.dark-mode .button-primary:hover {
+  background-color: var(--primary-color-hover);
+}
+
+body.dark-mode .button-secondary {
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+  color: var(--primary-color);
+  border-color: transparent;
+}
+
+body.dark-mode .button-secondary:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.3);
+}
+
+body.dark-mode .button-transparent {
+  background-color: transparent;
+  color: var(--text-color);
+}
+
+body.dark-mode .button-transparent:hover {
+  background-color: var(--hover-background);
+}
+
 body.dark-mode .button-outline {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background-color: transparent;
 }
 
 body.dark-mode .button-outline:hover {

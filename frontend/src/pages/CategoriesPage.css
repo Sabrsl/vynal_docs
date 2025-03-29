@@ -579,4 +579,70 @@
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .card {
+  background-color: var(--card-background, #2a2d3e);
+  border: 1px solid var(--border-color, #444);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Category Card Styles in Dark Mode */
+body.dark-mode .category-card {
+  background-color: var(--card-background, #2a2d3e);
+  border-color: var(--border-color, #444);
+}
+
+body.dark-mode .document-card {
+  background-color: var(--card-background, #2a2d3e);
+  border-bottom-color: var(--border-color, #444);
+}
+
+body.dark-mode .document-card:hover {
+  background-color: var(--hover-background, #323548);
+}
+
+body.dark-mode .documents-container {
+  background-color: var(--card-background, #2a2d3e);
+  border: 1px solid var(--border-color, #444);
+}
+
+/* Category Card styles for Dark Mode */
+body.dark-mode .category-content h3 {
+  color: var(--color-text-light, #e6e6e6);
+  font-weight: 600;
+}
+
+body.dark-mode .category-description {
+  color: var(--color-text-secondary, #b0b0b0);
+}
+
+body.dark-mode .card {
+  color: var(--color-text-light, #e6e6e6);
+}
+
+/* Document Card Styles in Dark Mode */
+body.dark-mode .document-info h3 {
+  color: var(--color-text-light, #e6e6e6);
+  font-weight: 600;
+}
+
+body.dark-mode .document-meta,
+body.dark-mode .doc-type, 
+body.dark-mode .doc-size, 
+body.dark-mode .doc-date {
+  color: var(--color-text-secondary, #b0b0b0);
+}
+
+body.dark-mode .sort-column {
+  color: var(--color-text-light, #e6e6e6);
+  font-weight: 600;
+}
+
+body.dark-mode .form-header h2 {
+  color: var(--color-text-light, #e6e6e6);
+}
+
+body.dark-mode .form-group label {
+  color: var(--color-text-light, #e6e6e6);
 } 

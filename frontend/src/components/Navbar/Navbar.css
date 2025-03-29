@@ -4,13 +4,14 @@
   justify-content: space-between;
   height: 64px;
   padding: 0 20px;
-  background-color: #fff;
+  background-color: var(--card-background, #fff);
   border-bottom: 1px solid var(--color-border, #e9ecef);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   position: sticky;
   top: 0;
   z-index: 100;
   width: 100%;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .logo {
@@ -244,12 +245,67 @@
   }
 }
 
+body.dark-mode .navbar {
+  background-color: var(--header-background);
+  border-bottom-color: var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .logo-text {
+  color: var(--text-color);
+}
+
+body.dark-mode .notification-btn {
+  color: var(--text-color);
+}
+
+body.dark-mode .notification-btn:hover {
+  color: var(--primary-color);
+}
+
 body.dark-mode .notification-dropdown {
   background-color: var(--card-background);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+body.dark-mode .notification-header {
+  border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .notification-header h3 {
+  color: var(--text-color);
+}
+
+body.dark-mode .notification-item {
+  border-bottom-color: var(--border-color);
+}
+
 body.dark-mode .notification-item:hover,
 body.dark-mode .notification-item.unread {
-  background-color: var(--color-background-light);
+  background-color: var(--hover-background);
+}
+
+body.dark-mode .notification-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .notification-message {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .notification-close {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .notification-close:hover {
+  color: var(--text-color);
+}
+
+body.dark-mode .notification-icon {
+  background-color: var(--hover-background);
+  color: var(--text-color);
+}
+
+body.dark-mode .no-notifications {
+  color: var(--text-color-light);
 } 

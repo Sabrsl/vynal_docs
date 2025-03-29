@@ -546,7 +546,17 @@ export const AppProvider = ({ children }) => {
   
   // Valeur exposée par le contexte
   const value = {
-    ...state,
+    documents: state.documents,
+    templates: state.templates,
+    categories: state.categories,
+    activities: state.activities,
+    users: state.users, 
+    activeDocument: state.activeDocument,
+    activeSection: state.activeSection,
+    isLoading: state.isLoading,
+    error: state.error,
+    darkMode: state.darkMode,
+    userSettings: state.userSettings,
     setActiveSection,
     createDocument,
     updateDocument,

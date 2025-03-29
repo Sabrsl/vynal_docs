@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
@@ -17,6 +17,7 @@ import {
 import '../styles/base.css';
 import '../styles/variables.css';
 import '../styles/modern.css';
+import { useAppContext } from '../context/AppContext';
 
 // Enregistrement des composants Chart.js
 ChartJS.register(
@@ -32,6 +33,8 @@ ChartJS.register(
 );
 
 const StatsPage = () => {
+  const appContext = useAppContext();
+  const { darkMode } = appContext;
   const [timeRange, setTimeRange] = useState('month');
   const [activeTab, setActiveTab] = useState('overview');
   const [chartFilters, setChartFilters] = useState({
@@ -158,22 +161,48 @@ const StatsPage = () => {
   };
 
   // Configuration des graphiques
+  const textColor = darkMode ? '#e6e6e6' : '#495057';
+  const gridColor = darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+  const backgroundColor = darkMode ? '#2a2d3e' : 'white';
+
   const activityChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top',
+        labels: {
+          color: textColor
+        }
       },
       title: {
         display: false
+      },
+      tooltip: {
+        backgroundColor: darkMode ? '#323548' : 'rgba(255, 255, 255, 0.9)',
+        titleColor: darkMode ? '#e6e6e6' : '#212529',
+        bodyColor: darkMode ? '#b0b0b0' : '#495057',
+        borderColor: darkMode ? '#444' : '#e9ecef',
+        borderWidth: 1
       }
     },
     scales: {
       y: {
         beginAtZero: true,
         ticks: {
-          stepSize: 1
+          stepSize: 1,
+          color: textColor
+        },
+        grid: {
+          color: gridColor
+        }
+      },
+      x: {
+        ticks: {
+          color: textColor
+        },
+        grid: {
+          color: gridColor
         }
       }
     }
@@ -185,9 +214,19 @@ const StatsPage = () => {
     plugins: {
       legend: {
         position: 'right',
+        labels: {
+          color: textColor
+        }
       },
       title: {
         display: false
+      },
+      tooltip: {
+        backgroundColor: darkMode ? '#323548' : 'rgba(255, 255, 255, 0.9)',
+        titleColor: darkMode ? '#e6e6e6' : '#212529',
+        bodyColor: darkMode ? '#b0b0b0' : '#495057',
+        borderColor: darkMode ? '#444' : '#e9ecef',
+        borderWidth: 1
       }
     }
   };
@@ -198,16 +237,38 @@ const StatsPage = () => {
     plugins: {
       legend: {
         position: 'top',
+        labels: {
+          color: textColor
+        }
       },
       title: {
         display: false
+      },
+      tooltip: {
+        backgroundColor: darkMode ? '#323548' : 'rgba(255, 255, 255, 0.9)',
+        titleColor: darkMode ? '#e6e6e6' : '#212529',
+        bodyColor: darkMode ? '#b0b0b0' : '#495057',
+        borderColor: darkMode ? '#444' : '#e9ecef',
+        borderWidth: 1
       }
     },
     scales: {
       y: {
         beginAtZero: true,
         ticks: {
-          stepSize: 1
+          stepSize: 1,
+          color: textColor
+        },
+        grid: {
+          color: gridColor
+        }
+      },
+      x: {
+        ticks: {
+          color: textColor
+        },
+        grid: {
+          color: gridColor
         }
       }
     }
@@ -329,6 +390,74 @@ const StatsPage = () => {
     link.click();
     document.body.removeChild(link);
   };
+
+  // Pour le graphique d'activité
+  const getActivityChartData = (filteredData) => {
+    // Couleurs adaptées au mode sombre ou clair
+    const uploadColor = darkMode ? 'rgba(91, 123, 240, 0.8)' : 'rgba(105, 51, 255, 0.8)';
+    const downloadColor = darkMode ? 'rgba(239, 83, 80, 0.8)' : 'rgba(255, 99, 132, 0.8)';
+    const viewColor = darkMode ? 'rgba(102, 187, 106, 0.8)' : 'rgba(75, 192, 192, 0.8)';
+    
+    return {
+      labels: filteredData.map(day => day.date),
+      datasets: [
+        {
+          label: 'Téléversements',
+          data: filteredData.map(day => day.uploads),
+          backgroundColor: uploadColor,
+          borderColor: uploadColor,
+          tension: 0.3
+        },
+        {
+          label: 'Téléchargements',
+          data: filteredData.map(day => day.downloads),
+          backgroundColor: downloadColor,
+          borderColor: downloadColor,
+          tension: 0.3
+        },
+        {
+          label: 'Vues',
+          data: filteredData.map(day => day.views),
+          backgroundColor: viewColor,
+          borderColor: viewColor,
+          tension: 0.3
+        }
+      ]
+    };
+  };
+
+  // Pour le graphique de types de documents
+  const getDocumentTypeChartData = (documentsByType, filterType) => {
+    // Couleurs adaptées au mode sombre
+    const bgColors = darkMode 
+      ? ['rgba(91, 123, 240, 0.8)', 'rgba(239, 83, 80, 0.8)', 'rgba(102, 187, 106, 0.8)', 'rgba(255, 202, 40, 0.8)', 'rgba(66, 165, 245, 0.8)']
+      : ['rgba(105, 51, 255, 0.8)', 'rgba(255, 99, 132, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(255, 206, 86, 0.8)', 'rgba(54, 162, 235, 0.8)'];
+    
+    return {
+      labels: documentsByType.map(type => type.type),
+      datasets: [
+        {
+          data: filterType === 'Nombre' 
+            ? documentsByType.map(type => type.count)
+            : documentsByType.map(type => parseFloat(type.size.replace(' GB', ''))),
+          backgroundColor: bgColors,
+          borderColor: darkMode ? 'rgba(42, 45, 62, 1)' : 'white',
+          borderWidth: 2
+        }
+      ]
+    };
+  };
+  
+  // Effet pour mettre à jour les graphiques quand le mode sombre change
+  useEffect(() => {
+    // Forcer une mise à jour des graphiques quand le thème change
+    const charts = document.querySelectorAll('canvas');
+    charts.forEach(chart => {
+      if (chart.chart) {
+        chart.chart.update();
+      }
+    });
+  }, [darkMode]);
 
   return (
     <div className="statistics-page">
@@ -501,33 +630,8 @@ const StatsPage = () => {
                 </div>
               </div>
               <div className="chart-body">
-                <Line
-                  data={{
-                    labels: getFilteredData(stats.activityByDay, chartFilters.overview.activityChart).map(day => day.date),
-                    datasets: [
-                      {
-                        label: 'Téléversements',
-                        data: getFilteredData(stats.activityByDay, chartFilters.overview.activityChart).map(day => day.uploads),
-                        borderColor: 'rgb(105, 51, 255)',
-                        backgroundColor: 'rgba(105, 51, 255, 0.5)',
-                        tension: 0.4
-                      },
-                      {
-                        label: 'Téléchargements',
-                        data: getFilteredData(stats.activityByDay, chartFilters.overview.activityChart).map(day => day.downloads),
-                        borderColor: 'rgb(52, 152, 219)',
-                        backgroundColor: 'rgba(52, 152, 219, 0.5)',
-                        tension: 0.4
-                      },
-                      {
-                        label: 'Vues',
-                        data: getFilteredData(stats.activityByDay, chartFilters.overview.activityChart).map(day => day.views),
-                        borderColor: 'rgb(46, 204, 113)',
-                        backgroundColor: 'rgba(46, 204, 113, 0.5)',
-                        tension: 0.4
-                      }
-                    ]
-                  }}
+                <Line 
+                  data={getActivityChartData(getFilteredData(stats.activityByDay, chartFilters.overview.activityChart))}
                   options={activityChartOptions}
                 />
               </div>
@@ -552,24 +656,11 @@ const StatsPage = () => {
                 </div>
               </div>
               <div className="chart-body">
-                <Doughnut
-                  data={{
-                    labels: stats.documentsByType.map(doc => doc.type),
-                    datasets: [
-                      {
-                        data: chartFilters.overview.documentChart === 'Nombre'
-                          ? stats.documentsByType.map(doc => doc.count)
-                          : stats.documentsByType.map(doc => parseFloat(doc.size.replace(' GB', ''))),
-                        backgroundColor: [
-                          'rgba(105, 51, 255, 0.8)',
-                          'rgba(52, 152, 219, 0.8)',
-                          'rgba(46, 204, 113, 0.8)',
-                          'rgba(241, 196, 15, 0.8)',
-                          'rgba(231, 76, 60, 0.8)'
-                        ]
-                      }
-                    ]
-                  }}
+                <Doughnut 
+                  data={getDocumentTypeChartData(
+                    stats.documentsByType,
+                    chartFilters.overview.documentChart
+                  )}
                   options={documentTypeChartOptions}
                 />
               </div>

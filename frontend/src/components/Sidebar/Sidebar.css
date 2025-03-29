@@ -1,10 +1,10 @@
 .sidebar {
   width: 70px;
-  background-color: var(--card-background, white);
-  border-right: 1px solid var(--border-color, #e9ecef);
+  background-color: white;
+  border-right: 1px solid #e9ecef;
   height: 100%;
   padding: 16px 0;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
   overflow-y: auto;
 }
 
@@ -24,19 +24,19 @@
   transition: all 0.2s ease;
   margin: 2px 8px;
   border-radius: 8px;
-  color: var(--text-color, #6c757d);
+  color: #6c757d;
   white-space: nowrap;
   overflow: hidden;
 }
 
 .sidebar-item:hover {
-  background-color: var(--hover-background, #f1f3f5);
-  color: var(--text-color, #343a40);
+  background-color: #f1f3f5;
+  color: #343a40;
 }
 
 .sidebar-item.active {
-  background-color: var(--primary-color, rgba(13, 110, 253, 0.1));
-  color: var(--primary-color, #0d6efd);
+  background-color: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
   font-weight: 500;
 }
 
@@ -59,7 +59,7 @@
 
 .sidebar-badge {
   margin-left: auto;
-  background-color: var(--color-badge, #dc3545);
+  background-color: #dc3545;
   color: white;
   font-size: 12px;
   font-weight: 600;
@@ -80,8 +80,36 @@
 
 .sidebar-separator {
   height: 1px;
-  background-color: var(--border-color, #e9ecef);
+  background-color: #e9ecef;
   margin: 8px 0;
+}
+
+/* Dark Mode Styles for Sidebar */
+body.dark-mode .sidebar {
+  background-color: #252836 !important;
+  border-right-color: #3a3f5a !important;
+}
+
+body.dark-mode .sidebar-separator {
+  background-color: #3a3f5a !important;
+}
+
+body.dark-mode .sidebar-item {
+  color: #b0b0b0 !important;
+}
+
+body.dark-mode .sidebar-item:hover {
+  background-color: #323548 !important;
+  color: #e6e6e6 !important;
+}
+
+body.dark-mode .sidebar-item.active {
+  background-color: rgba(91, 123, 240, 0.2) !important;
+  color: #5b7bf0 !important;
+}
+
+body.dark-mode .sidebar-badge {
+  background-color: #ef5350 !important;
 }
 
 @media (max-width: 768px) {
@@ -121,18 +149,4 @@
     font-size: 10px;
     opacity: 1;
   }
-}
-
-body.dark-mode .sidebar-item {
-  color: var(--color-text-secondary);
-}
-
-body.dark-mode .sidebar-item:hover {
-  background-color: var(--hover-background);
-  color: var(--text-color);
-}
-
-body.dark-mode .sidebar-item.active {
-  background-color: rgba(var(--primary-color-rgb), 0.2);
-  color: var(--primary-color);
 } 

@@ -25,6 +25,7 @@
   padding: 16px;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .search-container {
@@ -50,6 +51,7 @@
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .documents-empty i {
@@ -81,7 +83,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s ease;
 }
 
 .document-card:hover {
@@ -98,6 +100,7 @@
   border-radius: 8px;
   background-color: var(--color-primary-light);
   margin-bottom: 12px;
+  transition: background-color 0.3s ease;
 }
 
 .document-icon i {
@@ -159,6 +162,7 @@
   max-width: 500px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  transition: background-color 0.3s ease;
 }
 
 .modal-header {
@@ -232,6 +236,93 @@
   gap: 12px;
   padding: 16px 24px;
   border-top: 1px solid var(--color-border);
+}
+
+/* Dark mode styles */
+body.dark-mode .documents-filters {
+  background-color: var(--card-background);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+}
+
+body.dark-mode .documents-loading,
+body.dark-mode .documents-error,
+body.dark-mode .documents-empty {
+  background-color: var(--card-background);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+}
+
+body.dark-mode .documents-empty i {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .documents-empty h2 {
+  color: var(--text-color);
+}
+
+body.dark-mode .documents-empty p {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .document-card {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+}
+
+body.dark-mode .document-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+body.dark-mode .document-icon {
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+}
+
+body.dark-mode .document-info h3 {
+  color: var(--text-color);
+}
+
+body.dark-mode .document-meta {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .document-actions {
+  border-top-color: var(--border-color);
+}
+
+body.dark-mode .modal {
+  background-color: var(--card-background);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color);
+}
+
+body.dark-mode .modal-header {
+  border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .modal-header h2 {
+  color: var(--text-color);
+}
+
+body.dark-mode .form-group label {
+  color: var(--text-color);
+}
+
+body.dark-mode .type-option {
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+body.dark-mode .type-option:hover {
+  background-color: var(--hover-background);
+}
+
+body.dark-mode .type-option.selected {
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+}
+
+body.dark-mode .modal-footer {
+  border-top-color: var(--border-color);
 }
 
 @media (max-width: 768px) {

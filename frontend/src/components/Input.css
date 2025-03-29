@@ -7,7 +7,7 @@
   border: 1px solid var(--border-color, #dee2e6);
   background-color: var(--card-background, white);
   border-radius: 6px;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   overflow: hidden;
 }
 
@@ -74,6 +74,16 @@
 
 body.dark-mode .input-wrapper {
   background-color: var(--card-background);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .input-wrapper:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.25);
+}
+
+body.dark-mode .input-wrapper i {
+  color: var(--text-color-light);
 }
 
 body.dark-mode .input-wrapper input {

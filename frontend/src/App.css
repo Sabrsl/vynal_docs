@@ -704,16 +704,19 @@ body.dark-mode {
   --color-text-primary: #e6e6e6;
   --color-text-secondary: #b0b0b0;
   --color-text-muted: #848a9c;
+  --color-text-dark: #e6e6e6;
   
   --color-background-light: #323548;
   --color-background-medium: #2a2d3e;
   --color-background-dark: #1a1c2a;
   
   --color-border: #444;
+  --color-border-light: #3a3f5a;
+  --color-border-dark: #3a3f5a;
   --color-hover: #3a3f5a;
   
   --color-sidebar-bg: #252836;
-  --color-sidebar-text: #b0b0b0;
+  --color-sidebar-text: #e6e6e6;
   --color-sidebar-border: #3a3f5a;
   --color-sidebar-hover: #323548;
   
@@ -931,6 +934,45 @@ body.dark-mode .document-date {
   color: var(--text-color-light);
 }
 
+/* Styles des cartes du dashboard en mode sombre */
+body.dark-mode .dashboard-card {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+}
+
+body.dark-mode .card-content {
+  color: var(--text-color);
+}
+
+body.dark-mode .document-icon.pdf {
+  color: #ff6633;
+}
+
+body.dark-mode .document-icon.doc {
+  color: #3388ff;
+}
+
+body.dark-mode .document-icon.txt {
+  color: #b0b0b0;
+}
+
+body.dark-mode .widget-icon {
+  color: var(--primary-color);
+}
+
+body.dark-mode .stat-card {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+}
+
+body.dark-mode .stat-value {
+  color: var(--text-color);
+}
+
+body.dark-mode .stat-title {
+  color: var(--text-color-light);
+}
+
 /* Amélioration de l'apparence du menu utilisateur en mode dark */
 body.dark-mode .user-profile:hover {
   background-color: var(--hover-background);
@@ -947,4 +989,122 @@ body.dark-mode .user-dropdown-item:hover {
 .sidebar, 
 .search-input-wrapper {
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+}
+
+/* Corrections pour le mode sombre */
+body.dark-mode .button-text {
+  color: var(--text-color);
+}
+
+body.dark-mode .button-text:hover {
+  background-color: var(--hover-background);
+}
+
+body.dark-mode .button-secondary {
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+  color: var(--primary-color);
+}
+
+body.dark-mode .button-secondary:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.3);
+}
+
+body.dark-mode .card {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .user-dropdown-item {
+  color: var(--text-color);
+}
+
+body.dark-mode .user-dropdown-item i {
+  color: var(--text-color-light);
+}
+
+body.dark-mode button {
+  color: var(--text-color);
+}
+
+/* Corrections pour les inputs et form controls */
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  background-color: var(--card-background);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+body.dark-mode input::placeholder,
+body.dark-mode select::placeholder,
+body.dark-mode textarea::placeholder {
+  color: var(--text-color-light);
+}
+
+body.dark-mode input:focus,
+body.dark-mode select:focus,
+body.dark-mode textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.25);
+}
+
+/* Amélioration des contrastes pour les textes sur card */
+body.dark-mode .card-header-content {
+  color: var(--text-color);
+}
+
+body.dark-mode .section-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .app-main {
+  background-color: var(--background-color);
+}
+
+body.dark-mode .app-sidebar {
+  background-color: var(--color-sidebar-bg);
+  border-right: 1px solid var(--color-sidebar-border);
+}
+
+/* Assurer une bonne visibilité des éléments de recherche en mode sombre */
+body.dark-mode .search-container input {
+  color: var(--text-color);
+  background-color: var(--card-background);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .search-container input::placeholder {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .search-container i {
+  color: var(--text-color-light);
+}
+
+body.dark-mode .search-container .search-input-wrapper {
+  background-color: var(--card-background);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .search-container .search-input-wrapper:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.25);
+}
+
+body.dark-mode .type-filters button {
+  background-color: var(--card-background);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .type-filters button:hover {
+  background-color: var(--hover-background);
+}
+
+body.dark-mode .type-filters button.active,
+body.dark-mode .type-filters button[variant="primary"] {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
 }
