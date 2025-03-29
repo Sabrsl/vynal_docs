@@ -318,11 +318,19 @@ const DocumentsPage = () => {
           <div className="modal document-generator-modal">
             <div className="modal-header">
               <h2><i className="bx bx-file-find"></i> Créer un document avec modèle</h2>
-              <Button 
-                variant="transparent" 
-                icon="bx-x"
-                onClick={() => setShowTemplateModal(false)}
-              />
+              <div className="modal-header-actions">
+                <Button 
+                  variant="transparent" 
+                  icon="bx-expand"
+                  title="Agrandir le formulaire"
+                  onClick={() => document.querySelector('.document-generator-modal').classList.toggle('expanded')}
+                />
+                <Button 
+                  variant="transparent" 
+                  icon="bx-x"
+                  onClick={() => setShowTemplateModal(false)}
+                />
+              </div>
             </div>
             <div className="modal-body document-generator-modal-body">
               <DocumentGenerator 

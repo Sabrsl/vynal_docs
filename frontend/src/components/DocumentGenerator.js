@@ -29,6 +29,7 @@ const DocumentGenerator = ({ templates = [], contacts = [], onGenerateSuccess })
   const [generatedDocument, setGeneratedDocument] = useState(null);
   const [suggestions, setSuggestions] = useState({});
   const [localContacts, setLocalContacts] = useState([]);
+  const [expandedForm, setExpandedForm] = useState(false);
 
   // Utiliser des contacts de démo si aucun contact n'est fourni
   useEffect(() => {
@@ -771,6 +772,10 @@ vous devriez télécharger le fichier et l'ouvrir avec Microsoft Word ou un édi
     }
   };
 
+  const toggleFormExpansion = () => {
+    setExpandedForm(!expandedForm);
+  };
+
   // Afficher l'étape 1: Sélection du template et du contact
   const renderStep1 = () => (
     <div className="selection-section">
@@ -879,117 +884,61 @@ vous devriez télécharger le fichier et l'ouvrir avec Microsoft Word ou un édi
     <div className="document-generator-step step-2">
       <div className="document-generator-selected-items">
         <div className="document-generator-selected-template">
-          <h3>Modèle sélectionné:</h3>
-          <Card className="document-generator-selected-card">
-            <div className="document-generator-template-icon">
-              <i className="bx bxs-file-doc"></i>
-            </div>
-            <div className="document-generator-template-info">
-              <h4>{selectedTemplate.title}</h4>
-              <p>{selectedTemplate.description || 'Aucune description'}</p>
-            </div>
-          </Card>
+          <span className="selected-label">
+            <i className="bx bx-file-blank"></i> Template:
+          </span>
+          <span className="selected-name">{selectedTemplate.title}</span>
         </div>
+
         <div className="document-generator-selected-contact">
-          <h3>Client sélectionné:</h3>
-          <Card className="document-generator-selected-card">
-            <div className="document-generator-contact-avatar">
-              {selectedContact.photo ? (
-                <img src={selectedContact.photo} alt={selectedContact.name} />
-              ) : (
-                <div className="document-generator-contact-initials">
-                  {selectedContact.name.split(' ').map(n => n[0]).join('')}
-                </div>
-              )}
-            </div>
-            <div className="document-generator-contact-info">
-              <h4>{selectedContact.name}</h4>
-              <p>{selectedContact.company || 'Indépendant'}</p>
-              <p>{selectedContact.email}</p>
-            </div>
-          </Card>
+          <span className="selected-label">
+            <i className="bx bx-user"></i> Contact:
+          </span>
+          <span className="selected-name">{selectedContact ? selectedContact.name : 'Aucun contact sélectionné'}</span>
         </div>
       </div>
-      
-      <div className="document-generator-variables-overview">
-        <div className="document-generator-variables-header">
-          <h3>Variables détectées dans le modèle</h3>
-          <Button 
-            variant="transparent" 
-            onClick={() => setShowVariablesInfo(!showVariablesInfo)}
-          >
-            <i className={`bx ${showVariablesInfo ? 'bx-minus' : 'bx-plus'}`}></i>
-            {showVariablesInfo ? 'Masquer les détails' : 'Afficher les détails'}
-          </Button>
-        </div>
-        
-        {showVariablesInfo && (
-          <div className="document-generator-variables-info">
-            <div className="document-generator-variables-count">
-              <p><strong>Total:</strong> {variables.length} variables</p>
-              
-              <div className="document-generator-variables-types">
-                {variablePatterns.doublebraces && variablePatterns.doublebraces.length > 0 && (
-                  <div className="document-generator-variables-type">
-                    <span className="variable-type-icon">{"{{ }}"}</span>
-                    <span className="variable-type-count">{variablePatterns.doublebraces.length} variables</span>
-                  </div>
-                )}
-                {variablePatterns.doublebrackets && variablePatterns.doublebrackets.length > 0 && (
-                  <div className="document-generator-variables-type">
-                    <span className="variable-type-icon">{[[ ]]}</span>
-                    <span className="variable-type-count">{variablePatterns.doublebrackets.length} variables</span>
-                  </div>
-                )}
-                {variablePatterns.prefixed && variablePatterns.prefixed.length > 0 && (
-                  <div className="document-generator-variables-type">
-                    <span className="variable-type-icon">XXXX_</span>
-                    <span className="variable-type-count">{variablePatterns.prefixed.length} variables</span>
-                  </div>
-                )}
-                {variablePatterns.dollarbraces && variablePatterns.dollarbraces.length > 0 && (
-                  <div className="document-generator-variables-type">
-                    <span className="variable-type-icon">${"{}"}</span>
-                    <span className="variable-type-count">{variablePatterns.dollarbraces.length} variables</span>
-                  </div>
-                )}
-              </div>
+
+      <div className="document-variables-form">
+        {Object.keys(variablesByCategory).length > 0 ? (
+          Object.entries(variablesByCategory).map(([category, categoryVariables]) => (
+            <div key={category} className="document-generator-variables-category">
+              <h4>
+                {category === 'contact' && 'Informations de contact'}
+                {category === 'company' && 'Informations d\'entreprise'}
+                {category === 'date' && 'Dates'}
+                {category === 'financial' && 'Informations financières'}
+                {category === 'legal' && 'Informations juridiques'}
+                {category === 'other' && 'Autres informations'}
+              </h4>
+              <ul>
+                {categoryVariables.map(variable => (
+                  <li key={variable}>
+                    {documentGenerator.formatVariableForDisplay(variable)}
+                    <span className={`variable-status ${missingVariables.includes(variable) ? 'missing' : 'available'}`}>
+                      {missingVariables.includes(variable) ? 'À compléter' : 'Disponible'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            
-            <div className="document-generator-variables-list">
-              {Object.entries(variablesByCategory).map(([category, vars]) => (
-                <div key={category} className="document-generator-variables-category">
-                  <h4>
-                    {category === 'contact' && 'Informations de contact'}
-                    {category === 'company' && 'Informations d\'entreprise'}
-                    {category === 'date' && 'Dates'}
-                    {category === 'financial' && 'Informations financières'}
-                    {category === 'legal' && 'Informations juridiques'}
-                    {category === 'other' && 'Autres informations'}
-                  </h4>
-                  <ul>
-                    {vars.map(variable => (
-                      <li key={variable}>
-                        {documentGenerator.formatVariableForDisplay(variable)}
-                        <span className={`variable-status ${missingVariables.includes(variable) ? 'missing' : 'available'}`}>
-                          {missingVariables.includes(variable) ? 'À compléter' : 'Disponible'}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+          ))
+        ) : (
+          <div className="document-generator-all-variables-available">
+            <div className="document-generator-success-icon">
+              <i className="bx bx-check-circle"></i>
             </div>
+            <h3>Toutes les variables sont renseignées!</h3>
+            <p>
+              Les informations du client correspondent à toutes les variables du modèle.
+              Le document peut être généré directement.
+            </p>
           </div>
         )}
       </div>
-      
-      {missingVariables.length > 0 ? (
-        <div className="document-generator-missing-variables">
+
+      {missingVariables.length > 0 && (
+        <div className="document-generator-form-container">
           <h3>Variables à compléter ({missingVariables.length})</h3>
-          <p className="document-generator-instruction">
-            Complétez les informations manquantes ci-dessous:
-          </p>
           <div className="document-generator-form">
             {missingVariables.map(variable => {
               const fieldType = documentGenerator.detectFieldType(variable);
@@ -1018,12 +967,12 @@ vous devriez télécharger le fichier et l'ouvrir avec Microsoft Word ou un édi
                       onChange={handleInputChange}
                     />
                   ) : (
-              <Input
+                    <Input
                       type={fieldType}
                       id={variable}
-                name={variable}
-                value={formData[variable] || ''}
-                onChange={handleInputChange}
+                      name={variable}
+                      value={formData[variable] || ''}
+                      onChange={handleInputChange}
                       placeholder={`Entrez ${documentGenerator.formatVariableForDisplay(variable).toLowerCase()}`}
                     />
                   )}
@@ -1049,17 +998,6 @@ vous devriez télécharger le fichier et l'ouvrir avec Microsoft Word ou un édi
               );
             })}
           </div>
-        </div>
-      ) : (
-        <div className="document-generator-all-variables-available">
-          <div className="document-generator-success-icon">
-            <i className="bx bx-check-circle"></i>
-            </div>
-          <h3>Toutes les variables sont renseignées!</h3>
-          <p>
-            Les informations du client correspondent à toutes les variables du modèle.
-            Le document peut être généré directement.
-          </p>
         </div>
       )}
 
@@ -1102,14 +1040,12 @@ vous devriez télécharger le fichier et l'ouvrir avec Microsoft Word ou un édi
         <Button 
           variant="secondary" 
           onClick={() => setStep(1)}
-          disabled={loading}
         >
           Retour
         </Button>
         <Button 
           variant="primary" 
           onClick={handleGenerateDocument}
-          disabled={loading}
         >
           {loading ? 'Génération...' : 'Générer le document'}
         </Button>

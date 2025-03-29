@@ -408,4 +408,159 @@
 .button-note i {
   margin-right: 5px;
   color: #3b82f6;
+}
+
+/* Step 2: Variables */
+.document-variables-form {
+  margin-top: 20px;
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.document-generator-variables-category {
+  margin-bottom: 20px;
+}
+
+.document-generator-variables-category h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.document-generator-variables-category ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+}
+
+.document-generator-variables-category li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.document-generator-variables-category li:hover {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.variable-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.variable-status.available {
+  background-color: rgba(46, 213, 115, 0.15);
+  color: #2ecc71;
+}
+
+.variable-status.missing {
+  background-color: rgba(255, 71, 87, 0.15);
+  color: #ff4757;
+}
+
+.document-generator-all-variables-available {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px;
+  background-color: #f0f9ff;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.document-generator-success-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: rgba(46, 213, 115, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.document-generator-success-icon i {
+  font-size: 32px;
+  color: #2ecc71;
+}
+
+.document-generator-all-variables-available h3 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.document-generator-all-variables-available p {
+  margin: 0;
+  max-width: 400px;
+  color: #666;
+}
+
+/* Form for missing variables */
+.document-generator-form-container {
+  margin-top: 20px;
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.document-generator-form-container h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.document-generator-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.document-generator-form-field {
+  margin-bottom: 15px;
+}
+
+.document-generator-form-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+}
+
+.document-generator-suggestions {
+  margin-top: 8px;
+}
+
+.suggestions-label {
+  font-size: 12px;
+  color: #888;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.suggestions-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
 } 
