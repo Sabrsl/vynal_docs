@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": "webpack",
-  "buildCommand": "cd frontend && npm install --force && npm run build",
+  "buildCommand": "cd frontend && npm install --force --legacy-peer-deps && npm run build",
   "outputDirectory": "frontend/dist",
   "routes": [
     {
