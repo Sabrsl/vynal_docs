@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
   "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/node",
+      "config": {
+        "buildCommand": "cd frontend && npm install && npm run build"
+      }
+    },
     {
       "src": "index.py",
       "use": "@vercel/python"
@@ -10,16 +15,11 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/index.py"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/frontend/dist/$1"
-    },
-    {
-      "src": "/",
-      "dest": "/frontend/dist/index.html"
+      "dest": "/index.py"
     }
-  ]
+  ],
+  "env": {
+    "VERCEL": "1"
+  }
 } 
