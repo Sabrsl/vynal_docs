@@ -46,16 +46,29 @@ module.exports = (env, argv) => {
         template: './public/index.html',
         favicon: './public/favicon.ico',
         templateParameters: {
-          PUBLIC_URL: isProduction ? '.' : ''
-        }
+          PUBLIC_URL: ''
+        },
+        minify: isProduction ? {
+          removeComments: true,
+          collapseWhitespace: true,
+          removeRedundantAttributes: true,
+          useShortDoctype: true,
+          removeEmptyAttributes: true,
+          removeStyleLinkTypeAttributes: true,
+          keepClosingSlash: true,
+          minifyJS: true,
+          minifyCSS: true,
+          minifyURLs: true,
+        } : false
       }),
       !isProduction && new ReactRefreshWebpackPlugin(),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify({
           ...process.env,
+          NODE_ENV: isProduction ? 'production' : 'development',
           REACT_APP_API_URL: isProduction 
-            ? JSON.stringify('https://votre-api-de-production.com') 
-            : JSON.stringify(process.env.REACT_APP_API_URL || 'http://localhost:5000')
+            ? 'https://api.vynaldocs.com'
+            : (process.env.REACT_APP_API_URL || 'http://localhost:5000')
         }),
       }),
     ].filter(Boolean),
@@ -65,8 +78,8 @@ module.exports = (env, argv) => {
       port: 3003,
     },
     performance: {
-      hints: isProduction ? 'warning' : false
+      hints: false
     },
-    devtool: isProduction ? 'source-map' : 'eval-source-map',
+    devtool: isProduction ? false : 'eval-source-map',
   };
 }; 
