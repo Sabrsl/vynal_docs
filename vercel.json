@@ -2,13 +2,6 @@
   "version": 2,
   "builds": [
     {
-      "src": "frontend/package.json",
-      "use": "@vercel/node",
-      "config": {
-        "buildCommand": "cd frontend && npm install --legacy-peer-deps && npm run build"
-      }
-    },
-    {
       "src": "index.py",
       "use": "@vercel/python"
     }
@@ -20,6 +13,7 @@
     }
   ],
   "env": {
-    "VERCEL": "1"
+    "VERCEL": "1",
+    "NPM_FLAGS": "--force --no-audit --legacy-peer-deps"
   }
 } 
