@@ -1,15 +1,29 @@
 {
   "version": 2,
+  "framework": "webpack",
+  "buildCommand": "cd frontend && npm install --force && npm run build",
+  "outputDirectory": "frontend/dist",
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/index.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/dist/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/frontend/dist/index.html"
+    }
+  ],
   "builds": [
     {
       "src": "index.py",
       "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.py"
     }
   ],
   "env": {
