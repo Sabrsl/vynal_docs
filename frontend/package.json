@@ -10,7 +10,7 @@
     "@tiptap/extension-code-block": "^2.1.13",
     "@tiptap/extension-color": "^2.11.5",
     "@tiptap/extension-font-family": "^2.11.5",
-    "@tiptap/extension-font-size": "^3.0.0-next.3",
+    "@tiptap/extension-font-size": "^2.1.13",
     "@tiptap/extension-highlight": "^2.1.13",
     "@tiptap/extension-history": "^2.1.13",
     "@tiptap/extension-image": "^2.1.13",
@@ -57,7 +57,7 @@
   },
   "scripts": {
     "start": "webpack serve --mode development",
-    "build": "webpack --mode production",
+    "build": "webpack --mode production --legacy-peer-deps",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "eslintConfig": {
