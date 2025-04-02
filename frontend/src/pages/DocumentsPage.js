@@ -86,12 +86,30 @@ const DocumentsPage = () => {
   
   // Gérer le succès de la génération de document
   const handleGenerateSuccess = (documentInfo) => {
-    // Enregistrer le document généré dans la liste
+    console.log("Document généré avec succès:", documentInfo);
+    
+    // Créer un document réel dans l'application
+    const newDocument = {
+      title: documentInfo.title || 'Document sans titre',
+      type: 'document',
+      userId: user?.id,
+      template: documentInfo.template?.id || null,
+      // Ajouter d'autres propriétés nécessaires
+      content: documentInfo.content,
+      url: documentInfo.url,
+      format: documentInfo.format
+    };
+    
+    // Appeler la fonction de création de document du contexte
+    createDocument(newDocument);
+    
+    // Enregistrer également dans la liste des documents générés
     const newGeneratedDoc = {
-      id: Date.now(),
+      id: documentInfo.id || Date.now(),
+      title: documentInfo.title,
       template: documentInfo.template,
       contact: documentInfo.contact,
-      documentUrl: documentInfo.documentUrl,
+      url: documentInfo.url,
       filename: documentInfo.filename,
       format: documentInfo.format,
       date: new Date().toLocaleString()

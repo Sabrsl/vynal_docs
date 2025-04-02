@@ -497,125 +497,102 @@ startxref
               padding: 20mm;
               margin: 0 auto;
               background: white;
+              box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             }
-            .header { display: flex; justify-content: space-between; margin-bottom: 50px; }
-            .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
-            .document-title { font-size: 28px; font-weight: bold; margin-bottom: 30px; text-align: center; }
-            .info-section { margin-bottom: 30px; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-            .info-block h3 { font-size: 16px; margin-bottom: 10px; color: #666; }
-            .info-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            .info-table th { background: #f3f4f6; padding: 10px; text-align: left; font-weight: bold; }
-            .info-table td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
-            .amount-table { margin-top: 30px; width: 350px; margin-left: auto; }
-            .amount-table td { padding: 8px; }
-            .amount-table .total { font-weight: bold; font-size: 18px; }
-            .footer { margin-top: 50px; font-size: 12px; color: #666; text-align: center; }
-            .notice { margin-top: 30px; padding: 15px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 5px; }
-            .notice h3 { color: #4b5563; font-size: 14px; margin-bottom: 8px; }
-            .notice p { font-size: 12px; color: #64748b; margin: 5px 0; }
-            .button { 
-              display: inline-block; 
-              padding: 8px 16px; 
-              background-color: #2563eb; 
-              color: white; 
-              text-decoration: none;
-              border-radius: 4px;
-              font-size: 14px;
-              margin-top: 10px;
-            }
-            @media print {
-              body { background: white; }
-              .page { width: 100%; box-shadow: none; margin: 0; padding: 10mm; }
-              .notice { display: none; }
-            }
+            .header { margin-bottom: 30px; text-align: center; }
+            .company-info { float: left; width: 50%; }
+            .document-info { float: right; width: 50%; text-align: right; }
+            .client-info { margin: 40px 0; padding: 10px; background: #f9f9f9; border-radius: 5px; }
+            .document-details { margin: 20px 0; clear: both; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+            th { background: #f5f5f5; }
+            .amount-row { font-weight: bold; }
+            .footer { margin-top: 50px; font-size: 0.8em; color: #777; text-align: center; }
+            .notice { margin-top: 30px; padding: 15px; background: #fff8e1; border-left: 4px solid #ffc107; }
+            .button { padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
           </style>
         </head>
         <body>
           <div class="page">
             <div class="header">
-              <div class="logo">VynalDocs</div>
-              <div class="date">Date: ${dateStr}</div>
+              <h1>${selectedTemplate.title}</h1>
             </div>
             
-            <div class="document-title">${selectedTemplate.title}</div>
+            <div class="company-info">
+              <h3>VynalDocs</h3>
+              <p>123 Rue de l'Innovation<br>
+              75001 Paris<br>
+              contact@vynaldocs.com<br>
+              +33 1 23 45 67 89</p>
+            </div>
             
-            <div class="info-grid">
-              <div class="info-block">
-                <h3>DE:</h3>
-                <p>VynalDocs<br>
-                123 Rue de l'Innovation<br>
-                75001 Paris<br>
-                contact@vynaldocs.com<br>
-                +33 1 23 45 67 89</p>
+            <div class="document-info">
+              <h3>Référence: ${reference}</h3>
+              <p>Date: ${dateStr}<br>
+              Date d'échéance: ${dateExpirationStr}</p>
+            </div>
+            
+            <div class="client-info">
+              <h3>Client</h3>
+              <p>${formattedData.prenom} ${formattedData.nom}<br>
+              ${formattedData.entreprise}<br>
+              ${formattedData.adresse}<br>
+              ${formattedData.email}<br>
+              ${formattedData.telephone}</p>
+            </div>
+            
+            <div class="document-details">
+              <h3>Détails</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Quantité</th>
+                    <th>Prix unitaire</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Services de consultation</td>
+                    <td>1</td>
+                    <td>${formatMoney(montantHT)}</td>
+                    <td>${formatMoney(montantHT)}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="3" style="text-align: right;">Sous-total:</td>
+                    <td>${formatMoney(montantHT)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" style="text-align: right;">TVA (${tauxTVA}%):</td>
+                    <td>${formatMoney(montantTVA)}</td>
+                  </tr>
+                  <tr class="amount-row">
+                    <td colspan="3" style="text-align: right;">Total:</td>
+                    <td>${formatMoney(montantTTC)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+              
+              <div class="footer">
+                <p>Document généré par VynalDocs - ${new Date().toLocaleString('fr-FR')}</p>
               </div>
               
-              <div class="info-block">
-                <h3>À:</h3>
-                <p>${formattedData.prenom} ${formattedData.nom}<br>
-                ${formattedData.entreprise}<br>
-                ${formattedData.adresse}<br>
-                ${formattedData.email}<br>
-                ${formattedData.telephone}</p>
-              </div>
-            </div>
-            
-            <div class="info-section">
-              <h3>DÉTAILS:</h3>
-              <p><strong>Référence:</strong> ${reference}</p>
-              <p><strong>Date:</strong> ${dateStr}</p>
-              <p><strong>Date d'échéance:</strong> ${dateExpirationStr}</p>
-            </div>
-            
-            <table class="info-table">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Quantité</th>
-                  <th>Prix unitaire</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Services de consultation</td>
-                  <td>1</td>
-                  <td>${formatMoney(montantHT)}</td>
-                  <td>${formatMoney(montantHT)}</td>
-                </tr>
-              </tbody>
-            </table>
-            
-            <table class="amount-table">
-              <tr>
-                <td>Sous-total:</td>
-                <td>${formatMoney(montantHT)}</td>
-              </tr>
-              <tr>
-                <td>TVA (${tauxTVA}%):</td>
-                <td>${formatMoney(montantTVA)}</td>
-              </tr>
-              <tr class="total">
-                <td>Total:</td>
-                <td>${formatMoney(montantTTC)}</td>
-              </tr>
-            </table>
-            
-            <div class="footer">
-              <p>Document généré par VynalDocs - ${new Date().toLocaleString('fr-FR')}</p>
-            </div>
-            
-            <div class="notice">
-              <h3>Attention:</h3>
-              <p>Ceci est une prévisualisation HTML. Pour télécharger un vrai PDF, utilisez les boutons ci-dessous.</p>
-              <p>Si vous rencontrez des problèmes avec Adobe Reader, essayez les méthodes suivantes:</p>
-              <ol>
-                <li>Cliquez sur "Créer un PDF réel" pour ouvrir dans une nouvelle fenêtre</li>
-                <li>Utilisez la fonction d'impression du navigateur (Ctrl+P)</li>
-                <li>Sélectionnez "Enregistrer comme PDF" dans les options d'impression</li>
-              </ol>
-              <div style="display:flex;gap:10px;margin-top:15px;">
-                <button class="button" onclick="window.print()">Imprimer/Enregistrer</button>
+              <div class="notice">
+                <h3>Attention:</h3>
+                <p>Ceci est une prévisualisation HTML. Pour télécharger un vrai PDF, utilisez les boutons ci-dessous.</p>
+                <p>Si vous rencontrez des problèmes avec Adobe Reader, essayez les méthodes suivantes:</p>
+                <ol>
+                  <li>Cliquez sur "Créer un PDF réel" pour ouvrir dans une nouvelle fenêtre</li>
+                  <li>Utilisez la fonction d'impression du navigateur (Ctrl+P)</li>
+                  <li>Sélectionnez "Enregistrer comme PDF" dans les options d'impression</li>
+                </ol>
+                <div style="display:flex;gap:10px;margin-top:15px;">
+                  <button class="button" onclick="window.print()">Imprimer/Enregistrer</button>
+                </div>
               </div>
             </div>
           </div>
@@ -676,6 +653,31 @@ vous devriez télécharger le fichier et l'ouvrir avec Microsoft Word ou un édi
       // Passer à l'étape de prévisualisation
       setStep(3);
       setPreviewReady(true);
+      
+      // IMPORTANT: Appeler la fonction de callback pour informer l'application parent
+      // de la création du document
+      if (onGenerateSuccess && typeof onGenerateSuccess === 'function') {
+        console.log("Appel de onGenerateSuccess avec les données du document");
+        
+        // Créer un objet document avec toutes les informations nécessaires
+        const documentInfo = {
+          id: reference,
+          title: selectedTemplate.title,
+          template: selectedTemplate,
+          contact: selectedContact,
+          format: exportFormat,
+          filename: outputFilename || `document.${exportFormat}`,
+          url: url,
+          data: documentData,
+          createdAt: new Date().toISOString(),
+          content: documentBlob
+        };
+        
+        // Appeler la callback avec les données du document
+        onGenerateSuccess(documentInfo);
+      } else {
+        console.warn("La fonction onGenerateSuccess n'est pas définie ou n'est pas une fonction");
+      }
       
     } catch (err) {
       console.error('Erreur lors de la génération du document:', err);
