@@ -2,11 +2,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-# Configuration de l'application
+# Configuration de l'application avec un préfixe pour les routes
 app = FastAPI(
     title="Vynal Docs API",
     description="API pour la gestion des documents",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json"
 )
 
 # Configuration CORS
@@ -18,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
+@app.get("/api")
 async def home():
     """Endpoint d'accueil de l'API"""
     return {
